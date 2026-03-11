@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "name": "Hypolite",
+    "role": "Gender Information Management Officer",
+    "pillar": "Humanitaire"
+  },
+  {
+    "id": 2,
+    "name": "Sabine",
+    "role": "Programme Specialist",
+    "pillar": "Programme"
+  },
+  {
+    "id": 3,
+    "name": "Felix",
+    "role": "Operations Manager",
+    "pillar": "Operations"
+  }
+]
