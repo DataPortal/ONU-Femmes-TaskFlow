@@ -2,10 +2,11 @@
 <html lang="fr">
 
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>ONU Femmes — Task Manager</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>ONU Femmes Task Manager</title>
 
 <link rel="stylesheet" href="style.css">
 
@@ -15,16 +16,23 @@
 
 <header>
 
-<img src="assets/img/logo.png" class="logo">
+<div class="brand">
 
-<h1>ONU Femmes Task Manager</h1>
+<img src="assets/img/logunw.jpg" class="logo">
+
+<div>
+<h1>ONU Femmes</h1>
+<p>Gestion intelligente des tâches</p>
+</div>
+
+</div>
 
 </header>
 
 <section class="dashboard">
 
 <div class="card">
-<h3>Total tâches</h3>
+<h3>Total</h3>
 <p id="totalTasks">0</p>
 </div>
 
@@ -39,15 +47,28 @@
 </div>
 
 <div class="card">
-<h3>En retard</h3>
+<h3>Retard</h3>
 <p id="late">0</p>
 </div>
 
 </section>
 
-<section class="taskSection">
+<section class="controls">
 
-<h2>Liste des tâches</h2>
+<input type="text" id="searchInput" placeholder="Rechercher une tâche">
+
+<select id="pillarFilter">
+<option value="">Tous les piliers</option>
+<option value="Humanitaire">Humanitaire</option>
+<option value="Programme">Programme</option>
+<option value="Operations">Operations</option>
+</select>
+
+<button onclick="openForm()">+ Nouvelle tâche</button>
+
+</section>
+
+<section class="tasks">
 
 <table id="taskTable">
 
@@ -74,7 +95,40 @@
 
 </section>
 
+<div id="taskForm" class="modal">
+
+<div class="modalContent">
+
+<h2>Nouvelle tâche</h2>
+
+<input id="title" placeholder="Titre">
+
+<select id="pillar">
+<option>Humanitaire</option>
+<option>Programme</option>
+<option>Operations</option>
+</select>
+
+<input id="assigned" placeholder="Assigné à">
+
+<select id="priority">
+<option>Basse</option>
+<option>Moyenne</option>
+<option>Haute</option>
+</select>
+
+<input id="date" type="date">
+
+<button onclick="addTask()">Ajouter</button>
+
+<button onclick="closeForm()">Fermer</button>
+
+</div>
+
+</div>
+
 <script src="script.js"></script>
 
 </body>
+
 </html>
