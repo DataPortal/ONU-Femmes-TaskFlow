@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "title": "Mettre à jour le dashboard GiHA",
+    "pillar": "Humanitaire",
+    "assigned_to": "Hypolite",
+    "priority": "Haute",
+    "status": "En cours",
+    "progress": 50,
+    "due_date": "2026-03-20"
+  },
+  {
+    "id": 2,
+    "title": "Préparer le rapport mensuel",
+    "pillar": "Programme",
+    "assigned_to": "Sabine",
+    "priority": "Moyenne",
+    "status": "Non commencée",
+    "progress": 0,
+    "due_date": "2026-03-25"
+  }
+]
