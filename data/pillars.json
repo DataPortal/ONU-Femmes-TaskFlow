@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "name": "Humanitaire",
+    "lead": "Hypolite"
+  },
+  {
+    "id": 2,
+    "name": "Programme",
+    "lead": "Nadege"
+  },
+  {
+    "id": 3,
+    "name": "Operations",
+    "lead": "Felix"
+  },
+  {
+    "id": 4,
+    "name": "Coordination",
+    "lead": "Sabine"
+  }
+]
