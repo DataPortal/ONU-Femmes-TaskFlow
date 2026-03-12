@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONU Femmes — Mes tâches</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="my-tasks">
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
+        <div>
+          <h1>ONU Femmes Task Manager</h1>
+          <p>Suivi individuel des tâches</p>
+        </div>
+      </div>
+
+      <div class="top-tools">
+        <select id="currentUserSelect"></select>
+        <div id="currentUserLabel"></div>
+      </div>
+    </div>
+  </header>
+
+  <nav>
+    <a href="index.html">Dashboard</a>
+    <a href="mes-taches.html" class="active">Mes tâches</a>
+    <a href="mon-equipe.html">Mon équipe</a>
+  </nav>
+
+  <main class="container">
+    <h2 id="myTasksTitle" class="section-title">Mes tâches</h2>
+
+    <section id="myTasksKpis" class="dashboard"></section>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tâche</th>
+            <th>Assigné à</th>
+            <th>Superviseur</th>
+            <th>Priorité</th>
+            <th>Statut</th>
+            <th>Progression staff</th>
+            <th>Commentaire staff</th>
+            <th>Évaluation superviseur</th>
+            <th>Commentaire superviseur</th>
+            <th>Échéance</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="myTasksTbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="taskModal" class="modal">
+    <div class="modal-content">
+      <h3>Mise à jour de la tâche</h3>
+      <input type="hidden" id="editTaskId" />
+
+      <div class="modal-row">
+        <div>
+          <label for="editStatus">Statut</label>
+          <select id="editStatus">
+            <option>Non commencée</option>
+            <option>En cours</option>
+            <option>Bloquée</option>
+            <option>Terminée</option>
+          </select>
+        </div>
+        <div>
+          <label for="editProgress">Progression staff (%)</label>
+          <input type="number" id="editProgress" min="0" max="100" />
+        </div>
+      </div>
+
+      <div>
+        <label for="editStaffComment">Commentaire du staff</label>
+        <textarea id="editStaffComment"></textarea>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="editSupervisorProgress">Évaluation superviseur (%)</label>
+          <input type="number" id="editSupervisorProgress" min="0" max="100" />
+        </div>
+        <div>
+          <label for="editSupervisorStatus">Appréciation superviseur</label>
+          <select id="editSupervisorStatus">
+            <option>Non évalué</option>
+            <option>Très satisfaisant</option>
+            <option>Acceptable</option>
+            <option>À améliorer</option>
+            <option>Critique</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="editSupervisorComment">Commentaire du superviseur</label>
+        <textarea id="editSupervisorComment"></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button id="closeTaskModalBtn" class="secondary">Fermer</button>
+        <button id="saveTaskBtn">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
