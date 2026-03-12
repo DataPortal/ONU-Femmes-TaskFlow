@@ -3,132 +3,124 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ONU Femmes Task Manager</title>
+  <title>ONU Femmes — Dashboard des tâches</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-
+<body data-page="dashboard">
   <header>
-    <div class="brand">
-      <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
-      <div>
-        <h1>ONU Femmes</h1>
-        <p>Gestion intelligente des tâches</p>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <div>
+          <h1>ONU Femmes Task Manager</h1>
+          <p>Gestion intelligente des tâches par pilier, staff et superviseur</p>
+        </div>
+      </div>
+
+      <div class="top-tools">
+        <select id="currentUserSelect"></select>
+        <div id="currentUserLabel"></div>
       </div>
     </div>
   </header>
 
-  <section class="dashboard">
-    <div class="card">
-      <h3>Total</h3>
-      <p id="totalTasks">0</p>
-    </div>
-    <div class="card">
-      <h3>En cours</h3>
-      <p id="inProgress">0</p>
-    </div>
-    <div class="card">
-      <h3>Terminées</h3>
-      <p id="completed">0</p>
-    </div>
-    <div class="card">
-      <h3>Retard</h3>
-      <p id="late">0</p>
-    </div>
-  </section>
+  <nav>
+    <a href="index.html" class="active">Dashboard</a>
+    <a href="mes-taches.html">Mes tâches</a>
+    <a href="mon-equipe.html">Mon équipe</a>
+  </nav>
 
-  <section class="controls">
-    <input type="text" id="searchInput" placeholder="Rechercher une tâche" />
-    <select id="pillarFilter">
-      <option value="">Tous les piliers</option>
-      <option value="Humanitaire">Humanitaire</option>
-      <option value="Programme">Programme</option>
-      <option value="Operations">Operations</option>
-    </select>
-    <button onclick="openForm()">+ Nouvelle tâche</button>
-  </section>
+  <main class="container">
+    <h2 class="section-title">Vue globale des tâches</h2>
 
-  <section class="tasks">
-    <table id="taskTable">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Tâche</th>
-          <th>Pilier</th>
-          <th>Assigné</th>
-          <th>Priorité</th>
-          <th>Statut</th>
-          <th>Progression staff</th>
-          <th>Commentaire staff</th>
-          <th>Évaluation superviseur</th>
-          <th>Commentaire superviseur</th>
-          <th>Échéance</th>
-          <th>Action</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </section>
+    <section id="dashboardKpis" class="dashboard"></section>
 
-  <div id="taskForm" class="modal">
-    <div class="modalContent">
-      <h2>Nouvelle tâche</h2>
-      <input id="title" placeholder="Titre" />
-      <select id="pillar">
-        <option>Humanitaire</option>
-        <option>Programme</option>
-        <option>Operations</option>
+    <section class="filters">
+      <input type="text" id="searchInput" placeholder="Rechercher une tâche, un staff ou un superviseur" />
+      <select id="pillarFilter">
+        <option value="">Tous les piliers</option>
+        <option value="Humanitaire">Humanitaire</option>
+        <option value="Programme">Programme</option>
+        <option value="Operations">Operations</option>
+        <option value="Direction">Direction</option>
       </select>
-      <input id="assigned" placeholder="Assigné à" />
-      <select id="priority">
-        <option>Basse</option>
-        <option>Moyenne</option>
-        <option>Haute</option>
-        <option>Critique</option>
-      </select>
-      <input id="date" type="date" />
-      <button onclick="addTask()">Ajouter</button>
-      <button onclick="closeForm()">Fermer</button>
-    </div>
-  </div>
+      <select id="supervisorFilter"></select>
+    </section>
 
-  <div id="updateModal" class="modal">
-    <div class="modalContent largeModal">
-      <h2>Mise à jour de la tâche</h2>
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tâche</th>
+            <th>Assigné à</th>
+            <th>Superviseur</th>
+            <th>Priorité</th>
+            <th>Statut</th>
+            <th>Progression staff</th>
+            <th>Commentaire staff</th>
+            <th>Évaluation superviseur</th>
+            <th>Commentaire superviseur</th>
+            <th>Échéance</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="tasksTbody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <div id="taskModal" class="modal">
+    <div class="modal-content">
+      <h3>Mise à jour de la tâche</h3>
       <input type="hidden" id="editTaskId" />
 
-      <label>Statut</label>
-      <select id="editStatus">
-        <option>Non commencée</option>
-        <option>En cours</option>
-        <option>Terminée</option>
-        <option>Bloquée</option>
-      </select>
+      <div class="modal-row">
+        <div>
+          <label for="editStatus">Statut</label>
+          <select id="editStatus">
+            <option>Non commencée</option>
+            <option>En cours</option>
+            <option>Bloquée</option>
+            <option>Terminée</option>
+          </select>
+        </div>
+        <div>
+          <label for="editProgress">Progression staff (%)</label>
+          <input type="number" id="editProgress" min="0" max="100" />
+        </div>
+      </div>
 
-      <label>Progression du staff (%)</label>
-      <input type="number" id="editProgress" min="0" max="100" />
+      <div>
+        <label for="editStaffComment">Commentaire du staff</label>
+        <textarea id="editStaffComment" placeholder="Commentaire du staff"></textarea>
+      </div>
 
-      <label>Commentaire du staff</label>
-      <textarea id="editStaffComment" rows="4" placeholder="Commentaire du staff"></textarea>
+      <div class="modal-row">
+        <div>
+          <label for="editSupervisorProgress">Évaluation superviseur (%)</label>
+          <input type="number" id="editSupervisorProgress" min="0" max="100" />
+        </div>
+        <div>
+          <label for="editSupervisorStatus">Appréciation superviseur</label>
+          <select id="editSupervisorStatus">
+            <option>Non évalué</option>
+            <option>Très satisfaisant</option>
+            <option>Acceptable</option>
+            <option>À améliorer</option>
+            <option>Critique</option>
+          </select>
+        </div>
+      </div>
 
-      <label>Évaluation du superviseur (%)</label>
-      <input type="number" id="editSupervisorProgress" min="0" max="100" />
+      <div>
+        <label for="editSupervisorComment">Commentaire du superviseur</label>
+        <textarea id="editSupervisorComment" placeholder="Commentaire du superviseur"></textarea>
+      </div>
 
-      <label>Appréciation du superviseur</label>
-      <select id="editSupervisorStatus">
-        <option>Non évalué</option>
-        <option>Très satisfaisant</option>
-        <option>Acceptable</option>
-        <option>À améliorer</option>
-        <option>Critique</option>
-      </select>
-
-      <label>Commentaire du superviseur</label>
-      <textarea id="editSupervisorComment" rows="4" placeholder="Commentaire du superviseur"></textarea>
-
-      <div class="modalActions">
-        <button onclick="saveTaskUpdate()">Enregistrer</button>
-        <button onclick="closeUpdateModal()">Fermer</button>
+      <div class="modal-actions">
+        <button id="closeTaskModalBtn" class="secondary">Fermer</button>
+        <button id="saveTaskBtn">Enregistrer</button>
       </div>
     </div>
   </div>
