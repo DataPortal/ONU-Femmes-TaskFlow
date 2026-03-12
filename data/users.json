@@ -1,0 +1,66 @@
+[
+  {
+    "id": 1,
+    "name": "Hypolite Reoutar Mbailassem",
+    "role": "Gender Information Management Officer",
+    "pillar": "Humanitaire",
+    "user_type": "staff",
+    "supervisor_id": 10
+  },
+  {
+    "id": 2,
+    "name": "Marie Claire",
+    "role": "Programme Analyst",
+    "pillar": "Programme",
+    "user_type": "staff",
+    "supervisor_id": 11
+  },
+  {
+    "id": 3,
+    "name": "Felix Mukendi",
+    "role": "Operations Associate",
+    "pillar": "Operations",
+    "user_type": "staff",
+    "supervisor_id": 12
+  },
+  {
+    "id": 4,
+    "name": "Aline Kanku",
+    "role": "Administrative Assistant",
+    "pillar": "Operations",
+    "user_type": "staff",
+    "supervisor_id": 12
+  },
+  {
+    "id": 10,
+    "name": "Sabine Ilunga",
+    "role": "Humanitarian Specialist",
+    "pillar": "Humanitaire",
+    "user_type": "supervisor",
+    "supervisor_id": 20
+  },
+  {
+    "id": 11,
+    "name": "Nadege Mbuyi",
+    "role": "Programme Specialist",
+    "pillar": "Programme",
+    "user_type": "supervisor",
+    "supervisor_id": 20
+  },
+  {
+    "id": 12,
+    "name": "Arlette Kasongo",
+    "role": "Operations Manager",
+    "pillar": "Operations",
+    "user_type": "supervisor",
+    "supervisor_id": 20
+  },
+  {
+    "id": 20,
+    "name": "Mme la Représentante",
+    "role": "Representative",
+    "pillar": "Direction",
+    "user_type": "admin",
+    "supervisor_id": null
+  }
+]
