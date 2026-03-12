@@ -7,7 +7,11 @@
     "priority": "Haute",
     "status": "En cours",
     "progress": 50,
-    "due_date": "2026-03-20"
+    "due_date": "2026-03-20",
+    "staff_comment": "Collecte des données terminée, visualisations en cours.",
+    "supervisor_progress": 40,
+    "supervisor_status": "Acceptable",
+    "supervisor_comment": "Bonne avancée, mais il faut finaliser l’analyse avant validation."
   },
   {
     "id": 2,
@@ -17,6 +21,10 @@
     "priority": "Moyenne",
     "status": "Non commencée",
     "progress": 0,
-    "due_date": "2026-03-25"
+    "due_date": "2026-03-25",
+    "staff_comment": "",
+    "supervisor_progress": 0,
+    "supervisor_status": "Non évalué",
+    "supervisor_comment": ""
   }
 ]
