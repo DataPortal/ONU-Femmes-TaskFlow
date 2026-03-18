@@ -38,40 +38,24 @@
       <div class="modal-row">
         <div>
           <label for="regName">Nom complet</label>
-          <input
-            id="regName"
-            type="text"
-            placeholder="Ex. Hypolite Reoutar Mbailassem"
-          />
+          <input id="regName" type="text" placeholder="Ex. Hypolite Reoutar Mbailassem" />
         </div>
 
         <div>
           <label for="regEmail">Email</label>
-          <input
-            id="regEmail"
-            type="email"
-            placeholder="nom@unwomen.org"
-          />
+          <input id="regEmail" type="email" placeholder="nom@unwomen.org" />
         </div>
       </div>
 
       <div class="modal-row">
         <div>
           <label for="regRole">Fonction</label>
-          <input
-            id="regRole"
-            type="text"
-            placeholder="Ex. Gender Information Management Officer"
-          />
+          <input id="regRole" type="text" placeholder="Ex. Gender Information Management Officer" />
         </div>
 
         <div>
           <label for="regOffice">Bureau / unité</label>
-          <input
-            id="regOffice"
-            type="text"
-            placeholder="Ex. ONU Femmes RDC"
-          />
+          <input id="regOffice" type="text" placeholder="Ex. ONU Femmes RDC" />
         </div>
       </div>
 
@@ -107,20 +91,12 @@
       <div class="modal-row">
         <div>
           <label for="pillarName">Nom court du pilier</label>
-          <input
-            id="pillarName"
-            type="text"
-            placeholder="Ex. WPS"
-          />
+          <input id="pillarName" type="text" placeholder="Ex. WPS" />
         </div>
 
         <div>
           <label for="pillarFullName">Intitulé complet</label>
-          <input
-            id="pillarFullName"
-            type="text"
-            placeholder="Ex. Women Peace and Security"
-          />
+          <input id="pillarFullName" type="text" placeholder="Ex. Women Peace and Security" />
         </div>
       </div>
 
@@ -131,7 +107,6 @@
             <option value="">Sélectionner un superviseur</option>
           </select>
         </div>
-
         <div></div>
       </div>
 
@@ -180,11 +155,12 @@
             <th>Superviseur</th>
             <th>Email</th>
             <th>Bureau</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="registeredUsersTbody">
           <tr>
-            <td colspan="7">
+            <td colspan="8">
               <span class="muted">Chargement des utilisateurs enregistrés...</span>
             </td>
           </tr>
@@ -201,10 +177,10 @@
       </div>
 
       <div class="empty">
-        <strong>Limite du prototype</strong><br><br>
-        Les nouveaux piliers et les nouveaux profils sont stockés localement dans
-        le navigateur. Ils ne sont pas encore partagés entre plusieurs utilisateurs
-        ou appareils.
+        <strong>Suppression des membres</strong><br><br>
+        Seuls les <strong>superviseurs</strong> ou <strong>admins</strong> autorisés
+        peuvent supprimer les membres <strong>locaux</strong> de leur équipe.
+        Les profils de base du fichier <strong>users.json</strong> ne sont pas supprimables ici.
       </div>
     </section>
   </main>
