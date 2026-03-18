@@ -10,10 +10,10 @@
   <header>
     <div class="header-inner">
       <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
         <div>
           <h1>ONU Femmes Task Manager</h1>
-          <p>Enregistrement du personnel et rattachement au superviseur</p>
+          <p>Enregistrement du personnel par pilier et superviseur</p>
         </div>
       </div>
 
@@ -34,7 +34,7 @@
   <main class="container">
     <h2 class="section-title">Enregistrement d’un membre du staff</h2>
 
-    <section class="card" style="max-width:900px;">
+    <section class="card" style="max-width: 980px;">
       <div class="modal-row">
         <div>
           <label for="regName">Nom complet</label>
@@ -66,33 +66,28 @@
         </div>
 
         <div>
-          <label for="regPillar">Pilier</label>
-          <select id="regPillar">
-            <option value="">Sélectionner</option>
-            <option value="Humanitaire">Humanitaire</option>
-            <option value="Programme">Programme</option>
-            <option value="Operations">Operations</option>
-            <option value="Coordination">Coordination</option>
-            <option value="Direction">Direction</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="modal-row">
-        <div>
-          <label for="regSupervisor">Superviseur</label>
-          <select id="regSupervisor">
-            <option value="">Sélectionner un superviseur</option>
-          </select>
-        </div>
-
-        <div>
           <label for="regOffice">Bureau / unité</label>
           <input
             id="regOffice"
             type="text"
             placeholder="Ex. ONU Femmes RDC"
           />
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="regPillar">Pilier</label>
+          <select id="regPillar">
+            <option value="">Sélectionner</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="regSupervisor">Superviseur</label>
+          <select id="regSupervisor">
+            <option value="">Sélectionner un superviseur</option>
+          </select>
         </div>
       </div>
 
@@ -104,6 +99,72 @@
       </div>
 
       <div id="registerMessage" style="margin-top:12px;"></div>
+    </section>
+
+    <h3 class="section-title" style="margin-top:24px;">Créer un nouveau pilier</h3>
+
+    <section class="card" style="max-width: 980px;">
+      <div class="modal-row">
+        <div>
+          <label for="pillarName">Nom court du pilier</label>
+          <input
+            id="pillarName"
+            type="text"
+            placeholder="Ex. WPS"
+          />
+        </div>
+
+        <div>
+          <label for="pillarFullName">Intitulé complet</label>
+          <input
+            id="pillarFullName"
+            type="text"
+            placeholder="Ex. Women Peace and Security"
+          />
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="pillarSupervisor">Superviseur du pilier</label>
+          <select id="pillarSupervisor">
+            <option value="">Sélectionner un superviseur</option>
+          </select>
+        </div>
+
+        <div></div>
+      </div>
+
+      <div class="modal-actions" style="justify-content:flex-start;">
+        <button id="createPillarBtn" type="button">Créer le pilier</button>
+        <button id="clearPillarsBtn" class="secondary" type="button">
+          Réinitialiser les piliers locaux
+        </button>
+      </div>
+
+      <div id="pillarMessage" style="margin-top:12px;"></div>
+    </section>
+
+    <h3 class="section-title" style="margin-top:24px;">Piliers disponibles</h3>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nom court</th>
+            <th>Intitulé complet</th>
+            <th>Superviseur</th>
+          </tr>
+        </thead>
+        <tbody id="pillarsTbody">
+          <tr>
+            <td colspan="4">
+              <span class="muted">Chargement des piliers...</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </section>
 
     <h3 class="section-title" style="margin-top:24px;">Staff enregistrés localement</h3>
@@ -118,11 +179,12 @@
             <th>Pilier</th>
             <th>Superviseur</th>
             <th>Email</th>
+            <th>Bureau</th>
           </tr>
         </thead>
         <tbody id="registeredUsersTbody">
           <tr>
-            <td colspan="6">
+            <td colspan="7">
               <span class="muted">Chargement des utilisateurs enregistrés...</span>
             </td>
           </tr>
@@ -132,17 +194,17 @@
 
     <section class="grid-2" style="margin-top:24px;">
       <div class="empty">
-        <strong>Comment cela fonctionne</strong><br><br>
-        Les nouveaux membres du staff enregistrés sur cette page sont sauvegardés
-        localement dans le navigateur via <strong>localStorage</strong>. Ils sont ensuite
-        fusionnés avec les profils de base contenus dans <strong>users.json</strong>.
+        <strong>Logique de fonctionnement</strong><br><br>
+        Vous pouvez d’abord créer un <strong>pilier</strong> avec un superviseur,
+        puis enregistrer de nouveaux membres du staff dans ce pilier.
+        Le système filtre ensuite les superviseurs selon le pilier sélectionné.
       </div>
 
       <div class="empty">
         <strong>Limite du prototype</strong><br><br>
-        Les inscriptions ne sont pas partagées entre plusieurs ordinateurs ou navigateurs.
-        Pour une gestion centralisée réelle, il faudra ensuite connecter l’application
-        à une base de données en ligne.
+        Les nouveaux piliers et les nouveaux profils sont stockés localement dans
+        le navigateur. Ils ne sont pas encore partagés entre plusieurs utilisateurs
+        ou appareils.
       </div>
     </section>
   </main>
