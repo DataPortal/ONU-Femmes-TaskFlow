@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await loadData();
   initUserSelector();
   initGlobalActions();
+  initRegisterPage();
+  initTaskCreation();
 
   const page = document.body.dataset.page;
   if (page === "dashboard") renderDashboardPage();
@@ -21,8 +23,15 @@ async function loadData() {
     fetch("data/tasks.json")
   ]);
 
-  AppState.users = await usersRes.json();
-  AppState.tasks = await tasksRes.json();
+  const baseUsers = await usersRes.json();
+  const baseTasks = await tasksRes.json();
+
+  const localUsers = JSON.parse(localStorage.getItem("unw_registered_users") || "[]");
+  const localTasks = JSON.parse(localStorage.getItem("unw_created_tasks") || "[]");
+
+  AppState.users = [...baseUsers, ...localUsers];
+  AppState.tasks = [...baseTasks, ...localTasks];
+
   enrichTasks();
 }
 
@@ -92,12 +101,10 @@ function updateCurrentUserLabel() {
 }
 
 function initGlobalActions() {
-  const openBtn = document.getElementById("openTaskModalBtn");
   const closeBtn = document.getElementById("closeTaskModalBtn");
   const saveBtn = document.getElementById("saveTaskBtn");
   const modal = document.getElementById("taskModal");
 
-  if (openBtn) openBtn.addEventListener("click", openTaskModal);
   if (closeBtn) closeBtn.addEventListener("click", closeTaskModal);
   if (saveBtn) saveBtn.addEventListener("click", saveTaskUpdate);
 
@@ -111,8 +118,9 @@ function openTaskModal(taskId = null) {
   if (!modal) return;
 
   const task = AppState.enrichedTasks.find(t => t.id === taskId);
+  if (!task) return;
 
-  document.getElementById("editTaskId").value = task ? task.id : "";
+  document.getElementById("editTaskId").value = task.id;
   document.getElementById("editStatus").value = task?.status || "Non commencée";
   document.getElementById("editProgress").value = task?.progress ?? 0;
   document.getElementById("editStaffComment").value = task?.staff_comment || "";
@@ -163,13 +171,10 @@ function saveTaskUpdate() {
     task.progress = 100;
   }
 
+  persistLocalTasks();
   enrichTasks();
   closeTaskModal();
-
-  const page = document.body.dataset.page;
-  if (page === "dashboard") renderDashboardPage();
-  if (page === "my-tasks") renderMyTasksPage();
-  if (page === "my-team") renderMyTeamPage();
+  rerenderCurrentPage();
 }
 
 function clamp(v, min, max) {
@@ -234,7 +239,7 @@ function renderTaskRows(tasks) {
       </td>
       <td>${task.supervisor_comment || '<span class="muted">—</span>'}</td>
       <td class="${isLate(task) ? 'late' : ''}">${task.due_date}</td>
-      <td><button class="action-btn" onclick="openTaskModal(${task.id})">Mettre à jour</button></td>
+      <td><button class="action-btn" type="button" onclick="openTaskModal(${task.id})">Mettre à jour</button></td>
     </tr>
   `).join("");
 }
@@ -265,8 +270,11 @@ function renderDashboardPage() {
   const supervisorFilter = document.getElementById("supervisorFilter");
   const tbody = document.getElementById("tasksTbody");
 
+  if (!searchInput || !pillarFilter || !supervisorFilter || !tbody) return;
+
   const supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
-  supervisorFilter.innerHTML = `<option value="">Tous les superviseurs</option>` +
+  supervisorFilter.innerHTML =
+    `<option value="">Tous les superviseurs</option>` +
     supervisors.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
 
   function applyFilters() {
@@ -303,7 +311,7 @@ function renderMyTasksPage() {
   const tbody = document.getElementById("myTasksTbody");
   const title = document.getElementById("myTasksTitle");
 
-  if (!currentUser || !tbody) return;
+  if (!currentUser || !tbody || !title) return;
 
   const myTasks = AppState.enrichedTasks.filter(t => t.assigned_to_id === currentUser.id);
 
@@ -313,7 +321,7 @@ function renderMyTasksPage() {
   if (!myTasks.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="10"><span class="muted">Aucune tâche assignée pour le moment.</span></td>
+        <td colspan="12"><span class="muted">Aucune tâche assignée pour le moment.</span></td>
       </tr>
     `;
     return;
@@ -328,7 +336,7 @@ function renderMyTeamPage() {
   const tbody = document.getElementById("teamTasksTbody");
   const title = document.getElementById("myTeamTitle");
 
-  if (!currentUser || !membersBox || !tbody) return;
+  if (!currentUser || !membersBox || !tbody || !title) return;
 
   const teamMembers = AppState.users.filter(u => u.supervisor_id === currentUser.id);
   const teamTasks = AppState.enrichedTasks.filter(t => t.supervisor_id === currentUser.id);
@@ -340,7 +348,7 @@ function renderMyTeamPage() {
     membersBox.innerHTML = `<div class="empty">Vous n'avez aucun membre d'équipe rattaché comme superviseur.</div>`;
     tbody.innerHTML = `
       <tr>
-        <td colspan="10"><span class="muted">Aucune tâche d'équipe à afficher.</span></td>
+        <td colspan="12"><span class="muted">Aucune tâche d'équipe à afficher.</span></td>
       </tr>
     `;
     return;
@@ -367,4 +375,334 @@ function renderMyTeamPage() {
   }).join("");
 
   tbody.innerHTML = renderTaskRows(teamTasks);
+}
+
+/* =========================
+   LOGIQUE INSCRIPTION STAFF
+========================= */
+
+function getSupervisors() {
+  return AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
+}
+
+function getRegisteredLocalUsers() {
+  return JSON.parse(localStorage.getItem("unw_registered_users") || "[]");
+}
+
+function saveRegisteredLocalUsers(users) {
+  localStorage.setItem("unw_registered_users", JSON.stringify(users));
+}
+
+function generateNextUserId() {
+  const allIds = AppState.users.map(u => Number(u.id)).filter(id => !Number.isNaN(id));
+  return allIds.length ? Math.max(...allIds) + 1 : 1;
+}
+
+function initRegisterPage() {
+  const page = document.body.dataset.page;
+  if (page !== "register") return;
+
+  const supervisorSelect = document.getElementById("regSupervisor");
+  const registerBtn = document.getElementById("registerUserBtn");
+  const clearBtn = document.getElementById("clearRegisteredUsersBtn");
+
+  populateSupervisorDropdown(supervisorSelect);
+  renderRegisteredUsersTable();
+
+  if (registerBtn) {
+    registerBtn.addEventListener("click", registerNewUser);
+  }
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      localStorage.removeItem("unw_registered_users");
+      localStorage.removeItem("unw_current_user_id");
+      location.reload();
+    });
+  }
+}
+
+function populateSupervisorDropdown(selectElement) {
+  if (!selectElement) return;
+
+  const supervisors = getSupervisors();
+
+  selectElement.innerHTML = `
+    <option value="">Sélectionner un superviseur</option>
+    ${supervisors.map(s => `
+      <option value="${s.id}">
+        ${s.name} — ${s.role} (${s.pillar})
+      </option>
+    `).join("")}
+  `;
+}
+
+function registerNewUser() {
+  const name = document.getElementById("regName")?.value.trim() || "";
+  const email = document.getElementById("regEmail")?.value.trim() || "";
+  const role = document.getElementById("regRole")?.value.trim() || "";
+  const pillar = document.getElementById("regPillar")?.value || "";
+  const supervisorIdValue = document.getElementById("regSupervisor")?.value || "";
+  const office = document.getElementById("regOffice")?.value.trim() || "";
+  const messageBox = document.getElementById("registerMessage");
+
+  if (!messageBox) return;
+
+  if (!name || !role || !pillar || !supervisorIdValue) {
+    messageBox.innerHTML = `<div class="error-box">Veuillez renseigner le nom, la fonction, le pilier et le superviseur.</div>`;
+    return;
+  }
+
+  const supervisorId = Number(supervisorIdValue);
+  const supervisor = AppState.users.find(u => u.id === supervisorId);
+
+  if (!supervisor) {
+    messageBox.innerHTML = `<div class="error-box">Le superviseur sélectionné est introuvable.</div>`;
+    return;
+  }
+
+  const duplicate = AppState.users.find(
+    u =>
+      u.name.toLowerCase() === name.toLowerCase() &&
+      (u.role || "").toLowerCase() === role.toLowerCase()
+  );
+
+  if (duplicate) {
+    messageBox.innerHTML = `<div class="error-box">Cet utilisateur existe déjà dans le système.</div>`;
+    return;
+  }
+
+  const newUser = {
+    id: generateNextUserId(),
+    name,
+    email,
+    role,
+    pillar,
+    user_type: "staff",
+    supervisor_id: supervisorId,
+    office
+  };
+
+  const localUsers = getRegisteredLocalUsers();
+  localUsers.push(newUser);
+  saveRegisteredLocalUsers(localUsers);
+
+  AppState.users.push(newUser);
+  enrichTasks();
+
+  messageBox.innerHTML = `
+    <div class="success-box">
+      Staff enregistré avec succès. ${name} est maintenant rattaché à ${supervisor.name}.
+    </div>
+  `;
+
+  clearRegisterForm();
+  renderRegisteredUsersTable();
+  refreshCurrentUserSelectorAfterRegistration(newUser.id);
+}
+
+function clearRegisterForm() {
+  const fields = ["regName", "regEmail", "regRole", "regPillar", "regSupervisor", "regOffice"];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
+function renderRegisteredUsersTable() {
+  const tbody = document.getElementById("registeredUsersTbody");
+  if (!tbody) return;
+
+  const localUsers = getRegisteredLocalUsers();
+
+  if (!localUsers.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6"><span class="muted">Aucun staff enregistré localement pour le moment.</span></td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = localUsers.map(user => {
+    const supervisor = AppState.users.find(u => u.id === user.supervisor_id);
+    return `
+      <tr>
+        <td>${user.id}</td>
+        <td>${user.name}</td>
+        <td>${user.role}</td>
+        <td>${user.pillar}</td>
+        <td>${supervisor ? supervisor.name : "Non défini"}</td>
+        <td>${user.email || '<span class="muted">—</span>'}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function refreshCurrentUserSelectorAfterRegistration(newUserId) {
+  const selector = document.getElementById("currentUserSelect");
+  if (!selector) return;
+
+  selector.innerHTML = AppState.users
+    .map(u => `<option value="${u.id}">${u.name} — ${u.role}</option>`)
+    .join("");
+
+  selector.value = String(newUserId);
+  localStorage.setItem("unw_current_user_id", String(newUserId));
+  updateCurrentUserLabel();
+}
+
+/* =========================
+   LOGIQUE CREATION TÂCHES
+========================= */
+
+function getLocalTasks() {
+  return JSON.parse(localStorage.getItem("unw_created_tasks") || "[]");
+}
+
+function saveLocalTasks(tasks) {
+  localStorage.setItem("unw_created_tasks", JSON.stringify(tasks));
+}
+
+function persistLocalTasks() {
+  const baseTaskIds = [1,2,3,4,5,6,7,8,9,10];
+  const localOnlyTasks = AppState.tasks.filter(task => !baseTaskIds.includes(task.id));
+  saveLocalTasks(localOnlyTasks);
+}
+
+function generateNextTaskId() {
+  const ids = AppState.tasks.map(t => Number(t.id)).filter(id => !Number.isNaN(id));
+  return ids.length ? Math.max(...ids) + 1 : 1;
+}
+
+function getAssignableStaff() {
+  return AppState.users.filter(u =>
+    u.user_type === "staff" || u.user_type === "supervisor" || u.user_type === "admin"
+  );
+}
+
+function initTaskCreation() {
+  const openBtn = document.getElementById("openCreateTaskModalBtn");
+  const closeBtn = document.getElementById("closeCreateTaskModalBtn");
+  const saveBtn = document.getElementById("createTaskBtn");
+  const clearBtn = document.getElementById("clearLocalTasksBtn");
+  const modal = document.getElementById("createTaskModal");
+
+  populateTaskAssignedDropdown();
+
+  if (openBtn) openBtn.addEventListener("click", openCreateTaskModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
+  if (saveBtn) saveBtn.addEventListener("click", createNewTask);
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      localStorage.removeItem("unw_created_tasks");
+      location.reload();
+    });
+  }
+
+  window.addEventListener("click", e => {
+    if (e.target === modal) closeCreateTaskModal();
+  });
+}
+
+function populateTaskAssignedDropdown() {
+  const select = document.getElementById("taskAssignedTo");
+  if (!select) return;
+
+  const staffList = getAssignableStaff();
+
+  select.innerHTML = `
+    <option value="">Sélectionner un membre du staff</option>
+    ${staffList.map(user => `
+      <option value="${user.id}">
+        ${user.name} — ${user.role} (${user.pillar})
+      </option>
+    `).join("")}
+  `;
+}
+
+function openCreateTaskModal() {
+  const modal = document.getElementById("createTaskModal");
+  if (!modal) return;
+
+  populateTaskAssignedDropdown();
+  modal.style.display = "block";
+}
+
+function closeCreateTaskModal() {
+  const modal = document.getElementById("createTaskModal");
+  if (modal) modal.style.display = "none";
+}
+
+function createNewTask() {
+  const title = document.getElementById("taskTitle")?.value.trim() || "";
+  const pillar = document.getElementById("taskPillar")?.value || "";
+  const assignedToValue = document.getElementById("taskAssignedTo")?.value || "";
+  const priority = document.getElementById("taskPriority")?.value || "Moyenne";
+  const dueDate = document.getElementById("taskDueDate")?.value || "";
+  const description = document.getElementById("taskDescription")?.value.trim() || "";
+  const messageBox = document.getElementById("taskCreateMessage");
+
+  if (!messageBox) return;
+
+  if (!title || !pillar || !assignedToValue || !dueDate) {
+    messageBox.innerHTML = `<div class="error-box">Veuillez renseigner le titre, le pilier, le staff assigné et l’échéance.</div>`;
+    return;
+  }
+
+  const assignedToId = Number(assignedToValue);
+  const assignedUser = AppState.users.find(u => u.id === assignedToId);
+
+  if (!assignedUser) {
+    messageBox.innerHTML = `<div class="error-box">Le membre du staff sélectionné est introuvable.</div>`;
+    return;
+  }
+
+  const newTask = {
+    id: generateNextTaskId(),
+    title,
+    pillar,
+    assigned_to_id: assignedToId,
+    priority,
+    status: "Non commencée",
+    progress: 0,
+    due_date: dueDate,
+    description,
+    staff_comment: "",
+    supervisor_progress: 0,
+    supervisor_status: "Non évalué",
+    supervisor_comment: ""
+  };
+
+  AppState.tasks.push(newTask);
+  persistLocalTasks();
+  enrichTasks();
+
+  messageBox.innerHTML = `
+    <div class="success-box">
+      Tâche créée avec succès et assignée à ${assignedUser.name}.
+    </div>
+  `;
+
+  clearTaskCreationForm();
+  populateTaskAssignedDropdown();
+  rerenderCurrentPage();
+}
+
+function clearTaskCreationForm() {
+  const fields = ["taskTitle", "taskPillar", "taskAssignedTo", "taskPriority", "taskDueDate", "taskDescription"];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
+function rerenderCurrentPage() {
+  const page = document.body.dataset.page;
+  if (page === "dashboard") renderDashboardPage();
+  if (page === "my-tasks") renderMyTasksPage();
+  if (page === "my-team") renderMyTeamPage();
 }
