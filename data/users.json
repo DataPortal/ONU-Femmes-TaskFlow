@@ -1,102 +1,90 @@
 [
   {
-    "id": 1,
-    "name": "Hypolite Reoutar Mbailassem",
-    "email": "hypolite@unwomen.org",
-    "role": "Gender Information Management Officer",
-    "pillar": "Humanitaire",
-    "user_type": "staff",
-    "supervisor_id": 10,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 2,
-    "name": "Marie Claire Ilunga",
-    "email": "marieclaire@unwomen.org",
-    "role": "Programme Analyst",
-    "pillar": "Programme",
-    "user_type": "staff",
-    "supervisor_id": 11,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 3,
-    "name": "Felix Mukendi",
-    "email": "felix@unwomen.org",
-    "role": "Operations Associate",
-    "pillar": "Operations",
-    "user_type": "staff",
-    "supervisor_id": 12,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 4,
-    "name": "Aline Kanku",
-    "email": "aline@unwomen.org",
-    "role": "Administrative Assistant",
-    "pillar": "Operations",
-    "user_type": "staff",
-    "supervisor_id": 12,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 5,
-    "name": "Brigitte Malanda",
-    "email": "brigitte@unwomen.org",
-    "role": "Coordination Associate",
-    "pillar": "Coordination",
-    "user_type": "staff",
-    "supervisor_id": 13,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 10,
-    "name": "Sabine Ilunga",
-    "email": "sabine@unwomen.org",
-    "role": "Humanitarian Specialist",
-    "pillar": "Humanitaire",
+    "id": 100,
+    "name": "Sylvie Gougoua",
+    "email": "sylvie.gougoua@unwomen.org",
+    "role": "Programme Specialist WPS & HA",
+    "pillar": "WPS",
+    "pillar_id": 1,
     "user_type": "supervisor",
-    "supervisor_id": 20,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 11,
-    "name": "Nadege Mbuyi",
-    "email": "nadege@unwomen.org",
-    "role": "Programme Specialist",
-    "pillar": "Programme",
-    "user_type": "supervisor",
-    "supervisor_id": 20,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 12,
-    "name": "Arlette Kasongo",
-    "email": "arlette@unwomen.org",
-    "role": "Operations Manager",
-    "pillar": "Operations",
-    "user_type": "supervisor",
-    "supervisor_id": 20,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 13,
-    "name": "Pauline Mbenza",
-    "email": "pauline@unwomen.org",
-    "role": "Coordination Specialist",
-    "pillar": "Coordination",
-    "user_type": "supervisor",
-    "supervisor_id": 20,
-    "office": "ONU Femmes RDC"
-  },
-  {
-    "id": 20,
-    "name": "Mme la Représentante",
-    "email": "representante@unwomen.org",
-    "role": "Representative",
-    "pillar": "Direction",
-    "user_type": "admin",
     "supervisor_id": null,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 101,
+    "name": "Nina Alffram",
+    "email": "nina.alffram@unwomen.org",
+    "role": "Volunteer",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 102,
+    "name": "Anne Marie Lurhakumbira",
+    "email": "anne-marie.nabintu@unwomen.org",
+    "role": "Charge(e) de Projet",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 103,
+    "name": "Hypolite Reoutar",
+    "email": "hypolite.reoutar@unwomen.org",
+    "role": "Gender Information Management Officer",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 104,
+    "name": "Sylvain Kitambala Mabika",
+    "email": "sylvain.mabika@unwomen.org",
+    "role": "Chargé de Projet GPI 2.0",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 105,
+    "name": "Theodore Bahimba",
+    "email": "theodore.bahimba@unwomen.org",
+    "role": "Chargé de Projet",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 106,
+    "name": "Jolie Ndaya",
+    "email": "jolie.ndaya@unwomen.org",
+    "role": "Volunteer",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 107,
+    "name": "Dieu-Merci Yesse",
+    "email": "dieu-merci.yesse@unwomen.org",
+    "role": "Specialiste Suivi & Evaluation",
+    "pillar": "WPS",
+    "pillar_id": 1,
+    "user_type": "staff",
+    "supervisor_id": 100,
     "office": "ONU Femmes RDC"
   }
 ]
