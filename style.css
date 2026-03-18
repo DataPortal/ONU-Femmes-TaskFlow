@@ -374,6 +374,10 @@ textarea{
   margin-top:8px;
 }
 
+.no-print{
+  /* classe utilitaire */
+}
+
 @media (max-width: 900px){
   .dashboard{
     grid-template-columns:repeat(2, 1fr);
@@ -400,5 +404,50 @@ textarea{
   #currentUserLabel{
     min-width:unset;
     width:100%;
+  }
+}
+
+@media print{
+  body{
+    background:#fff;
+  }
+
+  .no-print,
+  .modal{
+    display:none !important;
+  }
+
+  header{
+    background:#fff !important;
+    color:#000 !important;
+    padding:0 0 12px 0;
+  }
+
+  .logo{
+    background:#fff;
+    border:1px solid #ddd;
+  }
+
+  .container{
+    padding:0;
+  }
+
+  .card,
+  .table-wrap,
+  .empty,
+  .member-card{
+    box-shadow:none;
+    border:1px solid #ddd;
+  }
+
+  table{
+    min-width:100%;
+  }
+
+  thead th{
+    color:#000 !important;
+    background:#f0f0f0 !important;
+    -webkit-print-color-adjust:exact;
+    print-color-adjust:exact;
   }
 }
