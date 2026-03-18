@@ -84,34 +84,86 @@
         <textarea id="editStaffComment"></textarea>
       </div>
 
-      <div class="modal-row">
-        <div>
-          <label for="editSupervisorProgress">Évaluation superviseur (%)</label>
-          <input type="number" id="editSupervisorProgress" min="0" max="100" />
-        </div>
-        <div>
-          <label for="editSupervisorStatus">Appréciation superviseur</label>
-          <select id="editSupervisorStatus">
-            <option>Non évalué</option>
-            <option>Très satisfaisant</option>
-            <option>Acceptable</option>
-            <option>À améliorer</option>
-            <option>Critique</option>
-          </select>
-        </div>
+      <div id="taskModal" class="modal">
+  <div class="modal-content">
+    <h3>Mise à jour de la tâche</h3>
+    <input type="hidden" id="editTaskId" />
+
+    <div class="modal-row">
+      <div>
+        <label for="editStatus">Statut</label>
+        <select id="editStatus">
+          <option>Non commencée</option>
+          <option>En cours</option>
+          <option>Bloquée</option>
+          <option>Terminée</option>
+        </select>
       </div>
 
       <div>
-        <label for="editSupervisorComment">Commentaire du superviseur</label>
-        <textarea id="editSupervisorComment"></textarea>
-      </div>
-
-      <div class="modal-actions">
-        <button id="closeTaskModalBtn" class="secondary">Fermer</button>
-        <button id="saveTaskBtn">Enregistrer</button>
+        <label for="editProgressScore">Score staff (0 à 10)</label>
+        <select id="editProgressScore">
+          <option value="0">0 = 0%</option>
+          <option value="1">1 = 10%</option>
+          <option value="2">2 = 20%</option>
+          <option value="3">3 = 30%</option>
+          <option value="4">4 = 40%</option>
+          <option value="5">5 = 50%</option>
+          <option value="6">6 = 60%</option>
+          <option value="7">7 = 70%</option>
+          <option value="8">8 = 80%</option>
+          <option value="9">9 = 90%</option>
+          <option value="10">10 = 100%</option>
+        </select>
       </div>
     </div>
+
+    <div>
+      <label for="editStaffComment">Commentaire du staff</label>
+      <textarea id="editStaffComment" placeholder="Ajouter une nouvelle mise à jour..."></textarea>
+    </div>
+
+    <div class="modal-row">
+      <div>
+        <label for="editSupervisorScore">Score superviseur (0 à 10)</label>
+        <select id="editSupervisorScore">
+          <option value="0">0 = 0%</option>
+          <option value="1">1 = 10%</option>
+          <option value="2">2 = 20%</option>
+          <option value="3">3 = 30%</option>
+          <option value="4">4 = 40%</option>
+          <option value="5">5 = 50%</option>
+          <option value="6">6 = 60%</option>
+          <option value="7">7 = 70%</option>
+          <option value="8">8 = 80%</option>
+          <option value="9">9 = 90%</option>
+          <option value="10">10 = 100%</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="editSupervisorStatus">Appréciation superviseur</label>
+        <select id="editSupervisorStatus">
+          <option>Non évalué</option>
+          <option>Très satisfaisant</option>
+          <option>Acceptable</option>
+          <option>À améliorer</option>
+          <option>Critique</option>
+        </select>
+      </div>
+    </div>
+
+    <div>
+      <label for="editSupervisorComment">Commentaire du superviseur</label>
+      <textarea id="editSupervisorComment" placeholder="Ajouter un nouveau commentaire de supervision..."></textarea>
+    </div>
+
+    <div class="modal-actions">
+      <button id="closeTaskModalBtn" class="secondary" type="button">Fermer</button>
+      <button id="saveTaskBtn" type="button">Enregistrer</button>
+    </div>
   </div>
+</div>
 
   <script src="script.js"></script>
 </body>
