@@ -121,12 +121,12 @@ function openTaskModal(taskId = null) {
   if (!task) return;
 
   document.getElementById("editTaskId").value = task.id;
-  document.getElementById("editStatus").value = task?.status || "Non commencée";
-  document.getElementById("editProgress").value = task?.progress ?? 0;
-  document.getElementById("editStaffComment").value = task?.staff_comment || "";
-  document.getElementById("editSupervisorProgress").value = task?.supervisor_progress ?? 0;
-  document.getElementById("editSupervisorStatus").value = task?.supervisor_status || "Non évalué";
-  document.getElementById("editSupervisorComment").value = task?.supervisor_comment || "";
+  document.getElementById("editStatus").value = task.status || "Non commencée";
+  document.getElementById("editProgress").value = task.progress ?? 0;
+  document.getElementById("editStaffComment").value = task.staff_comment || "";
+  document.getElementById("editSupervisorProgress").value = task.supervisor_progress ?? 0;
+  document.getElementById("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
+  document.getElementById("editSupervisorComment").value = task.supervisor_comment || "";
 
   modal.style.display = "block";
 }
@@ -567,8 +567,7 @@ function saveLocalTasks(tasks) {
 }
 
 function persistLocalTasks() {
-  const baseTaskIds = [1,2,3,4,5,6,7,8,9,10];
-  const localOnlyTasks = AppState.tasks.filter(task => !baseTaskIds.includes(task.id));
+  const localOnlyTasks = AppState.tasks.filter(task => task.is_local === true);
   saveLocalTasks(localOnlyTasks);
 }
 
@@ -674,7 +673,8 @@ function createNewTask() {
     staff_comment: "",
     supervisor_progress: 0,
     supervisor_status: "Non évalué",
-    supervisor_comment: ""
+    supervisor_comment: "",
+    is_local: true
   };
 
   AppState.tasks.push(newTask);
@@ -698,6 +698,9 @@ function clearTaskCreationForm() {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
+
+  const messageBox = document.getElementById("taskCreateMessage");
+  if (messageBox) messageBox.innerHTML = "";
 }
 
 function rerenderCurrentPage() {
