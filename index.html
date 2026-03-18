@@ -10,7 +10,7 @@
   <header>
     <div class="header-inner">
       <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
         <div>
           <h1>ONU Femmes Task Manager</h1>
           <p>Gestion intelligente des tâches par pilier, staff et superviseur</p>
@@ -28,6 +28,7 @@
     <a href="index.html" class="active">Dashboard</a>
     <a href="mes-taches.html">Mes tâches</a>
     <a href="mon-equipe.html">Mon équipe</a>
+    <a href="inscription.html">Inscription</a>
   </nav>
 
   <main class="container">
@@ -37,14 +38,22 @@
 
     <section class="filters">
       <input type="text" id="searchInput" placeholder="Rechercher une tâche, un staff ou un superviseur" />
+
       <select id="pillarFilter">
         <option value="">Tous les piliers</option>
         <option value="Humanitaire">Humanitaire</option>
         <option value="Programme">Programme</option>
         <option value="Operations">Operations</option>
+        <option value="Coordination">Coordination</option>
         <option value="Direction">Direction</option>
       </select>
-      <select id="supervisorFilter"></select>
+
+      <select id="supervisorFilter">
+        <option value="">Tous les superviseurs</option>
+      </select>
+
+      <button id="openCreateTaskModalBtn" type="button">+ Nouvelle tâche</button>
+      <button id="clearLocalTasksBtn" class="secondary" type="button">Réinitialiser tâches locales</button>
     </section>
 
     <section class="table-wrap">
@@ -85,6 +94,7 @@
             <option>Terminée</option>
           </select>
         </div>
+
         <div>
           <label for="editProgress">Progression staff (%)</label>
           <input type="number" id="editProgress" min="0" max="100" />
@@ -101,6 +111,7 @@
           <label for="editSupervisorProgress">Évaluation superviseur (%)</label>
           <input type="number" id="editSupervisorProgress" min="0" max="100" />
         </div>
+
         <div>
           <label for="editSupervisorStatus">Appréciation superviseur</label>
           <select id="editSupervisorStatus">
@@ -119,8 +130,73 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtn" class="secondary">Fermer</button>
-        <button id="saveTaskBtn">Enregistrer</button>
+        <button id="closeTaskModalBtn" class="secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" type="button">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="createTaskModal" class="modal">
+    <div class="modal-content">
+      <h3>Créer une nouvelle tâche</h3>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskTitle">Titre de la tâche</label>
+          <input id="taskTitle" type="text" placeholder="Ex. Préparer la note analytique" />
+        </div>
+
+        <div>
+          <label for="taskPillar">Pilier</label>
+          <select id="taskPillar">
+            <option value="">Sélectionner</option>
+            <option value="Humanitaire">Humanitaire</option>
+            <option value="Programme">Programme</option>
+            <option value="Operations">Operations</option>
+            <option value="Coordination">Coordination</option>
+            <option value="Direction">Direction</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskAssignedTo">Assigner à</label>
+          <select id="taskAssignedTo">
+            <option value="">Sélectionner un membre du staff</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="taskPriority">Priorité</label>
+          <select id="taskPriority">
+            <option value="Basse">Basse</option>
+            <option value="Moyenne">Moyenne</option>
+            <option value="Haute">Haute</option>
+            <option value="Critique">Critique</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskDueDate">Échéance</label>
+          <input id="taskDueDate" type="date" />
+        </div>
+
+        <div></div>
+      </div>
+
+      <div>
+        <label for="taskDescription">Description</label>
+        <textarea id="taskDescription" placeholder="Détails ou objectifs de la tâche"></textarea>
+      </div>
+
+      <div id="taskCreateMessage"></div>
+
+      <div class="modal-actions">
+        <button id="closeCreateTaskModalBtn" class="secondary" type="button">Fermer</button>
+        <button id="createTaskBtn" type="button">Créer la tâche</button>
       </div>
     </div>
   </div>
