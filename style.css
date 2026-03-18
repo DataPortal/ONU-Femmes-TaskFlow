@@ -77,7 +77,11 @@ header{
 .modal-content input,
 .modal-content select,
 .modal-content textarea,
-.modal-content button{
+.modal-content button,
+.card input,
+.card select,
+.card textarea,
+.card button{
   border:1px solid #d1d5db;
   border-radius:8px;
   padding:10px 12px;
@@ -87,15 +91,27 @@ header{
 .top-tools button,
 .filters button,
 .modal-content button,
+.card button,
 .action-btn{
   background:var(--uw-orange);
   color:#fff;
   border:none;
   cursor:pointer;
+  transition:all .2s ease;
+}
+
+.top-tools button:hover,
+.filters button:hover,
+.modal-content button:hover,
+.card button:hover,
+.action-btn:hover{
+  opacity:.92;
 }
 
 .top-tools button.secondary,
-.filters button.secondary{
+.filters button.secondary,
+.modal-content button.secondary,
+.card button.secondary{
   background:#fff;
   color:var(--uw-blue);
   border:1px solid var(--uw-blue);
@@ -285,6 +301,7 @@ tbody td{
   display:flex;
   flex-direction:column;
   gap:10px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
 }
 
 .modal-row{
@@ -311,6 +328,52 @@ textarea{
   min-height:88px;
 }
 
+.success-box{
+  background:#d1fae5;
+  color:#065f46;
+  padding:12px 14px;
+  border-radius:10px;
+  font-weight:600;
+  border:1px solid #a7f3d0;
+}
+
+.error-box{
+  background:#fee2e2;
+  color:#991b1b;
+  padding:12px 14px;
+  border-radius:10px;
+  font-weight:600;
+  border:1px solid #fecaca;
+}
+
+.info-box{
+  background:#eff6ff;
+  color:#1d4ed8;
+  padding:12px 14px;
+  border-radius:10px;
+  font-weight:600;
+  border:1px solid #bfdbfe;
+}
+
+#currentUserLabel{
+  background:rgba(255,255,255,.14);
+  padding:10px 12px;
+  border-radius:10px;
+  line-height:1.35;
+  min-width:220px;
+}
+
+#currentUserLabel .muted{
+  color:rgba(255,255,255,.9);
+}
+
+#taskCreateMessage,
+#registerMessage,
+#pillarMessage,
+#initMessage{
+  margin-top:8px;
+}
+
 @media (max-width: 900px){
   .dashboard{
     grid-template-columns:repeat(2, 1fr);
@@ -329,7 +392,13 @@ textarea{
   .modal-row{
     grid-template-columns:1fr;
   }
-}
-#taskCreateMessage{
-  margin-top:8px;
+
+  .header-inner{
+    align-items:flex-start;
+  }
+
+  #currentUserLabel{
+    min-width:unset;
+    width:100%;
+  }
 }
