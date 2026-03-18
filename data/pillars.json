@@ -1,22 +1,9 @@
 [
   {
     "id": 1,
-    "name": "Humanitaire",
-    "lead": "Hypolite"
-  },
-  {
-    "id": 2,
-    "name": "Programme",
-    "lead": "Nadege"
-  },
-  {
-    "id": 3,
-    "name": "Operations",
-    "lead": "Felix"
-  },
-  {
-    "id": 4,
-    "name": "Coordination",
-    "lead": "Sabine"
+    "name": "WPS",
+    "full_name": "Women Peace and Security",
+    "supervisor_id": 100,
+    "description": "Pilier Women Peace and Security"
   }
 ]
