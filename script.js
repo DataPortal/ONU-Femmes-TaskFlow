@@ -1,4 +1,5 @@
 const AppState = {
+  pillars: [],
   users: [],
   tasks: [],
   enrichedTasks: []
@@ -10,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   initGlobalActions();
   initRegisterPage();
   initTaskCreation();
+  initPillarCreation();
 
   const page = document.body.dataset.page;
   if (page === "dashboard") renderDashboardPage();
@@ -18,17 +20,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function loadData() {
-  const [usersRes, tasksRes] = await Promise.all([
+  const [pillarsRes, usersRes, tasksRes] = await Promise.all([
+    fetch("data/pillars.json"),
     fetch("data/users.json"),
     fetch("data/tasks.json")
   ]);
 
+  const basePillars = await pillarsRes.json();
   const baseUsers = await usersRes.json();
   const baseTasks = await tasksRes.json();
 
+  const localPillars = JSON.parse(localStorage.getItem("unw_created_pillars") || "[]");
   const localUsers = JSON.parse(localStorage.getItem("unw_registered_users") || "[]");
   const localTasks = JSON.parse(localStorage.getItem("unw_created_tasks") || "[]");
 
+  AppState.pillars = [...basePillars, ...localPillars];
   AppState.users = [...baseUsers, ...localUsers];
   AppState.tasks = [...baseTasks, ...localTasks];
 
@@ -54,6 +60,10 @@ function enrichTasks() {
   });
 }
 
+/* =========================
+   UTILISATEUR COURANT
+========================= */
+
 function initUserSelector() {
   const selector = document.getElementById("currentUserSelect");
   if (!selector) return;
@@ -63,10 +73,13 @@ function initUserSelector() {
     .join("");
 
   const saved = localStorage.getItem("unw_current_user_id");
-  const defaultUserId = saved || String(AppState.users[0]?.id || "");
+  const fallbackId = AppState.users[0]?.id ? String(AppState.users[0].id) : "";
+  const defaultUserId = saved || fallbackId;
 
   selector.value = defaultUserId;
-  localStorage.setItem("unw_current_user_id", defaultUserId);
+  if (defaultUserId) {
+    localStorage.setItem("unw_current_user_id", defaultUserId);
+  }
 
   selector.addEventListener("change", e => {
     localStorage.setItem("unw_current_user_id", e.target.value);
@@ -95,10 +108,14 @@ function updateCurrentUserLabel() {
 
   label.innerHTML = `
     <strong>${currentUser.name}</strong><br>
-    <span class="muted">${currentUser.role} | ${currentUser.pillar}</span><br>
+    <span class="muted">${currentUser.role} | ${currentUser.pillar || "Sans pilier"}</span><br>
     <span class="muted">Superviseur : ${supervisor ? supervisor.name : "Aucun"}</span>
   `;
 }
+
+/* =========================
+   ACTIONS MODAL MISE À JOUR
+========================= */
 
 function initGlobalActions() {
   const closeBtn = document.getElementById("closeTaskModalBtn");
@@ -177,9 +194,20 @@ function saveTaskUpdate() {
   rerenderCurrentPage();
 }
 
+/* =========================
+   OUTILS GÉNÉRAUX
+========================= */
+
 function clamp(v, min, max) {
   if (Number.isNaN(v)) return min;
   return Math.max(min, Math.min(max, v));
+}
+
+function isLate(task) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(task.due_date);
+  return due < today && task.status !== "Terminée";
 }
 
 function getStatusBadge(status) {
@@ -199,16 +227,10 @@ function getPriorityBadge(priority) {
 function getSupervisorBadge(status) {
   if (status === "Très satisfaisant") return `<span class="badge badge-green">${status}</span>`;
   if (status === "Acceptable") return `<span class="badge badge-yellow">${status}</span>`;
-  if (status === "À améliorer") return `<span class="badge badge-red">${status}</span>`;
-  if (status === "Critique") return `<span class="badge badge-red">${status}</span>`;
+  if (status === "À améliorer" || status === "Critique") {
+    return `<span class="badge badge-red">${status}</span>`;
+  }
   return `<span class="badge badge-grey">${status}</span>`;
-}
-
-function isLate(task) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(task.due_date);
-  return due < today && task.status !== "Terminée";
 }
 
 function renderTaskRows(tasks) {
@@ -261,6 +283,17 @@ function renderKPIs(targetId, tasks) {
   `;
 }
 
+function rerenderCurrentPage() {
+  const page = document.body.dataset.page;
+  if (page === "dashboard") renderDashboardPage();
+  if (page === "my-tasks") renderMyTasksPage();
+  if (page === "my-team") renderMyTeamPage();
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
 function renderDashboardPage() {
   const tasks = AppState.enrichedTasks;
   renderKPIs("dashboardKpis", tasks);
@@ -272,7 +305,12 @@ function renderDashboardPage() {
 
   if (!searchInput || !pillarFilter || !supervisorFilter || !tbody) return;
 
-  const supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
+  populatePillarFilter(pillarFilter);
+
+  const supervisors = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
+
   supervisorFilter.innerHTML =
     `<option value="">Tous les superviseurs</option>` +
     supervisors.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
@@ -287,7 +325,7 @@ function renderDashboardPage() {
         t.title.toLowerCase().includes(search) ||
         t.assigned_to_name.toLowerCase().includes(search) ||
         t.supervisor_name.toLowerCase().includes(search) ||
-        t.pillar.toLowerCase().includes(search);
+        (t.pillar || "").toLowerCase().includes(search);
 
       const matchPillar = !pillar || t.pillar === pillar;
       const matchSupervisor = !supervisorId || t.supervisor_id === supervisorId;
@@ -305,6 +343,21 @@ function renderDashboardPage() {
 
   tbody.innerHTML = renderTaskRows(tasks);
 }
+
+function populatePillarFilter(selectElement) {
+  if (!selectElement) return;
+
+  const currentValue = selectElement.value || "";
+  selectElement.innerHTML =
+    `<option value="">Tous les piliers</option>` +
+    AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
+
+  selectElement.value = currentValue;
+}
+
+/* =========================
+   MES TÂCHES
+========================= */
 
 function renderMyTasksPage() {
   const currentUser = getCurrentUser();
@@ -329,6 +382,10 @@ function renderMyTasksPage() {
 
   tbody.innerHTML = renderTaskRows(myTasks);
 }
+
+/* =========================
+   MON ÉQUIPE
+========================= */
 
 function renderMyTeamPage() {
   const currentUser = getCurrentUser();
@@ -363,7 +420,7 @@ function renderMyTeamPage() {
     return `
       <div class="member-card">
         <h4>${member.name}</h4>
-        <div class="muted">${member.role} | ${member.pillar}</div>
+        <div class="muted">${member.role} | ${member.pillar || "Sans pilier"}</div>
         <div class="kpi-inline">
           <span>Total tâches : <strong>${memberTasks.length}</strong></span>
           <span>En cours : <strong>${inProgress}</strong></span>
@@ -378,14 +435,8 @@ function renderMyTeamPage() {
 }
 
 /* =========================
-   LOGIQUE INSCRIPTION STAFF
+   INSCRIPTION STAFF
 ========================= */
-
-function getSupervisors() {
-  return AppState.users.filter(
-    u => u.user_type === "supervisor" || u.user_type === "admin"
-  );
-}
 
 function getRegisteredLocalUsers() {
   return JSON.parse(localStorage.getItem("unw_registered_users") || "[]");
@@ -404,12 +455,17 @@ function initRegisterPage() {
   const page = document.body.dataset.page;
   if (page !== "register") return;
 
-  const supervisorSelect = document.getElementById("regSupervisor");
   const registerBtn = document.getElementById("registerUserBtn");
   const clearBtn = document.getElementById("clearRegisteredUsersBtn");
+  const pillarSelect = document.getElementById("regPillar");
 
-  populateSupervisorDropdown(supervisorSelect);
+  populateRegistrationPillarDropdown();
+  populateRegistrationSupervisorDropdown();
   renderRegisteredUsersTable();
+
+  if (pillarSelect) {
+    pillarSelect.addEventListener("change", populateRegistrationSupervisorDropdown);
+  }
 
   if (registerBtn) {
     registerBtn.addEventListener("click", registerNewUser);
@@ -424,16 +480,42 @@ function initRegisterPage() {
   }
 }
 
-function populateSupervisorDropdown(selectElement) {
-  if (!selectElement) return;
+function populateRegistrationPillarDropdown() {
+  const select = document.getElementById("regPillar");
+  if (!select) return;
 
-  const supervisors = getSupervisors();
+  const currentValue = select.value || "";
+  select.innerHTML = `
+    <option value="">Sélectionner</option>
+    ${AppState.pillars.map(p => `
+      <option value="${p.name}">${p.name} — ${p.full_name}</option>
+    `).join("")}
+  `;
+  if (currentValue) select.value = currentValue;
+}
 
-  selectElement.innerHTML = `
+function populateRegistrationSupervisorDropdown() {
+  const pillarValue = document.getElementById("regPillar")?.value || "";
+  const supervisorSelect = document.getElementById("regSupervisor");
+  if (!supervisorSelect) return;
+
+  let supervisors = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
+
+  if (pillarValue) {
+    supervisors = supervisors.filter(u => (u.pillar || "") === pillarValue);
+  }
+
+  if (!supervisors.length) {
+    supervisors = AppState.users.filter(u => u.user_type === "admin");
+  }
+
+  supervisorSelect.innerHTML = `
     <option value="">Sélectionner un superviseur</option>
     ${supervisors.map(s => `
       <option value="${s.id}">
-        ${s.name} — ${s.role} (${s.pillar})
+        ${s.name} — ${s.role} (${s.pillar || "Sans pilier"})
       </option>
     `).join("")}
   `;
@@ -457,15 +539,16 @@ function registerNewUser() {
 
   const supervisorId = Number(supervisorIdValue);
   const supervisor = AppState.users.find(u => u.id === supervisorId);
-
   if (!supervisor) {
     messageBox.innerHTML = `<div class="error-box">Le superviseur sélectionné est introuvable.</div>`;
     return;
   }
 
+  const pillarObj = AppState.pillars.find(p => p.name === pillar);
+  const pillarId = pillarObj ? pillarObj.id : null;
+
   const duplicate = AppState.users.find(
-    u =>
-      u.name.toLowerCase() === name.toLowerCase() &&
+    u => u.name.toLowerCase() === name.toLowerCase() &&
       (u.role || "").toLowerCase() === role.toLowerCase()
   );
 
@@ -480,9 +563,11 @@ function registerNewUser() {
     email,
     role,
     pillar,
+    pillar_id: pillarId,
     user_type: "staff",
     supervisor_id: supervisorId,
-    office
+    office,
+    is_local: true
   };
 
   const localUsers = getRegisteredLocalUsers();
@@ -520,7 +605,7 @@ function renderRegisteredUsersTable() {
   if (!localUsers.length) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6"><span class="muted">Aucun staff enregistré localement pour le moment.</span></td>
+        <td colspan="7"><span class="muted">Aucun staff enregistré localement pour le moment.</span></td>
       </tr>
     `;
     return;
@@ -533,9 +618,10 @@ function renderRegisteredUsersTable() {
         <td>${user.id}</td>
         <td>${user.name}</td>
         <td>${user.role}</td>
-        <td>${user.pillar}</td>
+        <td>${user.pillar || "—"}</td>
         <td>${supervisor ? supervisor.name : "Non défini"}</td>
         <td>${user.email || '<span class="muted">—</span>'}</td>
+        <td>${user.office || '<span class="muted">—</span>'}</td>
       </tr>
     `;
   }).join("");
@@ -555,12 +641,136 @@ function refreshCurrentUserSelectorAfterRegistration(newUserId) {
 }
 
 /* =========================
-   LOGIQUE CREATION TÂCHES
+   CRÉATION DES PILIERS
 ========================= */
 
-function getLocalTasks() {
-  return JSON.parse(localStorage.getItem("unw_created_tasks") || "[]");
+function getLocalPillars() {
+  return JSON.parse(localStorage.getItem("unw_created_pillars") || "[]");
 }
+
+function saveLocalPillars(pillars) {
+  localStorage.setItem("unw_created_pillars", JSON.stringify(pillars));
+}
+
+function generateNextPillarId() {
+  const ids = AppState.pillars.map(p => Number(p.id)).filter(id => !Number.isNaN(id));
+  return ids.length ? Math.max(...ids) + 1 : 1;
+}
+
+function initPillarCreation() {
+  const createBtn = document.getElementById("createPillarBtn");
+  const clearBtn = document.getElementById("clearPillarsBtn");
+  const pillarSupervisor = document.getElementById("pillarSupervisor");
+
+  if (!createBtn && !clearBtn && !pillarSupervisor) return;
+
+  populatePillarSupervisorDropdown();
+  renderCreatedPillarsTable();
+
+  if (createBtn) createBtn.addEventListener("click", createNewPillar);
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", () => {
+      localStorage.removeItem("unw_created_pillars");
+      location.reload();
+    });
+  }
+}
+
+function populatePillarSupervisorDropdown() {
+  const select = document.getElementById("pillarSupervisor");
+  if (!select) return;
+
+  const candidates = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
+
+  select.innerHTML = `
+    <option value="">Sélectionner un superviseur</option>
+    ${candidates.map(user => `
+      <option value="${user.id}">${user.name} — ${user.role}</option>
+    `).join("")}
+  `;
+}
+
+function createNewPillar() {
+  const name = document.getElementById("pillarName")?.value.trim() || "";
+  const fullName = document.getElementById("pillarFullName")?.value.trim() || "";
+  const supervisorIdValue = document.getElementById("pillarSupervisor")?.value || "";
+  const messageBox = document.getElementById("pillarMessage");
+
+  if (!messageBox) return;
+
+  if (!name || !fullName || !supervisorIdValue) {
+    messageBox.innerHTML = `<div class="error-box">Veuillez renseigner le nom du pilier, son intitulé complet et le superviseur.</div>`;
+    return;
+  }
+
+  const exists = AppState.pillars.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (exists) {
+    messageBox.innerHTML = `<div class="error-box">Ce pilier existe déjà.</div>`;
+    return;
+  }
+
+  const newPillar = {
+    id: generateNextPillarId(),
+    name,
+    full_name: fullName,
+    supervisor_id: Number(supervisorIdValue),
+    description: `Pilier ${fullName}`,
+    is_local: true
+  };
+
+  AppState.pillars.push(newPillar);
+
+  const localPillars = getLocalPillars();
+  localPillars.push(newPillar);
+  saveLocalPillars(localPillars);
+
+  messageBox.innerHTML = `<div class="success-box">Pilier créé avec succès.</div>`;
+
+  const pillarName = document.getElementById("pillarName");
+  const pillarFullName = document.getElementById("pillarFullName");
+  const pillarSupervisor = document.getElementById("pillarSupervisor");
+
+  if (pillarName) pillarName.value = "";
+  if (pillarFullName) pillarFullName.value = "";
+  if (pillarSupervisor) pillarSupervisor.value = "";
+
+  renderCreatedPillarsTable();
+  populateRegistrationPillarDropdown();
+  populateTaskPillarDropdown();
+}
+
+function renderCreatedPillarsTable() {
+  const tbody = document.getElementById("pillarsTbody");
+  if (!tbody) return;
+
+  if (!AppState.pillars.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4"><span class="muted">Aucun pilier disponible.</span></td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = AppState.pillars.map(pillar => {
+    const supervisor = AppState.users.find(u => u.id === pillar.supervisor_id);
+    return `
+      <tr>
+        <td>${pillar.id}</td>
+        <td>${pillar.name}</td>
+        <td>${pillar.full_name}</td>
+        <td>${supervisor ? supervisor.name : "Non défini"}</td>
+      </tr>
+    `;
+  }).join("");
+}
+
+/* =========================
+   CRÉATION DE TÂCHES
+========================= */
 
 function saveLocalTasks(tasks) {
   localStorage.setItem("unw_created_tasks", JSON.stringify(tasks));
@@ -590,6 +800,7 @@ function initTaskCreation() {
   const modal = document.getElementById("createTaskModal");
 
   populateTaskAssignedDropdown();
+  populateTaskPillarDropdown();
 
   if (openBtn) openBtn.addEventListener("click", openCreateTaskModal);
   if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
@@ -617,10 +828,24 @@ function populateTaskAssignedDropdown() {
     <option value="">Sélectionner un membre du staff</option>
     ${staffList.map(user => `
       <option value="${user.id}">
-        ${user.name} — ${user.role} (${user.pillar})
+        ${user.name} — ${user.role} (${user.pillar || "Sans pilier"})
       </option>
     `).join("")}
   `;
+}
+
+function populateTaskPillarDropdown() {
+  const select = document.getElementById("taskPillar");
+  if (!select) return;
+
+  const currentValue = select.value || "";
+  select.innerHTML = `
+    <option value="">Sélectionner</option>
+    ${AppState.pillars.map(p => `
+      <option value="${p.name}">${p.name}</option>
+    `).join("")}
+  `;
+  if (currentValue) select.value = currentValue;
 }
 
 function openCreateTaskModal() {
@@ -628,6 +853,7 @@ function openCreateTaskModal() {
   if (!modal) return;
 
   populateTaskAssignedDropdown();
+  populateTaskPillarDropdown();
   modal.style.display = "block";
 }
 
@@ -688,7 +914,6 @@ function createNewTask() {
   `;
 
   clearTaskCreationForm();
-  populateTaskAssignedDropdown();
   rerenderCurrentPage();
 }
 
@@ -701,11 +926,4 @@ function clearTaskCreationForm() {
 
   const messageBox = document.getElementById("taskCreateMessage");
   if (messageBox) messageBox.innerHTML = "";
-}
-
-function rerenderCurrentPage() {
-  const page = document.body.dataset.page;
-  if (page === "dashboard") renderDashboardPage();
-  if (page === "my-tasks") renderMyTasksPage();
-  if (page === "my-team") renderMyTeamPage();
 }
