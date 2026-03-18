@@ -10,21 +10,21 @@
   <header>
     <div class="header-inner">
       <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
         <div>
           <h1>ONU Femmes Task Manager</h1>
           <p>Suivi individuel des tâches</p>
         </div>
       </div>
 
-      <div class="top-tools">
+      <div class="top-tools no-print">
         <select id="currentUserSelect"></select>
         <div id="currentUserLabel"></div>
       </div>
     </div>
   </header>
 
-  <nav>
+  <nav class="no-print">
     <a href="index.html">Dashboard</a>
     <a href="mes-taches.html" class="active">Mes tâches</a>
     <a href="mon-equipe.html">Mon équipe</a>
@@ -36,8 +36,13 @@
 
     <section id="myTasksKpis" class="dashboard"></section>
 
+    <section class="filters no-print">
+      <button id="exportXlsxBtn" type="button">Exporter XLSX</button>
+      <button id="printPageBtn" class="secondary" type="button">Imprimer</button>
+    </section>
+
     <section class="table-wrap">
-      <table>
+      <table id="myTasksTable">
         <thead>
           <tr>
             <th>ID</th>
@@ -51,7 +56,7 @@
             <th>Évaluation superviseur</th>
             <th>Commentaire superviseur</th>
             <th>Échéance</th>
-            <th>Action</th>
+            <th class="no-print">Action</th>
           </tr>
         </thead>
         <tbody id="myTasksTbody"></tbody>
@@ -59,7 +64,7 @@
     </section>
   </main>
 
-  <div id="taskModal" class="modal">
+  <div id="taskModal" class="modal no-print">
     <div class="modal-content">
       <h3>Mise à jour de la tâche</h3>
       <input type="hidden" id="editTaskId" />
@@ -140,6 +145,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
