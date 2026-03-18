@@ -7,11 +7,11 @@
     "priority": "Haute",
     "status": "En cours",
     "progress": 55,
-    "due_date": "2026-03-20",
-    "staff_comment": "Collecte consolidée, visualisations en cours.",
+    "due_date": "2026-03-22",
+    "staff_comment": "Collecte consolidée et nettoyage des données terminés. Les visualisations sont en cours.",
     "supervisor_progress": 45,
     "supervisor_status": "Acceptable",
-    "supervisor_comment": "Bien avancer sur l’analyse narrative."
+    "supervisor_comment": "Bonne progression. Finaliser la partie analyse narrative et validation des chiffres."
   },
   {
     "id": 2,
@@ -21,7 +21,7 @@
     "priority": "Moyenne",
     "status": "Non commencée",
     "progress": 0,
-    "due_date": "2026-03-25",
+    "due_date": "2026-03-28",
     "staff_comment": "",
     "supervisor_progress": 0,
     "supervisor_status": "Non évalué",
@@ -29,17 +29,17 @@
   },
   {
     "id": 3,
-    "title": "Finaliser le suivi des achats",
+    "title": "Finaliser le suivi des achats du mois",
     "pillar": "Operations",
     "assigned_to_id": 3,
     "priority": "Haute",
     "status": "En cours",
     "progress": 80,
-    "due_date": "2026-03-15",
-    "staff_comment": "Presque terminé, en attente d’une validation finale.",
+    "due_date": "2026-03-19",
+    "staff_comment": "Compilation des pièces presque achevée. En attente de deux justificatifs.",
     "supervisor_progress": 70,
     "supervisor_status": "Très satisfaisant",
-    "supervisor_comment": "Très bonne progression."
+    "supervisor_comment": "Très bon niveau d’avancement. Boucler rapidement les justificatifs manquants."
   },
   {
     "id": 4,
@@ -49,14 +49,28 @@
     "priority": "Basse",
     "status": "En cours",
     "progress": 30,
-    "due_date": "2026-03-28",
-    "staff_comment": "Classement des documents en cours.",
+    "due_date": "2026-03-30",
+    "staff_comment": "Classement en cours et vérification des dossiers physiques.",
     "supervisor_progress": 25,
     "supervisor_status": "À améliorer",
-    "supervisor_comment": "Accélérer la mise à jour."
+    "supervisor_comment": "Accélérer la mise à jour et harmoniser la nomenclature des dossiers."
   },
   {
     "id": 5,
+    "title": "Préparer la note de coordination inter-agences",
+    "pillar": "Coordination",
+    "assigned_to_id": 5,
+    "priority": "Haute",
+    "status": "En cours",
+    "progress": 40,
+    "due_date": "2026-03-24",
+    "staff_comment": "Les contributions de deux partenaires ont déjà été intégrées.",
+    "supervisor_progress": 35,
+    "supervisor_status": "Acceptable",
+    "supervisor_comment": "Continuer les relances et structurer davantage la section recommandations."
+  },
+  {
+    "id": 6,
     "title": "Brief de coordination humanitaire",
     "pillar": "Humanitaire",
     "assigned_to_id": 10,
@@ -64,9 +78,65 @@
     "status": "En cours",
     "progress": 60,
     "due_date": "2026-03-18",
-    "staff_comment": "Première version du brief prête.",
+    "staff_comment": "Première version prête, relecture finale en cours.",
     "supervisor_progress": 50,
     "supervisor_status": "Acceptable",
-    "supervisor_comment": "Renforcer la section risques."
+    "supervisor_comment": "Renforcer la section risques et insérer les derniers éléments contextuels."
+  },
+  {
+    "id": 7,
+    "title": "Consolider le plan de travail trimestriel",
+    "pillar": "Programme",
+    "assigned_to_id": 11,
+    "priority": "Haute",
+    "status": "En cours",
+    "progress": 65,
+    "due_date": "2026-03-26",
+    "staff_comment": "Compilation des inputs sectoriels terminée.",
+    "supervisor_progress": 60,
+    "supervisor_status": "Très satisfaisant",
+    "supervisor_comment": "Très bon travail. Vérifier les alignements budgétaires avant soumission."
+  },
+  {
+    "id": 8,
+    "title": "Valider le planning logistique des missions",
+    "pillar": "Operations",
+    "assigned_to_id": 12,
+    "priority": "Moyenne",
+    "status": "En cours",
+    "progress": 50,
+    "due_date": "2026-03-27",
+    "staff_comment": "Le planning préliminaire est disponible pour revue.",
+    "supervisor_progress": 55,
+    "supervisor_status": "Acceptable",
+    "supervisor_comment": "Procéder à la validation avec les équipes terrain avant diffusion."
+  },
+  {
+    "id": 9,
+    "title": "Mettre à jour la matrice des réunions de coordination",
+    "pillar": "Coordination",
+    "assigned_to_id": 13,
+    "priority": "Moyenne",
+    "status": "En cours",
+    "progress": 70,
+    "due_date": "2026-03-25",
+    "staff_comment": "Les réunions nationales et provinciales ont été intégrées.",
+    "supervisor_progress": 65,
+    "supervisor_status": "Très satisfaisant",
+    "supervisor_comment": "Très bonne avancée. Ajouter la colonne actions de suivi."
+  },
+  {
+    "id": 10,
+    "title": "Préparer la revue managériale hebdomadaire",
+    "pillar": "Direction",
+    "assigned_to_id": 20,
+    "priority": "Critique",
+    "status": "En cours",
+    "progress": 75,
+    "due_date": "2026-03-21",
+    "staff_comment": "Les principaux points de discussion sont consolidés.",
+    "supervisor_progress": 75,
+    "supervisor_status": "Très satisfaisant",
+    "supervisor_comment": "RAS."
   }
 ]
