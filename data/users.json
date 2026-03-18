@@ -2,65 +2,101 @@
   {
     "id": 1,
     "name": "Hypolite Reoutar Mbailassem",
+    "email": "hypolite@unwomen.org",
     "role": "Gender Information Management Officer",
     "pillar": "Humanitaire",
     "user_type": "staff",
-    "supervisor_id": 10
+    "supervisor_id": 10,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 2,
-    "name": "Marie Claire",
+    "name": "Marie Claire Ilunga",
+    "email": "marieclaire@unwomen.org",
     "role": "Programme Analyst",
     "pillar": "Programme",
     "user_type": "staff",
-    "supervisor_id": 11
+    "supervisor_id": 11,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 3,
     "name": "Felix Mukendi",
+    "email": "felix@unwomen.org",
     "role": "Operations Associate",
     "pillar": "Operations",
     "user_type": "staff",
-    "supervisor_id": 12
+    "supervisor_id": 12,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 4,
     "name": "Aline Kanku",
+    "email": "aline@unwomen.org",
     "role": "Administrative Assistant",
     "pillar": "Operations",
     "user_type": "staff",
-    "supervisor_id": 12
+    "supervisor_id": 12,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 5,
+    "name": "Brigitte Malanda",
+    "email": "brigitte@unwomen.org",
+    "role": "Coordination Associate",
+    "pillar": "Coordination",
+    "user_type": "staff",
+    "supervisor_id": 13,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 10,
     "name": "Sabine Ilunga",
+    "email": "sabine@unwomen.org",
     "role": "Humanitarian Specialist",
     "pillar": "Humanitaire",
     "user_type": "supervisor",
-    "supervisor_id": 20
+    "supervisor_id": 20,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 11,
     "name": "Nadege Mbuyi",
+    "email": "nadege@unwomen.org",
     "role": "Programme Specialist",
     "pillar": "Programme",
     "user_type": "supervisor",
-    "supervisor_id": 20
+    "supervisor_id": 20,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 12,
     "name": "Arlette Kasongo",
+    "email": "arlette@unwomen.org",
     "role": "Operations Manager",
     "pillar": "Operations",
     "user_type": "supervisor",
-    "supervisor_id": 20
+    "supervisor_id": 20,
+    "office": "ONU Femmes RDC"
+  },
+  {
+    "id": 13,
+    "name": "Pauline Mbenza",
+    "email": "pauline@unwomen.org",
+    "role": "Coordination Specialist",
+    "pillar": "Coordination",
+    "user_type": "supervisor",
+    "supervisor_id": 20,
+    "office": "ONU Femmes RDC"
   },
   {
     "id": 20,
     "name": "Mme la Représentante",
+    "email": "representante@unwomen.org",
     "role": "Representative",
     "pillar": "Direction",
     "user_type": "admin",
-    "supervisor_id": null
+    "supervisor_id": null,
+    "office": "ONU Femmes RDC"
   }
 ]
