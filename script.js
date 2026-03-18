@@ -6,19 +6,31 @@ const AppState = {
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
-  await loadData();
-  guardInitialization();
-  initUserSelector();
-  initGlobalActions();
-  initRegisterPage();
-  initTaskCreation();
-  initPillarCreation();
-  initInitializationPage();
+  try {
+    await loadData();
+    guardInitialization();
+    initUserSelector();
+    initGlobalActions();
+    initRegisterPage();
+    initTaskCreation();
+    initPillarCreation();
+    initInitializationPage();
 
-  const page = document.body.dataset.page;
-  if (page === "dashboard") renderDashboardPage();
-  if (page === "my-tasks") renderMyTasksPage();
-  if (page === "my-team") renderMyTeamPage();
+    const page = document.body.dataset.page;
+    if (page === "dashboard") renderDashboardPage();
+    if (page === "my-tasks") renderMyTasksPage();
+    if (page === "my-team") renderMyTeamPage();
+  } catch (error) {
+    console.error("Erreur au chargement de l'application :", error);
+    const initMessage = document.getElementById("initMessage");
+    if (initMessage) {
+      initMessage.innerHTML = `
+        <div class="error-box">
+          Une erreur empêche le chargement complet de l’application. Ouvrez la console du navigateur pour voir le détail.
+        </div>
+      `;
+    }
+  }
 });
 
 async function loadData() {
@@ -32,10 +44,10 @@ async function loadData() {
   const baseUsers = await usersRes.json();
   const baseTasks = await tasksRes.json();
 
-  const localPillars = JSON.parse(localStorage.getItem("unw_created_pillars") || "[]");
-  const localUsers = JSON.parse(localStorage.getItem("unw_registered_users") || "[]");
-  const localTasks = JSON.parse(localStorage.getItem("unw_created_tasks") || "[]");
-  const deletedUserIds = JSON.parse(localStorage.getItem("unw_deleted_user_ids") || "[]");
+  const localPillars = getLocalPillars();
+  const localUsers = getRegisteredLocalUsers();
+  const localTasks = getLocalTasks();
+  const deletedUserIds = getDeletedUserIds();
 
   AppState.pillars = [...basePillars, ...localPillars];
 
@@ -43,29 +55,11 @@ async function loadData() {
     user => !deletedUserIds.includes(user.id)
   );
 
-  AppState.tasks = [...baseTasks, ...localTasks].filter(task => {
-    return !deletedUserIds.includes(task.assigned_to_id);
-  });
+  AppState.tasks = [...baseTasks, ...localTasks].filter(
+    task => !deletedUserIds.includes(task.assigned_to_id)
+  );
 
   enrichTasks();
-}
-
-function guardInitialization() {
-  const page = document.body.dataset.page;
-  const initialized = isAppInitialized();
-
-  if (!initialized && page !== "init") {
-    window.location.href = "init.html";
-    return;
-  }
-
-  if (initialized && page === "init") {
-    window.location.href = "inscription.html";
-  }
-}
-
-function isAppInitialized() {
-  return AppState.pillars.length > 0 && AppState.users.length > 0;
 }
 
 function enrichTasks() {
@@ -79,6 +73,7 @@ function enrichTasks() {
       ...task,
       assigned_to_name: assignedUser ? assignedUser.name : "Non défini",
       assigned_to_role: assignedUser ? assignedUser.role : "",
+      assigned_to_type: assignedUser ? assignedUser.user_type : "",
       supervisor_id: supervisor ? supervisor.id : null,
       supervisor_name: supervisor ? supervisor.name : "Non défini",
       supervisor_role: supervisor ? supervisor.role : ""
@@ -90,19 +85,47 @@ function enrichTasks() {
    INITIALISATION
 ========================= */
 
+function isAppInitialized() {
+  return AppState.pillars.length > 0 && AppState.users.length > 0;
+}
+
+function guardInitialization() {
+  const page = document.body.dataset.page;
+  const initialized = isAppInitialized();
+
+  if (!initialized && page !== "init") {
+    window.location.href = "init.html";
+    return;
+  }
+}
+
 function initInitializationPage() {
   const page = document.body.dataset.page;
   if (page !== "init") return;
 
   const initBtn = document.getElementById("initializeAppBtn");
   const resetBtn = document.getElementById("resetAppBtn");
+  const messageBox = document.getElementById("initMessage");
 
-  if (initBtn) {
-    initBtn.addEventListener("click", initializeApplication);
+  if (!initBtn || !resetBtn || !messageBox) {
+    console.error("Éléments init.html introuvables.");
+    return;
   }
 
-  if (resetBtn) {
-    resetBtn.addEventListener("click", resetWholeApplication);
+  initBtn.addEventListener("click", () => {
+    initializeApplication();
+  });
+
+  resetBtn.addEventListener("click", () => {
+    resetWholeApplication();
+  });
+
+  if (isAppInitialized()) {
+    messageBox.innerHTML = `
+      <div class="info-box">
+        L’application est déjà initialisée. Vous pouvez la réinitialiser ou continuer vers l’inscription.
+      </div>
+    `;
   }
 }
 
@@ -118,7 +141,23 @@ function initializeApplication() {
   if (!messageBox) return;
 
   if (!pillarName || !pillarFullName || !supervisorName || !supervisorRole) {
-    messageBox.innerHTML = `<div class="error-box">Veuillez renseigner le pilier et les informations du premier superviseur.</div>`;
+    messageBox.innerHTML = `
+      <div class="error-box">
+        Veuillez renseigner le nom du pilier, son intitulé complet, le nom du superviseur et sa fonction.
+      </div>
+    `;
+    return;
+  }
+
+  const createdPillars = getLocalPillars();
+  const createdUsers = getRegisteredLocalUsers();
+
+  if (createdPillars.length > 0 || createdUsers.length > 0) {
+    messageBox.innerHTML = `
+      <div class="error-box">
+        L’application contient déjà des données locales. Utilisez d’abord le bouton de réinitialisation si vous souhaitez repartir de zéro.
+      </div>
+    `;
     return;
   }
 
@@ -147,26 +186,63 @@ function initializeApplication() {
     is_local: true
   };
 
-  localStorage.setItem("unw_created_pillars", JSON.stringify([firstPillar]));
-  localStorage.setItem("unw_registered_users", JSON.stringify([firstSupervisor]));
-  localStorage.setItem("unw_created_tasks", JSON.stringify([]));
-  localStorage.setItem("unw_deleted_user_ids", JSON.stringify([]));
-  localStorage.setItem("unw_current_user_id", String(firstSupervisorId));
+  try {
+    saveLocalPillars([firstPillar]);
+    saveRegisteredLocalUsers([firstSupervisor]);
+    saveLocalTasks([]);
+    saveDeletedUserIds([]);
+    localStorage.setItem("unw_current_user_id", String(firstSupervisorId));
 
-  messageBox.innerHTML = `<div class="success-box">Application initialisée avec succès.</div>`;
+    messageBox.innerHTML = `
+      <div class="success-box">
+        Application initialisée avec succès. Redirection en cours...
+      </div>
+    `;
 
-  setTimeout(() => {
-    window.location.href = "inscription.html";
-  }, 700);
+    setTimeout(() => {
+      window.location.href = "inscription.html";
+    }, 800);
+  } catch (error) {
+    console.error("Erreur pendant l'initialisation :", error);
+    messageBox.innerHTML = `
+      <div class="error-box">
+        Une erreur s’est produite pendant l’initialisation. Ouvrez la console du navigateur pour voir le détail.
+      </div>
+    `;
+  }
 }
 
 function resetWholeApplication() {
-  localStorage.removeItem("unw_created_pillars");
-  localStorage.removeItem("unw_registered_users");
-  localStorage.removeItem("unw_created_tasks");
-  localStorage.removeItem("unw_deleted_user_ids");
-  localStorage.removeItem("unw_current_user_id");
-  location.reload();
+  const messageBox = document.getElementById("initMessage");
+
+  try {
+    localStorage.removeItem("unw_created_pillars");
+    localStorage.removeItem("unw_registered_users");
+    localStorage.removeItem("unw_created_tasks");
+    localStorage.removeItem("unw_deleted_user_ids");
+    localStorage.removeItem("unw_current_user_id");
+
+    if (messageBox) {
+      messageBox.innerHTML = `
+        <div class="success-box">
+          Toutes les données locales ont été réinitialisées.
+        </div>
+      `;
+    }
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
+  } catch (error) {
+    console.error("Erreur pendant la réinitialisation :", error);
+    if (messageBox) {
+      messageBox.innerHTML = `
+        <div class="error-box">
+          Impossible de réinitialiser les données locales.
+        </div>
+      `;
+    }
+  }
 }
 
 /* =========================
@@ -187,6 +263,7 @@ function initUserSelector() {
   const defaultUserId = saved || fallbackId;
 
   selector.value = defaultUserId;
+
   if (defaultUserId) {
     localStorage.setItem("unw_current_user_id", defaultUserId);
   }
@@ -224,36 +301,15 @@ function updateCurrentUserLabel() {
 }
 
 /* =========================
-   OUTILS
+   STOCKAGE LOCAL
 ========================= */
 
-function clamp(v, min, max) {
-  if (Number.isNaN(v)) return min;
-  return Math.max(min, Math.min(max, v));
+function getLocalPillars() {
+  return JSON.parse(localStorage.getItem("unw_created_pillars") || "[]");
 }
 
-function scoreToPercent(score) {
-  return clamp(Number(score), 0, 10) * 10;
-}
-
-function appendComment(existingText, authorName, newText) {
-  const clean = (newText || "").trim();
-  if (!clean) return existingText || "";
-
-  const now = new Date();
-  const stamp =
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ` +
-    `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-  const entry = `[${stamp}] ${authorName} : ${clean}`;
-  return existingText ? `${existingText}\n${entry}` : entry;
-}
-
-function isLate(task) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(task.due_date);
-  return due < today && task.status !== "Terminée";
+function saveLocalPillars(pillars) {
+  localStorage.setItem("unw_created_pillars", JSON.stringify(pillars));
 }
 
 function getRegisteredLocalUsers() {
@@ -264,6 +320,14 @@ function saveRegisteredLocalUsers(users) {
   localStorage.setItem("unw_registered_users", JSON.stringify(users));
 }
 
+function getLocalTasks() {
+  return JSON.parse(localStorage.getItem("unw_created_tasks") || "[]");
+}
+
+function saveLocalTasks(tasks) {
+  localStorage.setItem("unw_created_tasks", JSON.stringify(tasks));
+}
+
 function getDeletedUserIds() {
   return JSON.parse(localStorage.getItem("unw_deleted_user_ids") || "[]");
 }
@@ -272,25 +336,131 @@ function saveDeletedUserIds(ids) {
   localStorage.setItem("unw_deleted_user_ids", JSON.stringify(ids));
 }
 
-function getLocalPillars() {
-  return JSON.parse(localStorage.getItem("unw_created_pillars") || "[]");
-}
-
-function saveLocalPillars(pillars) {
-  localStorage.setItem("unw_created_pillars", JSON.stringify(pillars));
-}
-
-function saveLocalTasks(tasks) {
-  localStorage.setItem("unw_created_tasks", JSON.stringify(tasks));
-}
-
 function persistLocalTasks() {
   const localOnlyTasks = AppState.tasks.filter(task => task.is_local === true);
   saveLocalTasks(localOnlyTasks);
 }
 
 /* =========================
-   MEMBRES / DROITS
+   OUTILS GÉNÉRAUX
+========================= */
+
+function clamp(v, min, max) {
+  if (Number.isNaN(v)) return min;
+  return Math.max(min, Math.min(max, v));
+}
+
+function scoreToPercent(score) {
+  const safeScore = clamp(Number(score), 0, 10);
+  return safeScore * 10;
+}
+
+function isLate(task) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(task.due_date);
+  return due < today && task.status !== "Terminée";
+}
+
+function appendComment(existingText, authorName, newText) {
+  const clean = (newText || "").trim();
+  if (!clean) return existingText || "";
+
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, "0");
+  const dd = String(now.getDate()).padStart(2, "0");
+  const hh = String(now.getHours()).padStart(2, "0");
+  const mi = String(now.getMinutes()).padStart(2, "0");
+
+  const entry = `[${yyyy}-${mm}-${dd} ${hh}:${mi}] ${authorName} : ${clean}`;
+  return existingText ? `${existingText}\n${entry}` : entry;
+}
+
+function getStatusBadge(status) {
+  if (status === "Terminée") return `<span class="badge badge-green">${status}</span>`;
+  if (status === "En cours") return `<span class="badge badge-blue">${status}</span>`;
+  if (status === "Bloquée") return `<span class="badge badge-red">${status}</span>`;
+  return `<span class="badge badge-grey">${status}</span>`;
+}
+
+function getPriorityBadge(priority) {
+  if (priority === "Critique") return `<span class="badge badge-red">${priority}</span>`;
+  if (priority === "Haute") return `<span class="badge badge-yellow">${priority}</span>`;
+  if (priority === "Moyenne") return `<span class="badge badge-blue">${priority}</span>`;
+  return `<span class="badge badge-grey">${priority}</span>`;
+}
+
+function getSupervisorBadge(status) {
+  if (status === "Très satisfaisant") return `<span class="badge badge-green">${status}</span>`;
+  if (status === "Acceptable") return `<span class="badge badge-yellow">${status}</span>`;
+  if (status === "À améliorer" || status === "Critique") {
+    return `<span class="badge badge-red">${status}</span>`;
+  }
+  return `<span class="badge badge-grey">${status}</span>`;
+}
+
+function renderTaskRows(tasks) {
+  return tasks.map(task => `
+    <tr>
+      <td>${task.id}</td>
+      <td>
+        <strong>${task.title}</strong><br>
+        <span class="muted">${task.pillar}</span>
+      </td>
+      <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role}</span></td>
+      <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role}</span></td>
+      <td>${getPriorityBadge(task.priority)}</td>
+      <td>${getStatusBadge(task.status)}</td>
+      <td>
+        <div class="progress-track">
+          <div class="progress-fill" style="width:${task.progress || 0}%"></div>
+        </div>
+        Score: ${task.progress_score ?? 0} / 10<br>
+        ${task.progress || 0}%
+      </td>
+      <td style="white-space: pre-line;">${task.staff_comment || '<span class="muted">—</span>'}</td>
+      <td>
+        <div class="progress-track">
+          <div class="progress-fill supervisor" style="width:${task.supervisor_progress || 0}%"></div>
+        </div>
+        Score: ${task.supervisor_score ?? 0} / 10<br>
+        ${task.supervisor_progress || 0}%<br>
+        ${getSupervisorBadge(task.supervisor_status)}
+      </td>
+      <td style="white-space: pre-line;">${task.supervisor_comment || '<span class="muted">—</span>'}</td>
+      <td class="${isLate(task) ? 'late' : ''}">${task.due_date}</td>
+      <td><button class="action-btn" type="button" onclick="openTaskModal(${task.id})">Mettre à jour</button></td>
+    </tr>
+  `).join("");
+}
+
+function renderKPIs(targetId, tasks) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+
+  const total = tasks.length;
+  const inProgress = tasks.filter(t => t.status === "En cours").length;
+  const completed = tasks.filter(t => t.status === "Terminée").length;
+  const late = tasks.filter(t => isLate(t)).length;
+
+  el.innerHTML = `
+    <div class="card"><h3>Total des tâches</h3><div class="value">${total}</div></div>
+    <div class="card"><h3>En cours</h3><div class="value">${inProgress}</div></div>
+    <div class="card"><h3>Terminées</h3><div class="value">${completed}</div></div>
+    <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
+  `;
+}
+
+function rerenderCurrentPage() {
+  const page = document.body.dataset.page;
+  if (page === "dashboard") renderDashboardPage();
+  if (page === "my-tasks") renderMyTasksPage();
+  if (page === "my-team") renderMyTeamPage();
+}
+
+/* =========================
+   DROITS SUR MEMBRES
 ========================= */
 
 function canManageTeamMember(targetUser) {
@@ -354,6 +524,237 @@ function deleteTeamMember(userId) {
 }
 
 /* =========================
+   MODAL MISE À JOUR TÂCHES
+========================= */
+
+function initGlobalActions() {
+  const closeBtn = document.getElementById("closeTaskModalBtn");
+  const saveBtn = document.getElementById("saveTaskBtn");
+  const modal = document.getElementById("taskModal");
+
+  if (closeBtn) closeBtn.addEventListener("click", closeTaskModal);
+  if (saveBtn) saveBtn.addEventListener("click", saveTaskUpdate);
+
+  window.addEventListener("click", e => {
+    if (e.target === modal) closeTaskModal();
+  });
+}
+
+function openTaskModal(taskId = null) {
+  const modal = document.getElementById("taskModal");
+  if (!modal) return;
+
+  const task = AppState.enrichedTasks.find(t => t.id === taskId);
+  if (!task) return;
+
+  document.getElementById("editTaskId").value = task.id;
+  document.getElementById("editStatus").value = task.status || "Non commencée";
+  document.getElementById("editProgressScore").value = task.progress_score ?? Math.round((task.progress || 0) / 10);
+  document.getElementById("editStaffComment").value = "";
+  document.getElementById("editSupervisorScore").value = task.supervisor_score ?? Math.round((task.supervisor_progress || 0) / 10);
+  document.getElementById("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
+  document.getElementById("editSupervisorComment").value = "";
+
+  modal.style.display = "block";
+}
+
+function closeTaskModal() {
+  const modal = document.getElementById("taskModal");
+  if (modal) modal.style.display = "none";
+}
+
+function saveTaskUpdate() {
+  const taskId = Number(document.getElementById("editTaskId").value);
+  const task = AppState.tasks.find(t => t.id === taskId);
+  const currentUser = getCurrentUser();
+  if (!task || !currentUser) return;
+
+  const currentEnriched = AppState.enrichedTasks.find(t => t.id === taskId);
+
+  let progressScore = Number(document.getElementById("editProgressScore").value);
+  let supervisorScore = Number(document.getElementById("editSupervisorScore").value);
+
+  progressScore = clamp(progressScore, 0, 10);
+  supervisorScore = clamp(supervisorScore, 0, 10);
+
+  task.status = document.getElementById("editStatus").value;
+
+  const isAssignedUser = currentUser.id === task.assigned_to_id;
+  const isSupervisor = currentUser.id === currentEnriched?.supervisor_id;
+  const isAdmin = currentUser.user_type === "admin";
+
+  const newStaffComment = document.getElementById("editStaffComment").value.trim();
+  const newSupervisorComment = document.getElementById("editSupervisorComment").value.trim();
+
+  if (isAssignedUser || isAdmin) {
+    task.progress_score = progressScore;
+    task.progress = scoreToPercent(progressScore);
+    task.staff_comment = appendComment(task.staff_comment, currentUser.name, newStaffComment);
+  }
+
+  if (isSupervisor || isAdmin) {
+    task.supervisor_score = supervisorScore;
+    task.supervisor_progress = scoreToPercent(supervisorScore);
+    task.supervisor_status = document.getElementById("editSupervisorStatus").value;
+    task.supervisor_comment = appendComment(task.supervisor_comment, currentUser.name, newSupervisorComment);
+  }
+
+  if (task.status === "Terminée" && (task.progress || 0) < 100) {
+    task.progress_score = 10;
+    task.progress = 100;
+  }
+
+  persistLocalTasks();
+  enrichTasks();
+  closeTaskModal();
+  rerenderCurrentPage();
+}
+
+/* =========================
+   DASHBOARD
+========================= */
+
+function renderDashboardPage() {
+  const tasks = AppState.enrichedTasks;
+  renderKPIs("dashboardKpis", tasks);
+
+  const searchInput = document.getElementById("searchInput");
+  const pillarFilter = document.getElementById("pillarFilter");
+  const supervisorFilter = document.getElementById("supervisorFilter");
+  const tbody = document.getElementById("tasksTbody");
+
+  if (!searchInput || !pillarFilter || !supervisorFilter || !tbody) return;
+
+  populatePillarFilter(pillarFilter);
+
+  const supervisors = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
+
+  supervisorFilter.innerHTML =
+    `<option value="">Tous les superviseurs</option>` +
+    supervisors.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
+
+  function applyFilters() {
+    const search = (searchInput.value || "").toLowerCase().trim();
+    const pillar = pillarFilter.value;
+    const supervisorId = supervisorFilter.value ? Number(supervisorFilter.value) : null;
+
+    const filtered = tasks.filter(t => {
+      const matchSearch =
+        t.title.toLowerCase().includes(search) ||
+        t.assigned_to_name.toLowerCase().includes(search) ||
+        t.supervisor_name.toLowerCase().includes(search) ||
+        (t.pillar || "").toLowerCase().includes(search);
+
+      const matchPillar = !pillar || t.pillar === pillar;
+      const matchSupervisor = !supervisorId || t.supervisor_id === supervisorId;
+
+      return matchSearch && matchPillar && matchSupervisor;
+    });
+
+    tbody.innerHTML = renderTaskRows(filtered);
+    renderKPIs("dashboardKpis", filtered);
+  }
+
+  searchInput.addEventListener("input", applyFilters);
+  pillarFilter.addEventListener("change", applyFilters);
+  supervisorFilter.addEventListener("change", applyFilters);
+
+  tbody.innerHTML = renderTaskRows(tasks);
+}
+
+function populatePillarFilter(selectElement) {
+  if (!selectElement) return;
+
+  const currentValue = selectElement.value || "";
+  selectElement.innerHTML =
+    `<option value="">Tous les piliers</option>` +
+    AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
+
+  selectElement.value = currentValue;
+}
+
+/* =========================
+   MES TÂCHES
+========================= */
+
+function renderMyTasksPage() {
+  const currentUser = getCurrentUser();
+  const tbody = document.getElementById("myTasksTbody");
+  const title = document.getElementById("myTasksTitle");
+
+  if (!currentUser || !tbody || !title) return;
+
+  const myTasks = AppState.enrichedTasks.filter(t => t.assigned_to_id === currentUser.id);
+
+  title.textContent = `Mes tâches — ${currentUser.name}`;
+  renderKPIs("myTasksKpis", myTasks);
+
+  if (!myTasks.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="12"><span class="muted">Aucune tâche assignée pour le moment.</span></td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = renderTaskRows(myTasks);
+}
+
+/* =========================
+   MON ÉQUIPE
+========================= */
+
+function renderMyTeamPage() {
+  const currentUser = getCurrentUser();
+  const membersBox = document.getElementById("teamMembersList");
+  const tbody = document.getElementById("teamTasksTbody");
+  const title = document.getElementById("myTeamTitle");
+
+  if (!currentUser || !membersBox || !tbody || !title) return;
+
+  const teamMembers = AppState.users.filter(u => u.supervisor_id === currentUser.id);
+  const teamTasks = AppState.enrichedTasks.filter(t => t.supervisor_id === currentUser.id);
+
+  title.textContent = `Mon équipe — ${currentUser.name}`;
+  renderKPIs("myTeamKpis", teamTasks);
+
+  if (!teamMembers.length) {
+    membersBox.innerHTML = `<div class="empty">Vous n'avez aucun membre d'équipe rattaché comme superviseur.</div>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="12"><span class="muted">Aucune tâche d'équipe à afficher.</span></td>
+      </tr>
+    `;
+    return;
+  }
+
+  membersBox.innerHTML = teamMembers.map(member => {
+    const memberTasks = teamTasks.filter(t => t.assigned_to_id === member.id);
+    const done = memberTasks.filter(t => t.status === "Terminée").length;
+    const inProgress = memberTasks.filter(t => t.status === "En cours").length;
+    const late = memberTasks.filter(t => isLate(t)).length;
+
+    return `
+      <div class="member-card">
+        <h4>${member.name}</h4>
+        <div class="muted">${member.role} | ${member.pillar || "Sans pilier"}</div>
+        <div class="kpi-inline">
+          <span>Total tâches : <strong>${memberTasks.length}</strong></span>
+          <span>En cours : <strong>${inProgress}</strong></span>
+          <span>Terminées : <strong>${done}</strong></span>
+          <span>En retard : <strong>${late}</strong></span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  tbody.innerHTML = renderTaskRows(teamTasks);
+}
+
+/* =========================
    PAGE INSCRIPTION
 ========================= */
 
@@ -390,10 +791,14 @@ function populateRegistrationPillarDropdown() {
   const select = document.getElementById("regPillar");
   if (!select) return;
 
+  const currentValue = select.value || "";
   select.innerHTML = `
     <option value="">Sélectionner</option>
-    ${AppState.pillars.map(p => `<option value="${p.name}">${p.name} — ${p.full_name}</option>`).join("")}
+    ${AppState.pillars.map(p => `
+      <option value="${p.name}">${p.name} — ${p.full_name}</option>
+    `).join("")}
   `;
+  if (currentValue) select.value = currentValue;
 }
 
 function populateRegistrationSupervisorDropdown() {
@@ -401,7 +806,9 @@ function populateRegistrationSupervisorDropdown() {
   const supervisorSelect = document.getElementById("regSupervisor");
   if (!supervisorSelect) return;
 
-  let supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
+  let supervisors = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
 
   if (pillarValue) {
     supervisors = supervisors.filter(u => (u.pillar || "") === pillarValue);
@@ -413,13 +820,17 @@ function populateRegistrationSupervisorDropdown() {
 
   supervisorSelect.innerHTML = `
     <option value="">Sélectionner un superviseur</option>
-    ${supervisors.map(s => `<option value="${s.id}">${s.name} — ${s.role} (${s.pillar || "Sans pilier"})</option>`).join("")}
+    ${supervisors.map(s => `
+      <option value="${s.id}">
+        ${s.name} — ${s.role} (${s.pillar || "Sans pilier"})
+      </option>
+    `).join("")}
   `;
 }
 
 function generateNextUserId() {
-  const ids = AppState.users.map(u => Number(u.id)).filter(id => !Number.isNaN(id));
-  return ids.length ? Math.max(...ids) + 1 : 1;
+  const allIds = AppState.users.map(u => Number(u.id)).filter(id => !Number.isNaN(id));
+  return allIds.length ? Math.max(...allIds) + 1 : 1;
 }
 
 function registerNewUser() {
@@ -478,15 +889,20 @@ function registerNewUser() {
   AppState.users.push(newUser);
   enrichTasks();
 
-  messageBox.innerHTML = `<div class="success-box">Staff enregistré avec succès.</div>`;
+  messageBox.innerHTML = `
+    <div class="success-box">
+      Staff enregistré avec succès. ${name} est maintenant rattaché à ${supervisor.name}.
+    </div>
+  `;
 
   clearRegisterForm();
   renderRegisteredUsersTable();
-  initUserSelector();
+  refreshCurrentUserSelectorAfterRegistration(newUser.id);
 }
 
 function clearRegisterForm() {
-  ["regName", "regEmail", "regRole", "regPillar", "regSupervisor", "regOffice"].forEach(id => {
+  const fields = ["regName", "regEmail", "regRole", "regPillar", "regSupervisor", "regOffice"];
+  fields.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
@@ -499,7 +915,11 @@ function renderRegisteredUsersTable() {
   const localUsers = getRegisteredLocalUsers();
 
   if (!localUsers.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><span class="muted">Aucun staff enregistré localement pour le moment.</span></td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8"><span class="muted">Aucun staff enregistré localement pour le moment.</span></td>
+      </tr>
+    `;
     return;
   }
 
@@ -516,15 +936,39 @@ function renderRegisteredUsersTable() {
         <td>${supervisor ? supervisor.name : "Non défini"}</td>
         <td>${user.email || '<span class="muted">—</span>'}</td>
         <td>${user.office || '<span class="muted">—</span>'}</td>
-        <td>${canDelete ? `<button class="action-btn" type="button" onclick="deleteTeamMember(${user.id})">Supprimer</button>` : `<span class="muted">Non autorisé</span>`}</td>
+        <td>
+          ${
+            canDelete
+              ? `<button class="action-btn" type="button" onclick="deleteTeamMember(${user.id})">Supprimer</button>`
+              : `<span class="muted">Non autorisé</span>`
+          }
+        </td>
       </tr>
     `;
   }).join("");
 }
 
+function refreshCurrentUserSelectorAfterRegistration(newUserId) {
+  const selector = document.getElementById("currentUserSelect");
+  if (!selector) return;
+
+  selector.innerHTML = AppState.users
+    .map(u => `<option value="${u.id}">${u.name} — ${u.role}</option>`)
+    .join("");
+
+  selector.value = String(newUserId);
+  localStorage.setItem("unw_current_user_id", String(newUserId));
+  updateCurrentUserLabel();
+}
+
 /* =========================
-   PILIERS
+   CRÉATION DES PILIERS
 ========================= */
+
+function generateNextPillarId() {
+  const ids = AppState.pillars.map(p => Number(p.id)).filter(id => !Number.isNaN(id));
+  return ids.length ? Math.max(...ids) + 1 : 1;
+}
 
 function initPillarCreation() {
   const createBtn = document.getElementById("createPillarBtn");
@@ -550,17 +994,16 @@ function populatePillarSupervisorDropdown() {
   const select = document.getElementById("pillarSupervisor");
   if (!select) return;
 
-  const candidates = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
+  const candidates = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
 
   select.innerHTML = `
     <option value="">Sélectionner un superviseur</option>
-    ${candidates.map(user => `<option value="${user.id}">${user.name} — ${user.role}</option>`).join("")}
+    ${candidates.map(user => `
+      <option value="${user.id}">${user.name} — ${user.role}</option>
+    `).join("")}
   `;
-}
-
-function generateNextPillarId() {
-  const ids = AppState.pillars.map(p => Number(p.id)).filter(id => !Number.isNaN(id));
-  return ids.length ? Math.max(...ids) + 1 : 1;
 }
 
 function createNewPillar() {
@@ -599,9 +1042,13 @@ function createNewPillar() {
 
   messageBox.innerHTML = `<div class="success-box">Pilier créé avec succès.</div>`;
 
-  document.getElementById("pillarName").value = "";
-  document.getElementById("pillarFullName").value = "";
-  document.getElementById("pillarSupervisor").value = "";
+  const pillarName = document.getElementById("pillarName");
+  const pillarFullName = document.getElementById("pillarFullName");
+  const pillarSupervisor = document.getElementById("pillarSupervisor");
+
+  if (pillarName) pillarName.value = "";
+  if (pillarFullName) pillarFullName.value = "";
+  if (pillarSupervisor) pillarSupervisor.value = "";
 
   renderCreatedPillarsTable();
   populateRegistrationPillarDropdown();
@@ -613,7 +1060,11 @@ function renderCreatedPillarsTable() {
   if (!tbody) return;
 
   if (!AppState.pillars.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><span class="muted">Aucun pilier disponible.</span></td></tr>`;
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4"><span class="muted">Aucun pilier disponible.</span></td>
+      </tr>
+    `;
     return;
   }
 
@@ -631,8 +1082,14 @@ function renderCreatedPillarsTable() {
 }
 
 /* =========================
-   TÂCHES
+   CRÉATION DES TÂCHES
 ========================= */
+
+function getAssignableStaff() {
+  return AppState.users.filter(u =>
+    u.user_type === "staff" || u.user_type === "supervisor" || u.user_type === "admin"
+  );
+}
 
 function initTaskCreation() {
   const openBtn = document.getElementById("openCreateTaskModalBtn");
@@ -664,13 +1121,15 @@ function populateTaskAssignedDropdown() {
   const select = document.getElementById("taskAssignedTo");
   if (!select) return;
 
-  const staffList = AppState.users.filter(u =>
-    u.user_type === "staff" || u.user_type === "supervisor" || u.user_type === "admin"
-  );
+  const staffList = getAssignableStaff();
 
   select.innerHTML = `
     <option value="">Sélectionner un membre du staff</option>
-    ${staffList.map(user => `<option value="${user.id}">${user.name} — ${user.role} (${user.pillar || "Sans pilier"})</option>`).join("")}
+    ${staffList.map(user => `
+      <option value="${user.id}">
+        ${user.name} — ${user.role} (${user.pillar || "Sans pilier"})
+      </option>
+    `).join("")}
   `;
 }
 
@@ -678,10 +1137,14 @@ function populateTaskPillarDropdown() {
   const select = document.getElementById("taskPillar");
   if (!select) return;
 
+  const currentValue = select.value || "";
   select.innerHTML = `
     <option value="">Sélectionner</option>
-    ${AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("")}
+    ${AppState.pillars.map(p => `
+      <option value="${p.name}">${p.name}</option>
+    `).join("")}
   `;
+  if (currentValue) select.value = currentValue;
 }
 
 function generateNextTaskId() {
@@ -750,198 +1213,23 @@ function createNewTask() {
   persistLocalTasks();
   enrichTasks();
 
-  messageBox.innerHTML = `<div class="success-box">Tâche créée avec succès.</div>`;
+  messageBox.innerHTML = `
+    <div class="success-box">
+      Tâche créée avec succès et assignée à ${assignedUser.name}.
+    </div>
+  `;
 
   clearTaskCreationForm();
   rerenderCurrentPage();
 }
 
 function clearTaskCreationForm() {
-  ["taskTitle", "taskPillar", "taskAssignedTo", "taskPriority", "taskDueDate", "taskDescription"].forEach(id => {
+  const fields = ["taskTitle", "taskPillar", "taskAssignedTo", "taskPriority", "taskDueDate", "taskDescription"];
+  fields.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
   });
 
   const messageBox = document.getElementById("taskCreateMessage");
   if (messageBox) messageBox.innerHTML = "";
-}
-
-/* =========================
-   PAGES DE SUIVI
-========================= */
-
-function getStatusBadge(status) {
-  if (status === "Terminée") return `<span class="badge badge-green">${status}</span>`;
-  if (status === "En cours") return `<span class="badge badge-blue">${status}</span>`;
-  if (status === "Bloquée") return `<span class="badge badge-red">${status}</span>`;
-  return `<span class="badge badge-grey">${status}</span>`;
-}
-
-function getPriorityBadge(priority) {
-  if (priority === "Critique") return `<span class="badge badge-red">${priority}</span>`;
-  if (priority === "Haute") return `<span class="badge badge-yellow">${priority}</span>`;
-  if (priority === "Moyenne") return `<span class="badge badge-blue">${priority}</span>`;
-  return `<span class="badge badge-grey">${priority}</span>`;
-}
-
-function getSupervisorBadge(status) {
-  if (status === "Très satisfaisant") return `<span class="badge badge-green">${status}</span>`;
-  if (status === "Acceptable") return `<span class="badge badge-yellow">${status}</span>`;
-  if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${status}</span>`;
-  return `<span class="badge badge-grey">${status}</span>`;
-}
-
-function renderTaskRows(tasks) {
-  return tasks.map(task => `
-    <tr>
-      <td>${task.id}</td>
-      <td><strong>${task.title}</strong><br><span class="muted">${task.pillar}</span></td>
-      <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role}</span></td>
-      <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role}</span></td>
-      <td>${getPriorityBadge(task.priority)}</td>
-      <td>${getStatusBadge(task.status)}</td>
-      <td>
-        <div class="progress-track"><div class="progress-fill" style="width:${task.progress || 0}%"></div></div>
-        Score: ${task.progress_score ?? 0} / 10<br>${task.progress || 0}%
-      </td>
-      <td style="white-space: pre-line;">${task.staff_comment || '<span class="muted">—</span>'}</td>
-      <td>
-        <div class="progress-track"><div class="progress-fill supervisor" style="width:${task.supervisor_progress || 0}%"></div></div>
-        Score: ${task.supervisor_score ?? 0} / 10<br>${task.supervisor_progress || 0}%<br>${getSupervisorBadge(task.supervisor_status)}
-      </td>
-      <td style="white-space: pre-line;">${task.supervisor_comment || '<span class="muted">—</span>'}</td>
-      <td class="${isLate(task) ? 'late' : ''}">${task.due_date}</td>
-      <td><button class="action-btn" type="button" onclick="openTaskModal(${task.id})">Mettre à jour</button></td>
-    </tr>
-  `).join("");
-}
-
-function renderKPIs(targetId, tasks) {
-  const el = document.getElementById(targetId);
-  if (!el) return;
-
-  const total = tasks.length;
-  const inProgress = tasks.filter(t => t.status === "En cours").length;
-  const completed = tasks.filter(t => t.status === "Terminée").length;
-  const late = tasks.filter(t => isLate(t)).length;
-
-  el.innerHTML = `
-    <div class="card"><h3>Total des tâches</h3><div class="value">${total}</div></div>
-    <div class="card"><h3>En cours</h3><div class="value">${inProgress}</div></div>
-    <div class="card"><h3>Terminées</h3><div class="value">${completed}</div></div>
-    <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
-  `;
-}
-
-function rerenderCurrentPage() {
-  const page = document.body.dataset.page;
-  if (page === "dashboard") renderDashboardPage();
-  if (page === "my-tasks") renderMyTasksPage();
-  if (page === "my-team") renderMyTeamPage();
-}
-
-function renderDashboardPage() {
-  const tasks = AppState.enrichedTasks;
-  renderKPIs("dashboardKpis", tasks);
-
-  const searchInput = document.getElementById("searchInput");
-  const pillarFilter = document.getElementById("pillarFilter");
-  const supervisorFilter = document.getElementById("supervisorFilter");
-  const tbody = document.getElementById("tasksTbody");
-
-  if (!searchInput || !pillarFilter || !supervisorFilter || !tbody) return;
-
-  pillarFilter.innerHTML =
-    `<option value="">Tous les piliers</option>` +
-    AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
-
-  const supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
-  supervisorFilter.innerHTML =
-    `<option value="">Tous les superviseurs</option>` +
-    supervisors.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
-
-  function applyFilters() {
-    const search = (searchInput.value || "").toLowerCase().trim();
-    const pillar = pillarFilter.value;
-    const supervisorId = supervisorFilter.value ? Number(supervisorFilter.value) : null;
-
-    const filtered = tasks.filter(t => {
-      const matchSearch =
-        t.title.toLowerCase().includes(search) ||
-        t.assigned_to_name.toLowerCase().includes(search) ||
-        t.supervisor_name.toLowerCase().includes(search) ||
-        (t.pillar || "").toLowerCase().includes(search);
-
-      const matchPillar = !pillar || t.pillar === pillar;
-      const matchSupervisor = !supervisorId || t.supervisor_id === supervisorId;
-
-      return matchSearch && matchPillar && matchSupervisor;
-    });
-
-    tbody.innerHTML = renderTaskRows(filtered);
-    renderKPIs("dashboardKpis", filtered);
-  }
-
-  searchInput.addEventListener("input", applyFilters);
-  pillarFilter.addEventListener("change", applyFilters);
-  supervisorFilter.addEventListener("change", applyFilters);
-
-  tbody.innerHTML = renderTaskRows(tasks);
-}
-
-function renderMyTasksPage() {
-  const currentUser = getCurrentUser();
-  const tbody = document.getElementById("myTasksTbody");
-  const title = document.getElementById("myTasksTitle");
-  if (!currentUser || !tbody || !title) return;
-
-  const myTasks = AppState.enrichedTasks.filter(t => t.assigned_to_id === currentUser.id);
-  title.textContent = `Mes tâches — ${currentUser.name}`;
-  renderKPIs("myTasksKpis", myTasks);
-
-  tbody.innerHTML = myTasks.length
-    ? renderTaskRows(myTasks)
-    : `<tr><td colspan="12"><span class="muted">Aucune tâche assignée pour le moment.</span></td></tr>`;
-}
-
-function renderMyTeamPage() {
-  const currentUser = getCurrentUser();
-  const membersBox = document.getElementById("teamMembersList");
-  const tbody = document.getElementById("teamTasksTbody");
-  const title = document.getElementById("myTeamTitle");
-  if (!currentUser || !membersBox || !tbody || !title) return;
-
-  const teamMembers = AppState.users.filter(u => u.supervisor_id === currentUser.id);
-  const teamTasks = AppState.enrichedTasks.filter(t => t.supervisor_id === currentUser.id);
-
-  title.textContent = `Mon équipe — ${currentUser.name}`;
-  renderKPIs("myTeamKpis", teamTasks);
-
-  if (!teamMembers.length) {
-    membersBox.innerHTML = `<div class="empty">Vous n'avez aucun membre d'équipe rattaché comme superviseur.</div>`;
-    tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche d'équipe à afficher.</span></td></tr>`;
-    return;
-  }
-
-  membersBox.innerHTML = teamMembers.map(member => {
-    const memberTasks = teamTasks.filter(t => t.assigned_to_id === member.id);
-    const done = memberTasks.filter(t => t.status === "Terminée").length;
-    const inProgress = memberTasks.filter(t => t.status === "En cours").length;
-    const late = memberTasks.filter(t => isLate(t)).length;
-
-    return `
-      <div class="member-card">
-        <h4>${member.name}</h4>
-        <div class="muted">${member.role} | ${member.pillar || "Sans pilier"}</div>
-        <div class="kpi-inline">
-          <span>Total tâches : <strong>${memberTasks.length}</strong></span>
-          <span>En cours : <strong>${inProgress}</strong></span>
-          <span>Terminées : <strong>${done}</strong></span>
-          <span>En retard : <strong>${late}</strong></span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  tbody.innerHTML = renderTaskRows(teamTasks);
 }
