@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     initTaskCreation();
     initPillarCreation();
     initInitializationPage();
+    initExportAndPrint();
 
     const page = document.body.dataset.page;
     if (page === "dashboard") renderDashboardPage();
@@ -79,6 +80,110 @@ function enrichTasks() {
       supervisor_role: supervisor ? supervisor.role : ""
     };
   });
+}
+
+/* =========================
+   EXPORT / IMPRESSION
+========================= */
+
+function initExportAndPrint() {
+  const exportBtn = document.getElementById("exportXlsxBtn");
+  const printBtn = document.getElementById("printPageBtn");
+
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportCurrentViewToXlsx);
+  }
+
+  if (printBtn) {
+    printBtn.addEventListener("click", printCurrentPage);
+  }
+}
+
+function getCurrentPageName() {
+  return document.body.dataset.page || "dashboard";
+}
+
+function getCurrentTableDataForExport() {
+  const page = getCurrentPageName();
+  const currentUser = getCurrentUser();
+
+  if (page === "my-tasks" && currentUser) {
+    return AppState.enrichedTasks.filter(t => t.assigned_to_id === currentUser.id);
+  }
+
+  if (page === "my-team" && currentUser) {
+    return AppState.enrichedTasks.filter(t => t.supervisor_id === currentUser.id);
+  }
+
+  if (page === "dashboard") {
+    const searchInput = document.getElementById("searchInput");
+    const pillarFilter = document.getElementById("pillarFilter");
+    const supervisorFilter = document.getElementById("supervisorFilter");
+
+    const search = (searchInput?.value || "").toLowerCase().trim();
+    const pillar = pillarFilter?.value || "";
+    const supervisorId = supervisorFilter?.value ? Number(supervisorFilter.value) : null;
+
+    return AppState.enrichedTasks.filter(t => {
+      const matchSearch =
+        t.title.toLowerCase().includes(search) ||
+        t.assigned_to_name.toLowerCase().includes(search) ||
+        t.supervisor_name.toLowerCase().includes(search) ||
+        (t.pillar || "").toLowerCase().includes(search);
+
+      const matchPillar = !pillar || t.pillar === pillar;
+      const matchSupervisor = !supervisorId || t.supervisor_id === supervisorId;
+
+      return matchSearch && matchPillar && matchSupervisor;
+    });
+  }
+
+  return AppState.enrichedTasks;
+}
+
+function exportCurrentViewToXlsx() {
+  try {
+    const rows = getCurrentTableDataForExport();
+
+    const exportData = rows.map(task => ({
+      ID: task.id,
+      Tache: task.title,
+      Pilier: task.pillar || "",
+      Assigne_a: task.assigned_to_name || "",
+      Role_assigne: task.assigned_to_role || "",
+      Superviseur: task.supervisor_name || "",
+      Role_superviseur: task.supervisor_role || "",
+      Priorite: task.priority || "",
+      Statut: task.status || "",
+      Score_staff: task.progress_score ?? 0,
+      Progression_staff_pourcent: task.progress ?? 0,
+      Commentaire_staff: task.staff_comment || "",
+      Score_superviseur: task.supervisor_score ?? 0,
+      Progression_superviseur_pourcent: task.supervisor_progress ?? 0,
+      Appreciation_superviseur: task.supervisor_status || "",
+      Commentaire_superviseur: task.supervisor_comment || "",
+      Echeance: task.due_date || "",
+      En_retard: isLate(task) ? "Oui" : "Non"
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Taches");
+
+    const page = getCurrentPageName();
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+
+    XLSX.writeFile(workbook, `UNW_TaskManager_${page}_${stamp}.xlsx`);
+  } catch (error) {
+    console.error("Erreur export XLSX :", error);
+    alert("Impossible d’exporter les données en XLSX.");
+  }
+}
+
+function printCurrentPage() {
+  window.print();
 }
 
 /* =========================
@@ -640,7 +745,7 @@ function renderDashboardPage() {
     const pillar = pillarFilter.value;
     const supervisorId = supervisorFilter.value ? Number(supervisorFilter.value) : null;
 
-    const filtered = tasks.filter(t => {
+    const filtered = AppState.enrichedTasks.filter(t => {
       const matchSearch =
         t.title.toLowerCase().includes(search) ||
         t.assigned_to_name.toLowerCase().includes(search) ||
@@ -661,7 +766,7 @@ function renderDashboardPage() {
   pillarFilter.addEventListener("change", applyFilters);
   supervisorFilter.addEventListener("change", applyFilters);
 
-  tbody.innerHTML = renderTaskRows(tasks);
+  tbody.innerHTML = renderTaskRows(AppState.enrichedTasks);
 }
 
 function populatePillarFilter(selectElement) {
