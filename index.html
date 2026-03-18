@@ -10,7 +10,7 @@
   <header>
     <div class="header-inner">
       <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
         <div>
           <h1>ONU Femmes Task Manager</h1>
           <p>Gestion intelligente des tâches par pilier, staff et superviseur</p>
@@ -37,15 +37,14 @@
     <section id="dashboardKpis" class="dashboard"></section>
 
     <section class="filters">
-      <input type="text" id="searchInput" placeholder="Rechercher une tâche, un staff ou un superviseur" />
+      <input
+        type="text"
+        id="searchInput"
+        placeholder="Rechercher une tâche, un staff ou un superviseur"
+      />
 
       <select id="pillarFilter">
         <option value="">Tous les piliers</option>
-        <option value="Humanitaire">Humanitaire</option>
-        <option value="Programme">Programme</option>
-        <option value="Operations">Operations</option>
-        <option value="Coordination">Coordination</option>
-        <option value="Direction">Direction</option>
       </select>
 
       <select id="supervisorFilter">
@@ -79,86 +78,89 @@
     </section>
   </main>
 
+  <!-- Modal mise à jour tâche -->
   <div id="taskModal" class="modal">
-  <div class="modal-content">
-    <h3>Mise à jour de la tâche</h3>
-    <input type="hidden" id="editTaskId" />
+    <div class="modal-content">
+      <h3>Mise à jour de la tâche</h3>
+      <input type="hidden" id="editTaskId" />
 
-    <div class="modal-row">
-      <div>
-        <label for="editStatus">Statut</label>
-        <select id="editStatus">
-          <option>Non commencée</option>
-          <option>En cours</option>
-          <option>Bloquée</option>
-          <option>Terminée</option>
-        </select>
+      <div class="modal-row">
+        <div>
+          <label for="editStatus">Statut</label>
+          <select id="editStatus">
+            <option>Non commencée</option>
+            <option>En cours</option>
+            <option>Bloquée</option>
+            <option>Terminée</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="editProgressScore">Score staff (0 à 10)</label>
+          <select id="editProgressScore">
+            <option value="0">0 = 0%</option>
+            <option value="1">1 = 10%</option>
+            <option value="2">2 = 20%</option>
+            <option value="3">3 = 30%</option>
+            <option value="4">4 = 40%</option>
+            <option value="5">5 = 50%</option>
+            <option value="6">6 = 60%</option>
+            <option value="7">7 = 70%</option>
+            <option value="8">8 = 80%</option>
+            <option value="9">9 = 90%</option>
+            <option value="10">10 = 100%</option>
+          </select>
+        </div>
       </div>
 
       <div>
-        <label for="editProgressScore">Score staff (0 à 10)</label>
-        <select id="editProgressScore">
-          <option value="0">0 = 0%</option>
-          <option value="1">1 = 10%</option>
-          <option value="2">2 = 20%</option>
-          <option value="3">3 = 30%</option>
-          <option value="4">4 = 40%</option>
-          <option value="5">5 = 50%</option>
-          <option value="6">6 = 60%</option>
-          <option value="7">7 = 70%</option>
-          <option value="8">8 = 80%</option>
-          <option value="9">9 = 90%</option>
-          <option value="10">10 = 100%</option>
-        </select>
+        <label for="editStaffComment">Commentaire du staff</label>
+        <textarea id="editStaffComment" placeholder="Ajouter une nouvelle mise à jour..."></textarea>
       </div>
-    </div>
 
-    <div>
-      <label for="editStaffComment">Commentaire du staff</label>
-      <textarea id="editStaffComment" placeholder="Ajouter une nouvelle mise à jour..."></textarea>
-    </div>
+      <div class="modal-row">
+        <div>
+          <label for="editSupervisorScore">Score superviseur (0 à 10)</label>
+          <select id="editSupervisorScore">
+            <option value="0">0 = 0%</option>
+            <option value="1">1 = 10%</option>
+            <option value="2">2 = 20%</option>
+            <option value="3">3 = 30%</option>
+            <option value="4">4 = 40%</option>
+            <option value="5">5 = 50%</option>
+            <option value="6">6 = 60%</option>
+            <option value="7">7 = 70%</option>
+            <option value="8">8 = 80%</option>
+            <option value="9">9 = 90%</option>
+            <option value="10">10 = 100%</option>
+          </select>
+        </div>
 
-    <div class="modal-row">
-      <div>
-        <label for="editSupervisorScore">Score superviseur (0 à 10)</label>
-        <select id="editSupervisorScore">
-          <option value="0">0 = 0%</option>
-          <option value="1">1 = 10%</option>
-          <option value="2">2 = 20%</option>
-          <option value="3">3 = 30%</option>
-          <option value="4">4 = 40%</option>
-          <option value="5">5 = 50%</option>
-          <option value="6">6 = 60%</option>
-          <option value="7">7 = 70%</option>
-          <option value="8">8 = 80%</option>
-          <option value="9">9 = 90%</option>
-          <option value="10">10 = 100%</option>
-        </select>
+        <div>
+          <label for="editSupervisorStatus">Appréciation superviseur</label>
+          <select id="editSupervisorStatus">
+            <option>Non évalué</option>
+            <option>Très satisfaisant</option>
+            <option>Acceptable</option>
+            <option>À améliorer</option>
+            <option>Critique</option>
+          </select>
+        </div>
       </div>
 
       <div>
-        <label for="editSupervisorStatus">Appréciation superviseur</label>
-        <select id="editSupervisorStatus">
-          <option>Non évalué</option>
-          <option>Très satisfaisant</option>
-          <option>Acceptable</option>
-          <option>À améliorer</option>
-          <option>Critique</option>
-        </select>
+        <label for="editSupervisorComment">Commentaire du superviseur</label>
+        <textarea id="editSupervisorComment" placeholder="Ajouter un nouveau commentaire de supervision..."></textarea>
       </div>
-    </div>
 
-    <div>
-      <label for="editSupervisorComment">Commentaire du superviseur</label>
-      <textarea id="editSupervisorComment" placeholder="Ajouter un nouveau commentaire de supervision..."></textarea>
-    </div>
-
-    <div class="modal-actions">
-      <button id="closeTaskModalBtn" class="secondary" type="button">Fermer</button>
-      <button id="saveTaskBtn" type="button">Enregistrer</button>
+      <div class="modal-actions">
+        <button id="closeTaskModalBtn" class="secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" type="button">Enregistrer</button>
+      </div>
     </div>
   </div>
-</div>
+
+  <!-- Modal création tâche -->
   <div id="createTaskModal" class="modal">
     <div class="modal-content">
       <h3>Créer une nouvelle tâche</h3>
@@ -173,11 +175,6 @@
           <label for="taskPillar">Pilier</label>
           <select id="taskPillar">
             <option value="">Sélectionner</option>
-            <option value="Humanitaire">Humanitaire</option>
-            <option value="Programme">Programme</option>
-            <option value="Operations">Operations</option>
-            <option value="Coordination">Coordination</option>
-            <option value="Direction">Direction</option>
           </select>
         </div>
       </div>
@@ -206,7 +203,6 @@
           <label for="taskDueDate">Échéance</label>
           <input id="taskDueDate" type="date" />
         </div>
-
         <div></div>
       </div>
 
