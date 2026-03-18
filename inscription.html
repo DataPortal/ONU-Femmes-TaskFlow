@@ -38,9 +38,8 @@
       <div class="modal-row">
         <div>
           <label for="regName">Nom complet</label>
-          <input id="regName" type="text" placeholder="Ex. Hypolite Reoutar Mbailassem" />
+          <input id="regName" type="text" placeholder="Ex. Hypolite Reoutar" />
         </div>
-
         <div>
           <label for="regEmail">Email</label>
           <input id="regEmail" type="email" placeholder="nom@unwomen.org" />
@@ -52,7 +51,6 @@
           <label for="regRole">Fonction</label>
           <input id="regRole" type="text" placeholder="Ex. Gender Information Management Officer" />
         </div>
-
         <div>
           <label for="regOffice">Bureau / unité</label>
           <input id="regOffice" type="text" placeholder="Ex. ONU Femmes RDC" />
@@ -66,7 +64,6 @@
             <option value="">Sélectionner</option>
           </select>
         </div>
-
         <div>
           <label for="regSupervisor">Superviseur</label>
           <select id="regSupervisor">
@@ -77,9 +74,7 @@
 
       <div class="modal-actions" style="justify-content:flex-start;">
         <button id="registerUserBtn" type="button">Enregistrer</button>
-        <button id="clearRegisteredUsersBtn" class="secondary" type="button">
-          Réinitialiser les inscriptions locales
-        </button>
+        <button id="clearRegisteredUsersBtn" class="secondary" type="button">Réinitialiser les inscriptions locales</button>
       </div>
 
       <div id="registerMessage" style="margin-top:12px;"></div>
@@ -93,7 +88,6 @@
           <label for="pillarName">Nom court du pilier</label>
           <input id="pillarName" type="text" placeholder="Ex. WPS" />
         </div>
-
         <div>
           <label for="pillarFullName">Intitulé complet</label>
           <input id="pillarFullName" type="text" placeholder="Ex. Women Peace and Security" />
@@ -112,16 +106,13 @@
 
       <div class="modal-actions" style="justify-content:flex-start;">
         <button id="createPillarBtn" type="button">Créer le pilier</button>
-        <button id="clearPillarsBtn" class="secondary" type="button">
-          Réinitialiser les piliers locaux
-        </button>
+        <button id="clearPillarsBtn" class="secondary" type="button">Réinitialiser les piliers locaux</button>
       </div>
 
       <div id="pillarMessage" style="margin-top:12px;"></div>
     </section>
 
     <h3 class="section-title" style="margin-top:24px;">Piliers disponibles</h3>
-
     <section class="table-wrap">
       <table>
         <thead>
@@ -132,18 +123,11 @@
             <th>Superviseur</th>
           </tr>
         </thead>
-        <tbody id="pillarsTbody">
-          <tr>
-            <td colspan="4">
-              <span class="muted">Chargement des piliers...</span>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="pillarsTbody"></tbody>
       </table>
     </section>
 
     <h3 class="section-title" style="margin-top:24px;">Staff enregistrés localement</h3>
-
     <section class="table-wrap">
       <table>
         <thead>
@@ -158,30 +142,8 @@
             <th>Action</th>
           </tr>
         </thead>
-        <tbody id="registeredUsersTbody">
-          <tr>
-            <td colspan="8">
-              <span class="muted">Chargement des utilisateurs enregistrés...</span>
-            </td>
-          </tr>
-        </tbody>
+        <tbody id="registeredUsersTbody"></tbody>
       </table>
-    </section>
-
-    <section class="grid-2" style="margin-top:24px;">
-      <div class="empty">
-        <strong>Logique de fonctionnement</strong><br><br>
-        Vous pouvez d’abord créer un <strong>pilier</strong> avec un superviseur,
-        puis enregistrer de nouveaux membres du staff dans ce pilier.
-        Le système filtre ensuite les superviseurs selon le pilier sélectionné.
-      </div>
-
-      <div class="empty">
-        <strong>Suppression des membres</strong><br><br>
-        Seuls les <strong>superviseurs</strong> ou <strong>admins</strong> autorisés
-        peuvent supprimer les membres <strong>locaux</strong> de leur équipe.
-        Les profils de base du fichier <strong>users.json</strong> ne sont pas supprimables ici.
-      </div>
     </section>
   </main>
 
