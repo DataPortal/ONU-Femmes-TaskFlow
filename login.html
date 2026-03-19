@@ -10,7 +10,7 @@
   <header>
     <div class="header-inner">
       <div class="brand">
-        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
+        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
         <div>
           <h1>ONU Femmes Task Manager</h1>
           <p>Connexion sécurisée à la plateforme</p>
@@ -19,39 +19,42 @@
     </div>
   </header>
 
-  <main class="container">
-    <section class="card" style="max-width:520px; margin:40px auto;">
-      <h2 class="section-title">Se connecter</h2>
+  <main class="container login-page">
+    <section class="login-card">
+      <div class="login-card-header">
+        <h2 class="section-title">Se connecter</h2>
+        <p class="muted">Utilisez votre compte créé dans Supabase Authentication.</p>
+      </div>
 
-      <div>
+      <div class="form-group">
         <label for="loginEmail">Adresse email</label>
         <input
           id="loginEmail"
           type="email"
           placeholder="hypolite.reoutar@unwomen.org"
-          style="width:100%; margin-top:6px;"
+          autocomplete="username"
         />
       </div>
 
-      <div style="margin-top:14px;">
+      <div class="form-group">
         <label for="loginPassword">Mot de passe</label>
         <input
           id="loginPassword"
           type="password"
           placeholder="Votre mot de passe"
-          style="width:100%; margin-top:6px;"
+          autocomplete="current-password"
         />
       </div>
 
-      <div class="modal-actions" style="justify-content:flex-start; margin-top:18px;">
+      <div class="login-actions">
         <button id="loginBtn" type="button">Connexion</button>
       </div>
 
       <div id="loginMessage" style="margin-top:14px;"></div>
 
       <div class="empty" style="margin-top:18px;">
-        Utilisez un compte déjà créé dans <strong>Supabase Authentication</strong>.
-        Après connexion, votre profil est récupéré depuis la table <strong>profiles</strong>.
+        Après connexion, l’application récupère automatiquement votre profil dans la table
+        <strong>profiles</strong>, puis vous redirige vers le dashboard.
       </div>
     </section>
   </main>
