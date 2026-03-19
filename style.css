@@ -451,3 +451,14 @@ textarea{
     print-color-adjust:exact;
   }
 }
+.table-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.action-btn.secondary-danger{
+  background:#fff;
+  color:#991b1b;
+  border:1px solid #991b1b;
+}
