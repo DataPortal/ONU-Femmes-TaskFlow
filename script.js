@@ -88,6 +88,9 @@ function enrichTasks() {
 ========================= */
 
 function initExportAndPrint() {
+  const page = getCurrentPageName();
+  if (page !== "dashboard") return;
+
   const exportBtn = document.getElementById("exportXlsxBtn");
   const printBtn = document.getElementById("printPageBtn");
 
@@ -106,15 +109,6 @@ function getCurrentPageName() {
 
 function getCurrentTableDataForExport() {
   const page = getCurrentPageName();
-  const currentUser = getCurrentUser();
-
-  if (page === "my-tasks" && currentUser) {
-    return AppState.enrichedTasks.filter(t => t.assigned_to_id === currentUser.id);
-  }
-
-  if (page === "my-team" && currentUser) {
-    return AppState.enrichedTasks.filter(t => t.supervisor_id === currentUser.id);
-  }
 
   if (page === "dashboard") {
     const searchInput = document.getElementById("searchInput");
@@ -139,7 +133,7 @@ function getCurrentTableDataForExport() {
     });
   }
 
-  return AppState.enrichedTasks;
+  return [];
 }
 
 function exportCurrentViewToXlsx() {
@@ -522,7 +516,6 @@ function getSupervisorBadge(status) {
 function canDeleteTask(task) {
   const currentUser = getCurrentUser();
   if (!currentUser || !task) return false;
-
   return currentUser.user_type === "supervisor" || currentUser.user_type === "admin";
 }
 
@@ -780,15 +773,13 @@ function saveTaskUpdate() {
 ========================= */
 
 function renderDashboardPage() {
-  const tasks = AppState.enrichedTasks;
-  renderKPIs("dashboardKpis", tasks);
-
   const searchInput = document.getElementById("searchInput");
+  const searchBtn = document.getElementById("searchBtn");
   const pillarFilter = document.getElementById("pillarFilter");
   const supervisorFilter = document.getElementById("supervisorFilter");
   const tbody = document.getElementById("tasksTbody");
 
-  if (!searchInput || !pillarFilter || !supervisorFilter || !tbody) return;
+  if (!searchInput || !searchBtn || !pillarFilter || !supervisorFilter || !tbody) return;
 
   populatePillarFilter(pillarFilter);
 
@@ -800,7 +791,7 @@ function renderDashboardPage() {
     `<option value="">Tous les superviseurs</option>` +
     supervisors.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
 
-  function applyFilters() {
+  const applyFilters = () => {
     const search = (searchInput.value || "").toLowerCase().trim();
     const pillar = pillarFilter.value;
     const supervisorId = supervisorFilter.value ? Number(supervisorFilter.value) : null;
@@ -820,13 +811,17 @@ function renderDashboardPage() {
 
     tbody.innerHTML = renderTaskRows(filtered);
     renderKPIs("dashboardKpis", filtered);
-  }
+  };
 
-  searchInput.addEventListener("input", applyFilters);
+  searchBtn.addEventListener("click", applyFilters);
+  searchInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") applyFilters();
+  });
   pillarFilter.addEventListener("change", applyFilters);
   supervisorFilter.addEventListener("change", applyFilters);
 
   tbody.innerHTML = renderTaskRows(AppState.enrichedTasks);
+  renderKPIs("dashboardKpis", AppState.enrichedTasks);
 }
 
 function populatePillarFilter(selectElement) {
@@ -848,12 +843,54 @@ function renderMyTasksPage() {
   const currentUser = getCurrentUser();
   const tbody = document.getElementById("myTasksTbody");
   const title = document.getElementById("myTasksTitle");
+  const searchInput = document.getElementById("myTasksSearchInput");
+  const searchBtn = document.getElementById("myTasksSearchBtn");
 
   if (!currentUser || !tbody || !title) return;
 
   const myTasks = AppState.enrichedTasks.filter(t => t.assigned_to_id === currentUser.id);
 
   title.textContent = `Mes tâches — ${currentUser.name}`;
+
+  const applyMyTasksFilter = () => {
+    const search = (searchInput?.value || "").toLowerCase().trim();
+
+    const filtered = myTasks.filter(t => {
+      return (
+        t.title.toLowerCase().includes(search) ||
+        (t.pillar || "").toLowerCase().includes(search) ||
+        (t.status || "").toLowerCase().includes(search) ||
+        (t.priority || "").toLowerCase().includes(search) ||
+        (t.supervisor_name || "").toLowerCase().includes(search) ||
+        (t.staff_comment || "").toLowerCase().includes(search) ||
+        (t.supervisor_comment || "").toLowerCase().includes(search)
+      );
+    });
+
+    renderKPIs("myTasksKpis", filtered);
+
+    if (!filtered.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="12"><span class="muted">Aucune tâche trouvée.</span></td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = renderTaskRows(filtered);
+  };
+
+  if (searchBtn) {
+    searchBtn.addEventListener("click", applyMyTasksFilter);
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") applyMyTasksFilter();
+    });
+  }
+
   renderKPIs("myTasksKpis", myTasks);
 
   if (!myTasks.length) {
@@ -928,7 +965,6 @@ function initRegisterPage() {
   if (page !== "register") return;
 
   const registerBtn = document.getElementById("registerUserBtn");
-  const clearBtn = document.getElementById("clearRegisteredUsersBtn");
   const pillarSelect = document.getElementById("regPillar");
 
   populateRegistrationPillarDropdown();
@@ -941,14 +977,6 @@ function initRegisterPage() {
 
   if (registerBtn) {
     registerBtn.addEventListener("click", registerNewUser);
-  }
-
-  if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      localStorage.removeItem("unw_registered_users");
-      localStorage.removeItem("unw_current_user_id");
-      location.reload();
-    });
   }
 }
 
@@ -1137,22 +1165,14 @@ function generateNextPillarId() {
 
 function initPillarCreation() {
   const createBtn = document.getElementById("createPillarBtn");
-  const clearBtn = document.getElementById("clearPillarsBtn");
   const pillarSupervisor = document.getElementById("pillarSupervisor");
 
-  if (!createBtn && !clearBtn && !pillarSupervisor) return;
+  if (!createBtn && !pillarSupervisor) return;
 
   populatePillarSupervisorDropdown();
   renderCreatedPillarsTable();
 
   if (createBtn) createBtn.addEventListener("click", createNewPillar);
-
-  if (clearBtn) {
-    clearBtn.addEventListener("click", () => {
-      localStorage.removeItem("unw_created_pillars");
-      location.reload();
-    });
-  }
 }
 
 function populatePillarSupervisorDropdown() {
