@@ -21,19 +21,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 async function bootstrapApp() {
   const page = document.body.dataset.page || "";
 
-  const {
-    data: { session }
-  } = await supabase.auth.getSession();
+  if (page === "login") {
+    initLoginPage();
+    return;
+  }
 
-  // Pages libres
   if (page === "init") {
     await initInitializationPage();
     return;
   }
 
-  // Si pas connecté, redirection simple
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+
   if (!session) {
-    showGlobalError("Aucune session active. Connectez-vous d’abord à Supabase Auth.");
+    window.location.href = "login.html";
     return;
   }
 
@@ -41,6 +44,7 @@ async function bootstrapApp() {
   await loadReferenceData();
 
   initUserHeader();
+  initLogout();
   initGlobalActions();
   initTaskCreation();
   initPillarCreation();
@@ -50,6 +54,96 @@ async function bootstrapApp() {
   if (page === "dashboard") renderDashboardPage();
   if (page === "my-tasks") renderMyTasksPage();
   if (page === "my-team") renderMyTeamPage();
+}
+
+/* =========================
+   LOGIN / LOGOUT
+========================= */
+
+function initLoginPage() {
+  const loginBtn = document.getElementById("loginBtn");
+  const emailInput = document.getElementById("loginEmail");
+  const passwordInput = document.getElementById("loginPassword");
+  const messageBox = document.getElementById("loginMessage");
+
+  if (!loginBtn || !emailInput || !passwordInput || !messageBox) return;
+
+  const submitLogin = async () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
+
+    if (!email || !password) {
+      messageBox.innerHTML = `<div class="error-box">Veuillez renseigner votre email et votre mot de passe.</div>`;
+      return;
+    }
+
+    messageBox.innerHTML = `<div class="info-box">Connexion en cours...</div>`;
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      console.error(error);
+      messageBox.innerHTML = `<div class="error-box">Connexion impossible. Vérifiez vos identifiants.</div>`;
+      return;
+    }
+
+    const {
+      data: { user },
+      error: userError
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      messageBox.innerHTML = `<div class="error-box">Connexion réussie, mais impossible de récupérer le compte.</div>`;
+      return;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error(profileError);
+      messageBox.innerHTML = `<div class="error-box">Compte connecté, mais profil introuvable dans profiles.</div>`;
+      return;
+    }
+
+    if (profile.is_active === false) {
+      await supabase.auth.signOut();
+      messageBox.innerHTML = `<div class="error-box">Votre compte est désactivé.</div>`;
+      return;
+    }
+
+    messageBox.innerHTML = `<div class="success-box">Connexion réussie. Redirection en cours...</div>`;
+
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 700);
+  };
+
+  loginBtn.addEventListener("click", submitLogin);
+
+  passwordInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") submitLogin();
+  });
+
+  emailInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") submitLogin();
+  });
+}
+
+function initLogout() {
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (!logoutBtn) return;
+
+  logoutBtn.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "login.html";
+  });
 }
 
 /* =========================
@@ -82,6 +176,7 @@ async function loadCurrentUser() {
     .single();
 
   if (profileError) throw profileError;
+  if (!profile?.is_active) throw new Error("Compte désactivé.");
 
   AppState.currentUser = profile;
 }
@@ -179,7 +274,7 @@ function initUserHeader() {
   const currentUser = getCurrentUser();
 
   if (selector && currentUser) {
-    selector.innerHTML = `<option value="${currentUser.id}">${currentUser.name} — ${currentUser.role || currentUser.user_type}</option>`;
+    selector.innerHTML = `<option value="${currentUser.id}">${currentUser.name} — ${currentUser.user_type}</option>`;
     selector.disabled = true;
   }
 
@@ -198,11 +293,19 @@ function initUserHeader() {
 ========================= */
 
 function showGlobalError(message) {
+  const loginMessage = document.getElementById("loginMessage");
   const initMessage = document.getElementById("initMessage");
+
+  if (loginMessage) {
+    loginMessage.innerHTML = `<div class="error-box">${message}</div>`;
+    return;
+  }
+
   if (initMessage) {
     initMessage.innerHTML = `<div class="error-box">${message}</div>`;
     return;
   }
+
   console.error(message);
 }
 
@@ -266,10 +369,7 @@ function canDeleteTask(task) {
   if (!currentUser || !task) return false;
 
   return currentUser.user_type === "admin" ||
-    (
-      currentUser.user_type === "supervisor" &&
-      task.supervisor_id === currentUser.id
-    );
+    (currentUser.user_type === "supervisor" && task.supervisor_id === currentUser.id);
 }
 
 function canDeleteUser(targetUser) {
@@ -283,7 +383,7 @@ function canDeleteUser(targetUser) {
 }
 
 /* =========================
-   INITIALISATION APP
+   INIT APP PAGE
 ========================= */
 
 async function initInitializationPage() {
@@ -294,21 +394,9 @@ async function initInitializationPage() {
   if (!initBtn || !resetBtn || !messageBox) return;
 
   initBtn.addEventListener("click", async () => {
-    const pillarName = document.getElementById("initPillarName")?.value.trim() || "";
-    const pillarFullName = document.getElementById("initPillarFullName")?.value.trim() || "";
-    const supervisorName = document.getElementById("initSupervisorName")?.value.trim() || "";
-    const supervisorEmail = document.getElementById("initSupervisorEmail")?.value.trim() || "";
-    const supervisorRole = document.getElementById("initSupervisorRole")?.value.trim() || "";
-    const supervisorOffice = document.getElementById("initSupervisorOffice")?.value.trim() || "";
-
-    if (!pillarName || !pillarFullName || !supervisorName || !supervisorEmail || !supervisorRole) {
-      messageBox.innerHTML = `<div class="error-box">Veuillez remplir tous les champs obligatoires.</div>`;
-      return;
-    }
-
     messageBox.innerHTML = `
       <div class="info-box">
-        Étape suivante recommandée : créez d’abord l’utilisateur dans Supabase Auth, puis mettez à jour son rôle en base en <strong>supervisor</strong>, puis créez le pilier dans la page d’inscription.
+        En mode Supabase, créez d’abord vos comptes dans Authentication puis configurez les profils dans la table <strong>profiles</strong>.
       </div>
     `;
   });
@@ -316,7 +404,7 @@ async function initInitializationPage() {
   resetBtn.addEventListener("click", () => {
     messageBox.innerHTML = `
       <div class="info-box">
-        En mode Supabase, la réinitialisation ne se fait plus dans le navigateur. Elle se gère via la base de données ou les comptes Auth.
+        En mode Supabase, la réinitialisation se fait au niveau de la base de données.
       </div>
     `;
   });
@@ -376,8 +464,8 @@ async function registerNewUser() {
 
   messageBox.innerHTML = `
     <div class="info-box">
-      En mode Supabase réel, le membre doit d’abord être créé dans <strong>Authentication</strong>.
-      Ensuite, mettez à jour sa ligne dans <strong>profiles</strong> avec : rôle = staff, pillar_id = ${pillar.id}, supervisor_id = ${supervisorId}, office = "${office}".
+      Créez d’abord le compte dans <strong>Supabase Authentication</strong>, puis mettez à jour sa ligne dans <strong>profiles</strong> avec :
+      role = staff, pillar_id = ${pillar.id}, supervisor_id = ${supervisorId}, office = "${office}".
     </div>
   `;
 }
@@ -517,7 +605,7 @@ function renderCreatedPillarsTable() {
 }
 
 /* =========================
-   TÂCHES
+   TASKS
 ========================= */
 
 function initTaskCreation() {
@@ -657,7 +745,7 @@ async function deleteTask(taskId) {
 }
 
 /* =========================
-   MISE À JOUR TÂCHES
+   TASK UPDATE
 ========================= */
 
 function initGlobalActions() {
@@ -719,9 +807,7 @@ async function saveTaskUpdate() {
   const isSupervisor = currentUser.id === task.supervisor_id;
   const isAdmin = currentUser.user_type === "admin";
 
-  const payload = {
-    status
-  };
+  const payload = { status };
 
   if (isAssignedUser || isAdmin) {
     payload.progress_score = progressScore;
@@ -775,13 +861,7 @@ async function saveTaskUpdate() {
   }
 
   if (commentsToInsert.length) {
-    const { error: commentsError } = await supabase
-      .from("task_comments")
-      .insert(commentsToInsert);
-
-    if (commentsError) {
-      console.error("Erreur commentaires :", commentsError);
-    }
+    await supabase.from("task_comments").insert(commentsToInsert);
   }
 
   await reloadAndRerender();
@@ -789,8 +869,19 @@ async function saveTaskUpdate() {
 }
 
 /* =========================
-   EXPORT / IMPRESSION
+   EXPORT / PRINT
 ========================= */
+
+function initExportAndPrint() {
+  const page = document.body.dataset.page;
+  if (page !== "dashboard") return;
+
+  const exportBtn = document.getElementById("exportXlsxBtn");
+  const printBtn = document.getElementById("printPageBtn");
+
+  if (exportBtn) exportBtn.addEventListener("click", exportCurrentViewToXlsx);
+  if (printBtn) printBtn.addEventListener("click", printCurrentPage);
+}
 
 function getCurrentPageName() {
   return document.body.dataset.page || "dashboard";
@@ -798,7 +889,6 @@ function getCurrentPageName() {
 
 function getCurrentTableDataForExport() {
   const page = getCurrentPageName();
-  const currentUser = getCurrentUser();
 
   if (page === "dashboard") {
     const search = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
@@ -817,14 +907,6 @@ function getCurrentTableDataForExport() {
 
       return matchSearch && matchPillar && matchSupervisor;
     });
-  }
-
-  if (page === "my-tasks" && currentUser) {
-    return AppState.tasks.filter(t => t.assigned_to_id === currentUser.id);
-  }
-
-  if (page === "my-team" && currentUser) {
-    return AppState.tasks.filter(t => t.supervisor_id === currentUser.id);
   }
 
   return [];
@@ -874,7 +956,7 @@ function printCurrentPage() {
 }
 
 /* =========================
-   RENDU TÂCHES
+   TABLE RENDER
 ========================= */
 
 function renderTaskRows(tasks) {
@@ -932,7 +1014,7 @@ function renderKPIs(targetId, tasks) {
 }
 
 /* =========================
-   PAGES
+   PAGE RENDERS
 ========================= */
 
 function renderDashboardPage() {
