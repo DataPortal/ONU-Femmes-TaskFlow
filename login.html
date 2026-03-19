@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONU Femmes — Connexion</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="login">
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
+        <div>
+          <h1>ONU Femmes Task Manager</h1>
+          <p>Connexion sécurisée à la plateforme</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card" style="max-width:520px; margin:40px auto;">
+      <h2 class="section-title">Se connecter</h2>
+
+      <div>
+        <label for="loginEmail">Adresse email</label>
+        <input
+          id="loginEmail"
+          type="email"
+          placeholder="hypolite.reoutar@unwomen.org"
+          style="width:100%; margin-top:6px;"
+        />
+      </div>
+
+      <div style="margin-top:14px;">
+        <label for="loginPassword">Mot de passe</label>
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Votre mot de passe"
+          style="width:100%; margin-top:6px;"
+        />
+      </div>
+
+      <div class="modal-actions" style="justify-content:flex-start; margin-top:18px;">
+        <button id="loginBtn" type="button">Connexion</button>
+      </div>
+
+      <div id="loginMessage" style="margin-top:14px;"></div>
+
+      <div class="empty" style="margin-top:18px;">
+        Utilisez un compte déjà créé dans <strong>Supabase Authentication</strong>.
+        Après connexion, votre profil est récupéré depuis la table <strong>profiles</strong>.
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
