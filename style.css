@@ -111,10 +111,16 @@ header{
 .top-tools button.secondary,
 .filters button.secondary,
 .modal-content button.secondary,
-.card button.secondary{
+.card button.secondary,
+.action-btn.secondary-danger{
   background:#fff;
   color:var(--uw-blue);
   border:1px solid var(--uw-blue);
+}
+
+.action-btn.secondary-danger{
+  color:#991b1b;
+  border-color:#991b1b;
 }
 
 nav{
@@ -367,16 +373,53 @@ textarea{
   color:rgba(255,255,255,.9);
 }
 
-#taskCreateMessage,
-#registerMessage,
-#pillarMessage,
-#initMessage{
+.table-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.login-page{
+  min-height:calc(100vh - 120px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.login-card{
+  width:min(100%, 520px);
+  background:#fff;
+  border-radius:18px;
+  padding:28px;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.login-card-header{
+  margin-bottom:18px;
+}
+
+.login-card-header .section-title{
+  margin-bottom:8px;
+}
+
+.form-group{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-bottom:14px;
+}
+
+.form-group input{
+  width:100%;
+}
+
+.login-actions{
+  display:flex;
+  justify-content:flex-start;
   margin-top:8px;
 }
 
-.no-print{
-  /* classe utilitaire */
-}
+.no-print{}
 
 @media (max-width: 900px){
   .dashboard{
@@ -450,36 +493,4 @@ textarea{
     -webkit-print-color-adjust:exact;
     print-color-adjust:exact;
   }
-}
-.table-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.table-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-.action-btn.secondary-danger{
-  background:#fff;
-  color:#991b1b;
-  border:1px solid #991b1b;
-}
-.action-btn.secondary-danger{
-  background:#fff;
-  color:#991b1b;
-  border:1px solid #991b1b;
-}
-.table-actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-
-.action-btn.secondary-danger{
-  background:#fff;
-  color:#991b1b;
-  border:1px solid #991b1b;
 }
