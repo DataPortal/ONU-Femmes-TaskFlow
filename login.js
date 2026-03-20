@@ -1,35 +1,33 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  const sb = await waitForSupabaseClient();
+
   const loginBtn = document.getElementById("loginBtn");
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
   const messageBox = document.getElementById("loginMessage");
 
-  if (!window.sb) {
+  if (!sb) {
     showMessage("Client Supabase introuvable.", "error");
     return;
   }
 
-  try {
-    const {
-      data: { session },
-      error
-    } = await window.sb.auth.getSession();
+  if (!loginBtn || !emailInput || !passwordInput || !messageBox) {
+    console.error("Éléments login manquants.");
+    return;
+  }
 
+  try {
+    const { data, error } = await sb.auth.getSession();
     if (error) {
       console.error("Erreur session :", error);
     }
 
-    if (session) {
+    if (data?.session) {
       window.location.href = "index.html";
       return;
     }
   } catch (err) {
-    console.error("Erreur session :", err);
-  }
-
-  if (!loginBtn || !emailInput || !passwordInput || !messageBox) {
-    console.error("Éléments de connexion introuvables.");
-    return;
+    console.error("Erreur vérification session :", err);
   }
 
   async function handleLogin() {
@@ -41,18 +39,17 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    setLoading(true);
     showMessage("Connexion en cours...", "info");
-    loginBtn.disabled = true;
-    loginBtn.textContent = "Connexion...";
 
     try {
-      const { error: signInError } = await window.sb.auth.signInWithPassword({
+      const { error: signInError } = await sb.auth.signInWithPassword({
         email,
         password
       });
 
       if (signInError) {
-        console.error("Erreur signIn :", signInError);
+        console.error("Erreur signInWithPassword :", signInError);
         showMessage("Connexion impossible. Vérifiez vos identifiants.", "error");
         return;
       }
@@ -60,7 +57,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const {
         data: { user },
         error: userError
-      } = await window.sb.auth.getUser();
+      } = await sb.auth.getUser();
 
       if (userError || !user) {
         console.error("Erreur getUser :", userError);
@@ -68,14 +65,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      const { data: profile, error: profileError } = await window.sb
+      const { data: profile, error: profileError } = await sb
         .from("profiles")
         .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
         .eq("id", user.id)
         .single();
 
       if (profileError) {
-        console.error("Erreur profile :", profileError);
+        console.error("Erreur lecture profiles :", profileError);
         showMessage("Compte connecté, mais profil introuvable dans profiles.", "error");
         return;
       }
@@ -86,7 +83,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       if (profile.is_active === false) {
-        await window.sb.auth.signOut();
+        await sb.auth.signOut();
         showMessage("Votre compte est désactivé.", "error");
         return;
       }
@@ -95,13 +92,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       setTimeout(() => {
         window.location.href = "index.html";
-      }, 800);
+      }, 700);
     } catch (err) {
       console.error("Erreur inattendue login :", err);
       showMessage("Une erreur technique empêche la connexion.", "error");
     } finally {
-      loginBtn.disabled = false;
-      loginBtn.textContent = "Connexion";
+      setLoading(false);
     }
   }
 
@@ -115,13 +111,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.key === "Enter") handleLogin();
   });
 
-  function showMessage(text, type) {
-    if (!messageBox) return;
+  function setLoading(isLoading) {
+    loginBtn.disabled = isLoading;
+    loginBtn.textContent = isLoading ? "Connexion..." : "Connexion";
+  }
 
+  function showMessage(text, type) {
     let className = "info-box";
     if (type === "error") className = "error-box";
     if (type === "success") className = "success-box";
-
     messageBox.innerHTML = `<div class="${className}">${text}</div>`;
   }
 });
+
+async function waitForSupabaseClient(maxWaitMs = 5000) {
+  const start = Date.now();
+
+  while (!window.sb) {
+    if (Date.now() - start > maxWaitMs) {
+      console.error("Timeout: client Supabase indisponible.");
+      return null;
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+
+  return window.sb;
+}
