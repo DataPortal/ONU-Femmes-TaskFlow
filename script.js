@@ -30,16 +30,9 @@ async function waitForSupabaseClient(maxWaitMs = 3000) {
   }
 }
 
-/* =========================
-   BOOTSTRAP
-========================= */
-
 async function bootstrapApp() {
   const sb = getSb();
-
-  if (!sb) {
-    throw new Error("Client Supabase indisponible.");
-  }
+  if (!sb) throw new Error("Client Supabase indisponible.");
 
   const page = document.body.dataset.page || "";
 
@@ -72,10 +65,6 @@ async function bootstrapApp() {
   if (page === "my-tasks") renderMyTasksPage();
   if (page === "my-team") renderMyTeamPage();
 }
-
-/* =========================
-   SESSION / PROFIL
-========================= */
 
 async function loadCurrentUser() {
   const sb = getSb();
@@ -192,10 +181,6 @@ function getCurrentUser() {
   };
 }
 
-/* =========================
-   HEADER / LOGOUT
-========================= */
-
 function initUserHeader() {
   const selector = document.getElementById("currentUserSelect");
   const label = document.getElementById("currentUserLabel");
@@ -227,17 +212,13 @@ function initLogout() {
   });
 }
 
-/* =========================
-   OUTILS UI
-========================= */
-
 function showGlobalError(message) {
   const initMessage = document.getElementById("initMessage");
   if (initMessage) {
     initMessage.innerHTML = `<div class="error-box">${message}</div>`;
     return;
   }
-  alert(message);
+  console.error(message);
 }
 
 function clamp(v, min, max) {
@@ -291,10 +272,6 @@ function getSupervisorBadge(status) {
   return `<span class="badge badge-grey">${status}</span>`;
 }
 
-/* =========================
-   DROITS
-========================= */
-
 function canDeleteTask(task) {
   const currentUser = getCurrentUser();
   if (!currentUser || !task) return false;
@@ -312,10 +289,6 @@ function canDeleteUser(targetUser) {
 
   return targetUser.supervisor_id === currentUser.id;
 }
-
-/* =========================
-   INIT PAGE
-========================= */
 
 async function initInitializationPage() {
   const initBtn = document.getElementById("initializeAppBtn");
@@ -340,10 +313,6 @@ async function initInitializationPage() {
     `;
   });
 }
-
-/* =========================
-   REGISTER / PILLARS
-========================= */
 
 function initRegisterPage() {
   const page = document.body.dataset.page;
@@ -536,10 +505,6 @@ function renderCreatedPillarsTable() {
   }).join("");
 }
 
-/* =========================
-   TASKS
-========================= */
-
 function initTaskCreation() {
   populateTaskAssignedDropdown();
   populateTaskPillarDropdown();
@@ -678,10 +643,6 @@ async function deleteTask(taskId) {
   await reloadAndRerender();
 }
 
-/* =========================
-   TASK UPDATE
-========================= */
-
 function initGlobalActions() {
   const closeBtn = document.getElementById("closeTaskModalBtn");
   const saveBtn = document.getElementById("saveTaskBtn");
@@ -803,10 +764,6 @@ async function saveTaskUpdate() {
   closeTaskModal();
 }
 
-/* =========================
-   EXPORT / PRINT
-========================= */
-
 function initExportAndPrint() {
   const page = document.body.dataset.page;
   if (page !== "dashboard") return;
@@ -818,33 +775,23 @@ function initExportAndPrint() {
   if (printBtn) printBtn.addEventListener("click", printCurrentPage);
 }
 
-function getCurrentPageName() {
-  return document.body.dataset.page || "dashboard";
-}
-
 function getCurrentTableDataForExport() {
-  const page = getCurrentPageName();
+  const search = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
+  const pillar = document.getElementById("pillarFilter")?.value || "";
+  const supervisorId = document.getElementById("supervisorFilter")?.value || "";
 
-  if (page === "dashboard") {
-    const search = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
-    const pillar = document.getElementById("pillarFilter")?.value || "";
-    const supervisorId = document.getElementById("supervisorFilter")?.value || "";
+  return AppState.tasks.filter(t => {
+    const matchSearch =
+      t.title.toLowerCase().includes(search) ||
+      t.assigned_to_name.toLowerCase().includes(search) ||
+      t.supervisor_name.toLowerCase().includes(search) ||
+      (t.pillar || "").toLowerCase().includes(search);
 
-    return AppState.tasks.filter(t => {
-      const matchSearch =
-        t.title.toLowerCase().includes(search) ||
-        t.assigned_to_name.toLowerCase().includes(search) ||
-        t.supervisor_name.toLowerCase().includes(search) ||
-        (t.pillar || "").toLowerCase().includes(search);
+    const matchPillar = !pillar || t.pillar === pillar;
+    const matchSupervisor = !supervisorId || String(t.supervisor_id) === String(supervisorId);
 
-      const matchPillar = !pillar || t.pillar === pillar;
-      const matchSupervisor = !supervisorId || String(t.supervisor_id) === String(supervisorId);
-
-      return matchSearch && matchPillar && matchSupervisor;
-    });
-  }
-
-  return [];
+    return matchSearch && matchPillar && matchSupervisor;
+  });
 }
 
 function exportCurrentViewToXlsx() {
@@ -889,10 +836,6 @@ function exportCurrentViewToXlsx() {
 function printCurrentPage() {
   window.print();
 }
-
-/* =========================
-   TABLE RENDER
-========================= */
 
 function renderTaskRows(tasks) {
   return tasks.map(task => `
@@ -947,10 +890,6 @@ function renderKPIs(targetId, tasks) {
     <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
   `;
 }
-
-/* =========================
-   PAGE RENDERS
-========================= */
 
 function renderDashboardPage() {
   const searchInput = document.getElementById("searchInput");
@@ -1013,4 +952,98 @@ function renderMyTasksPage() {
   if (!currentUser || !tbody || !title) return;
 
   const myTasks = AppState.tasks.filter(t => t.assigned_to_id === currentUser.id);
-  title.textContent = `Mes tâches — ${
+  title.textContent = `Mes tâches — ${currentUser.name}`;
+
+  const applySearch = () => {
+    const search = (searchInput?.value || "").toLowerCase().trim();
+
+    const filtered = myTasks.filter(t =>
+      t.title.toLowerCase().includes(search) ||
+      (t.pillar || "").toLowerCase().includes(search) ||
+      (t.status || "").toLowerCase().includes(search) ||
+      (t.priority || "").toLowerCase().includes(search) ||
+      (t.supervisor_name || "").toLowerCase().includes(search) ||
+      (t.staff_comment || "").toLowerCase().includes(search) ||
+      (t.supervisor_comment || "").toLowerCase().includes(search)
+    );
+
+    renderKPIs("myTasksKpis", filtered);
+
+    if (!filtered.length) {
+      tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche trouvée.</span></td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = renderTaskRows(filtered);
+  };
+
+  if (searchBtn) searchBtn.addEventListener("click", applySearch);
+  if (searchInput) {
+    searchInput.addEventListener("keydown", e => {
+      if (e.key === "Enter") applySearch();
+    });
+  }
+
+  renderKPIs("myTasksKpis", myTasks);
+  tbody.innerHTML = myTasks.length
+    ? renderTaskRows(myTasks)
+    : `<tr><td colspan="12"><span class="muted">Aucune tâche assignée pour le moment.</span></td></tr>`;
+}
+
+function renderMyTeamPage() {
+  const currentUser = getCurrentUser();
+  const membersBox = document.getElementById("teamMembersList");
+  const tbody = document.getElementById("teamTasksTbody");
+  const title = document.getElementById("myTeamTitle");
+
+  if (!currentUser || !membersBox || !tbody || !title) return;
+
+  const teamMembers = AppState.users.filter(u => u.supervisor_id === currentUser.id);
+  const teamTasks = AppState.tasks.filter(t => t.supervisor_id === currentUser.id);
+
+  title.textContent = `Mon équipe — ${currentUser.name}`;
+  renderKPIs("myTeamKpis", teamTasks);
+
+  if (!teamMembers.length) {
+    membersBox.innerHTML = `<div class="empty">Vous n'avez aucun membre d'équipe rattaché comme superviseur.</div>`;
+    tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche d'équipe à afficher.</span></td></tr>`;
+    return;
+  }
+
+  membersBox.innerHTML = teamMembers.map(member => {
+    const memberTasks = teamTasks.filter(t => t.assigned_to_id === member.id);
+    const done = memberTasks.filter(t => t.status === "Terminée").length;
+    const inProgress = memberTasks.filter(t => t.status === "En cours").length;
+    const late = memberTasks.filter(t => isLate(t)).length;
+
+    return `
+      <div class="member-card">
+        <h4>${member.name}</h4>
+        <div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div>
+        <div class="kpi-inline">
+          <span>Total tâches : <strong>${memberTasks.length}</strong></span>
+          <span>En cours : <strong>${inProgress}</strong></span>
+          <span>Terminées : <strong>${done}</strong></span>
+          <span>En retard : <strong>${late}</strong></span>
+        </div>
+      </div>
+    `;
+  }).join("");
+
+  tbody.innerHTML = renderTaskRows(teamTasks);
+}
+
+async function reloadAndRerender() {
+  await loadReferenceData();
+
+  const page = document.body.dataset.page;
+  if (page === "register") {
+    populateRegistrationPillarDropdown();
+    populateRegistrationSupervisorDropdown();
+    renderRegisteredUsersTable();
+    renderCreatedPillarsTable();
+  }
+  if (page === "dashboard") renderDashboardPage();
+  if (page === "my-tasks") renderMyTasksPage();
+  if (page === "my-team") renderMyTeamPage();
+}
