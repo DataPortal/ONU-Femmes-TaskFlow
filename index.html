@@ -167,18 +167,22 @@
       <div class="modal-row">
         <div>
           <label for="taskTitle">Titre de la tâche</label>
-          <input id="taskTitle" type="text" />
+          <input id="taskTitle" type="text" placeholder="Ex. Préparer le rapport mensuel" />
         </div>
         <div>
           <label for="taskPillar">Pilier</label>
-          <select id="taskPillar"></select>
+          <select id="taskPillar">
+          <option value="">Sélectionner un pilier</option>
+      </select>
         </div>
       </div>
 
       <div class="modal-row">
         <div>
           <label for="taskAssignedTo">Assigner à</label>
-          <select id="taskAssignedTo"></select>
+          <select id="taskAssignedTo">
+        <option value="">Sélectionner un membre</option>
+        </select>
         </div>
         <div>
           <label for="taskPriority">Priorité</label>
@@ -201,7 +205,7 @@
 
       <div>
         <label for="taskDescription">Description</label>
-        <textarea id="taskDescription"></textarea>
+        <textarea id="taskDescription" placeholder="Décrire l’objectif et les livrables attendus"></textarea>
       </div>
 
       <div id="taskCreateMessage"></div>
