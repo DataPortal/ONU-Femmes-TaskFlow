@@ -15,11 +15,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     await bootstrapApp();
   } catch (error) {
     console.error("Erreur au démarrage :", error);
-    showGlobalError("Une erreur empêche le chargement de l’application.");
+    showGlobalError(`Une erreur empêche le chargement : ${error.message || error}`);
   }
 });
 
-async function waitForSupabaseClient(maxWaitMs = 3000) {
+async function waitForSupabaseClient(maxWaitMs = 5000) {
   const start = Date.now();
 
   while (!window.sb) {
@@ -37,15 +37,16 @@ async function bootstrapApp() {
   const page = document.body.dataset.page || "";
 
   if (page === "init") {
-    await initInitializationPage();
+    initInitializationPage();
     return;
   }
 
-  const {
-    data: { session }
-  } = await sb.auth.getSession();
+  const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+  if (sessionError) {
+    throw new Error(`Erreur session: ${sessionError.message}`);
+  }
 
-  if (!session) {
+  if (!sessionData?.session) {
     window.location.href = "login.html";
     return;
   }
@@ -75,26 +76,26 @@ async function loadCurrentUser() {
   } = await sb.auth.getUser();
 
   if (userError || !user) {
-    throw userError || new Error("Utilisateur non connecté.");
+    throw new Error("Utilisateur non connecté ou introuvable.");
   }
 
   const { data: profile, error: profileError } = await sb
     .from("profiles")
-    .select(`
-      id,
-      full_name,
-      email,
-      role,
-      pillar_id,
-      supervisor_id,
-      office,
-      is_active
-    `)
+    .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
     .eq("id", user.id)
     .single();
 
-  if (profileError) throw profileError;
-  if (!profile?.is_active) throw new Error("Compte désactivé.");
+  if (profileError) {
+    throw new Error(`Lecture du profil impossible: ${profileError.message}`);
+  }
+
+  if (!profile) {
+    throw new Error("Aucun profil trouvé dans profiles.");
+  }
+
+  if (!profile.is_active) {
+    throw new Error("Compte désactivé.");
+  }
 
   AppState.currentUser = profile;
 }
@@ -102,62 +103,94 @@ async function loadCurrentUser() {
 async function loadReferenceData() {
   const sb = getSb();
 
-  const [pillarsRes, usersRes, tasksRes] = await Promise.all([
+  const [pillarsRes, usersRes] = await Promise.all([
     sb.from("pillars").select("*").order("name", { ascending: true }),
     sb.from("profiles")
-      .select(`
-        id,
-        full_name,
-        email,
-        role,
-        pillar_id,
-        supervisor_id,
-        office,
-        is_active
-      `)
+      .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
       .eq("is_active", true)
-      .order("full_name", { ascending: true }),
-    sb.from("tasks_enriched").select("*").order("id", { ascending: true })
+      .order("full_name", { ascending: true })
   ]);
 
-  if (pillarsRes.error) throw pillarsRes.error;
-  if (usersRes.error) throw usersRes.error;
-  if (tasksRes.error) throw tasksRes.error;
+  if (pillarsRes.error) throw new Error(`Lecture pillars impossible: ${pillarsRes.error.message}`);
+  if (usersRes.error) throw new Error(`Lecture profiles impossible: ${usersRes.error.message}`);
 
   AppState.pillars = pillarsRes.data || [];
-
   AppState.users = (usersRes.data || []).map(u => ({
     ...u,
     name: u.full_name,
     user_type: u.role,
-    pillar: getPillarNameByIdFromArray(u.pillar_id, pillarsRes.data || [])
+    pillar: getPillarNameByIdFromArray(u.pillar_id, AppState.pillars)
   }));
 
-  AppState.tasks = (tasksRes.data || []).map(t => ({
-    id: t.id,
-    title: t.title,
-    pillar_id: t.pillar_id,
-    pillar: t.pillar_name || "",
-    assigned_to_id: t.assigned_to_id,
-    assigned_to_name: t.assigned_to_name || "Non défini",
-    assigned_to_role: t.assigned_to_role || "",
-    supervisor_id: t.supervisor_id,
-    supervisor_name: t.supervisor_name || "Non défini",
-    supervisor_role: t.supervisor_role || "",
-    priority: t.priority,
-    status: t.status,
-    progress_score: t.progress_score,
-    progress: t.progress,
-    staff_comment: t.staff_comment || "",
-    supervisor_score: t.supervisor_score,
-    supervisor_progress: t.supervisor_progress,
-    supervisor_status: t.supervisor_status,
-    supervisor_comment: t.supervisor_comment || "",
-    due_date: t.due_date,
-    description: t.description || "",
-    created_by: t.created_by,
-    created_at: t.created_at
-  }));
+  // 1er essai : vue enrichie
+  const tasksViewRes = await sb.from("tasks_enriched").select("*").order("id", { ascending: true });
+
+  if (!tasksViewRes.error) {
+    AppState.tasks = (tasksViewRes.data || []).map(t => ({
+      id: t.id,
+      title: t.title,
+      pillar_id: t.pillar_id,
+      pillar: t.pillar_name || "",
+      assigned_to_id: t.assigned_to_id,
+      assigned_to_name: t.assigned_to_name || "Non défini",
+      assigned_to_role: t.assigned_to_role || "",
+      supervisor_id: t.supervisor_id,
+      supervisor_name: t.supervisor_name || "Non défini",
+      supervisor_role: t.supervisor_role || "",
+      priority: t.priority,
+      status: t.status,
+      progress_score: t.progress_score,
+      progress: t.progress,
+      staff_comment: t.staff_comment || "",
+      supervisor_score: t.supervisor_score,
+      supervisor_progress: t.supervisor_progress,
+      supervisor_status: t.supervisor_status,
+      supervisor_comment: t.supervisor_comment || "",
+      due_date: t.due_date,
+      description: t.description || "",
+      created_by: t.created_by,
+      created_at: t.created_at
+    }));
+    return;
+  }
+
+  console.warn("tasks_enriched indisponible, fallback sur tasks :", tasksViewRes.error.message);
+
+  // 2e essai : fallback simple sur tasks
+  const tasksRes = await sb.from("tasks").select("*").order("id", { ascending: true });
+  if (tasksRes.error) throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}`);
+
+  AppState.tasks = (tasksRes.data || []).map(t => {
+    const assigned = AppState.users.find(u => u.id === t.assigned_to_id);
+    const supervisor = assigned ? AppState.users.find(u => u.id === assigned.supervisor_id) : null;
+    const pillar = AppState.pillars.find(p => p.id === t.pillar_id);
+
+    return {
+      id: t.id,
+      title: t.title,
+      pillar_id: t.pillar_id,
+      pillar: pillar ? pillar.name : "",
+      assigned_to_id: t.assigned_to_id,
+      assigned_to_name: assigned ? assigned.name : "Non défini",
+      assigned_to_role: assigned ? assigned.user_type : "",
+      supervisor_id: supervisor ? supervisor.id : null,
+      supervisor_name: supervisor ? supervisor.name : "Non défini",
+      supervisor_role: supervisor ? supervisor.user_type : "",
+      priority: t.priority,
+      status: t.status,
+      progress_score: t.progress_score,
+      progress: t.progress,
+      staff_comment: t.staff_comment || "",
+      supervisor_score: t.supervisor_score,
+      supervisor_progress: t.supervisor_progress,
+      supervisor_status: t.supervisor_status,
+      supervisor_comment: t.supervisor_comment || "",
+      due_date: t.due_date,
+      description: t.description || "",
+      created_by: t.created_by,
+      created_at: t.created_at
+    };
+  });
 }
 
 function getPillarNameByIdFromArray(pillarId, pillarsArray) {
@@ -214,11 +247,19 @@ function initLogout() {
 
 function showGlobalError(message) {
   const initMessage = document.getElementById("initMessage");
+  const debugBox = document.getElementById("pageDebugMessage");
+
+  if (debugBox) {
+    debugBox.innerHTML = `<div class="error-box">${message}</div>`;
+    return;
+  }
+
   if (initMessage) {
     initMessage.innerHTML = `<div class="error-box">${message}</div>`;
     return;
   }
-  console.error(message);
+
+  alert(message);
 }
 
 function clamp(v, min, max) {
@@ -280,17 +321,7 @@ function canDeleteTask(task) {
     (currentUser.user_type === "supervisor" && task.supervisor_id === currentUser.id);
 }
 
-function canDeleteUser(targetUser) {
-  const currentUser = getCurrentUser();
-  if (!currentUser || !targetUser) return false;
-
-  if (currentUser.user_type === "admin") return true;
-  if (currentUser.user_type !== "supervisor") return false;
-
-  return targetUser.supervisor_id === currentUser.id;
-}
-
-async function initInitializationPage() {
+function initInitializationPage() {
   const initBtn = document.getElementById("initializeAppBtn");
   const resetBtn = document.getElementById("resetAppBtn");
   const messageBox = document.getElementById("initMessage");
@@ -298,350 +329,17 @@ async function initInitializationPage() {
   if (!initBtn || !resetBtn || !messageBox) return;
 
   initBtn.addEventListener("click", async () => {
-    messageBox.innerHTML = `
-      <div class="info-box">
-        En mode Supabase, créez d’abord vos comptes dans Authentication puis configurez les profils dans la table <strong>profiles</strong>.
-      </div>
-    `;
+    messageBox.innerHTML = `<div class="info-box">En mode Supabase, créez d’abord les comptes dans Authentication puis configurez profiles.</div>`;
   });
 
   resetBtn.addEventListener("click", () => {
-    messageBox.innerHTML = `
-      <div class="info-box">
-        En mode Supabase, la réinitialisation se fait au niveau de la base de données.
-      </div>
-    `;
+    messageBox.innerHTML = `<div class="info-box">La réinitialisation se fait dans Supabase.</div>`;
   });
 }
 
-function initRegisterPage() {
-  const page = document.body.dataset.page;
-  if (page !== "register") return;
-
-  populateRegistrationPillarDropdown();
-  populateRegistrationSupervisorDropdown();
-  renderRegisteredUsersTable();
-  renderCreatedPillarsTable();
-
-  const pillarSelect = document.getElementById("regPillar");
-  if (pillarSelect) {
-    pillarSelect.addEventListener("change", populateRegistrationSupervisorDropdown);
-  }
-
-  const registerBtn = document.getElementById("registerUserBtn");
-  if (registerBtn) {
-    registerBtn.addEventListener("click", registerNewUser);
-  }
-}
-
-async function registerNewUser() {
-  const currentUser = getCurrentUser();
-  const messageBox = document.getElementById("registerMessage");
-
-  if (!currentUser || !messageBox) return;
-
-  if (currentUser.user_type !== "supervisor" && currentUser.user_type !== "admin") {
-    messageBox.innerHTML = `<div class="error-box">Seuls les superviseurs et admins peuvent enregistrer un membre.</div>`;
-    return;
-  }
-
-  const name = document.getElementById("regName")?.value.trim() || "";
-  const email = document.getElementById("regEmail")?.value.trim() || "";
-  const roleLabel = document.getElementById("regRole")?.value.trim() || "";
-  const pillarName = document.getElementById("regPillar")?.value || "";
-  const supervisorId = document.getElementById("regSupervisor")?.value || null;
-  const office = document.getElementById("regOffice")?.value.trim() || "";
-
-  if (!name || !email || !roleLabel || !pillarName || !supervisorId) {
-    messageBox.innerHTML = `<div class="error-box">Veuillez renseigner tous les champs requis.</div>`;
-    return;
-  }
-
-  const pillar = AppState.pillars.find(p => p.name === pillarName);
-  if (!pillar) {
-    messageBox.innerHTML = `<div class="error-box">Pilier introuvable.</div>`;
-    return;
-  }
-
-  messageBox.innerHTML = `
-    <div class="info-box">
-      Créez d’abord le compte dans <strong>Supabase Authentication</strong>, puis mettez à jour sa ligne dans <strong>profiles</strong> avec :
-      role = staff, pillar_id = ${pillar.id}, supervisor_id = ${supervisorId}, office = "${office}".
-    </div>
-  `;
-}
-
-function populateRegistrationPillarDropdown() {
-  const select = document.getElementById("regPillar");
-  if (!select) return;
-
-  select.innerHTML = `
-    <option value="">Sélectionner</option>
-    ${AppState.pillars.map(p => `<option value="${p.name}">${p.name} — ${p.full_name}</option>`).join("")}
-  `;
-}
-
-function populateRegistrationSupervisorDropdown() {
-  const pillarName = document.getElementById("regPillar")?.value || "";
-  const select = document.getElementById("regSupervisor");
-  if (!select) return;
-
-  let supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
-
-  if (pillarName) {
-    supervisors = supervisors.filter(u => u.pillar === pillarName);
-  }
-
-  select.innerHTML = `
-    <option value="">Sélectionner un superviseur</option>
-    ${supervisors.map(u => `<option value="${u.id}">${u.name} — ${u.user_type}</option>`).join("")}
-  `;
-}
-
-function renderRegisteredUsersTable() {
-  const tbody = document.getElementById("registeredUsersTbody");
-  if (!tbody) return;
-
-  if (!AppState.users.length) {
-    tbody.innerHTML = `<tr><td colspan="8"><span class="muted">Aucun utilisateur disponible.</span></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = AppState.users.map(user => {
-    const supervisor = AppState.users.find(u => u.id === user.supervisor_id);
-    return `
-      <tr>
-        <td>${user.id}</td>
-        <td>${user.name}</td>
-        <td>${user.user_type}</td>
-        <td>${user.pillar || "—"}</td>
-        <td>${supervisor ? supervisor.name : "Non défini"}</td>
-        <td>${user.email || "—"}</td>
-        <td>${user.office || "—"}</td>
-        <td>${canDeleteUser(user) ? `<button class="action-btn" type="button">Supprimer</button>` : `<span class="muted">Non autorisé</span>`}</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function initPillarCreation() {
-  const page = document.body.dataset.page;
-  if (page !== "register") return;
-
-  populatePillarSupervisorDropdown();
-
-  const createBtn = document.getElementById("createPillarBtn");
-  if (createBtn) createBtn.addEventListener("click", createNewPillar);
-}
-
-function populatePillarSupervisorDropdown() {
-  const select = document.getElementById("pillarSupervisor");
-  if (!select) return;
-
-  const candidates = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
-
-  select.innerHTML = `
-    <option value="">Sélectionner un superviseur</option>
-    ${candidates.map(u => `<option value="${u.id}">${u.name} — ${u.user_type}</option>`).join("")}
-  `;
-}
-
-async function createNewPillar() {
-  const currentUser = getCurrentUser();
-  const messageBox = document.getElementById("pillarMessage");
-  const sb = getSb();
-
-  if (!currentUser || !messageBox || !sb) return;
-
-  if (currentUser.user_type !== "supervisor" && currentUser.user_type !== "admin") {
-    messageBox.innerHTML = `<div class="error-box">Seuls les superviseurs et admins peuvent créer un pilier.</div>`;
-    return;
-  }
-
-  const name = document.getElementById("pillarName")?.value.trim() || "";
-  const fullName = document.getElementById("pillarFullName")?.value.trim() || "";
-  const supervisorId = document.getElementById("pillarSupervisor")?.value || null;
-
-  if (!name || !fullName || !supervisorId) {
-    messageBox.innerHTML = `<div class="error-box">Veuillez remplir tous les champs du pilier.</div>`;
-    return;
-  }
-
-  const { error } = await sb.from("pillars").insert([{
-    name,
-    full_name: fullName,
-    supervisor_profile_id: supervisorId
-  }]);
-
-  if (error) {
-    console.error(error);
-    messageBox.innerHTML = `<div class="error-box">Impossible de créer le pilier.</div>`;
-    return;
-  }
-
-  messageBox.innerHTML = `<div class="success-box">Pilier créé avec succès.</div>`;
-  await reloadAndRerender();
-}
-
-function renderCreatedPillarsTable() {
-  const tbody = document.getElementById("pillarsTbody");
-  if (!tbody) return;
-
-  if (!AppState.pillars.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><span class="muted">Aucun pilier disponible.</span></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = AppState.pillars.map(pillar => {
-    const supervisor = AppState.users.find(u => u.id === pillar.supervisor_profile_id);
-    return `
-      <tr>
-        <td>${pillar.id}</td>
-        <td>${pillar.name}</td>
-        <td>${pillar.full_name}</td>
-        <td>${supervisor ? supervisor.name : "Non défini"}</td>
-      </tr>
-    `;
-  }).join("");
-}
-
-function initTaskCreation() {
-  populateTaskAssignedDropdown();
-  populateTaskPillarDropdown();
-
-  const openBtn = document.getElementById("openCreateTaskModalBtn");
-  const closeBtn = document.getElementById("closeCreateTaskModalBtn");
-  const saveBtn = document.getElementById("createTaskBtn");
-  const modal = document.getElementById("createTaskModal");
-
-  if (openBtn) openBtn.addEventListener("click", openCreateTaskModal);
-  if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
-  if (saveBtn) saveBtn.addEventListener("click", createNewTask);
-
-  window.addEventListener("click", e => {
-    if (e.target === modal) closeCreateTaskModal();
-  });
-}
-
-function populateTaskAssignedDropdown() {
-  const select = document.getElementById("taskAssignedTo");
-  if (!select) return;
-
-  const staffList = AppState.users.filter(u =>
-    u.user_type === "staff" || u.user_type === "supervisor" || u.user_type === "admin"
-  );
-
-  select.innerHTML = `
-    <option value="">Sélectionner un membre du staff</option>
-    ${staffList.map(u => `<option value="${u.id}">${u.name} — ${u.user_type} (${u.pillar || "Sans pilier"})</option>`).join("")}
-  `;
-}
-
-function populateTaskPillarDropdown() {
-  const select = document.getElementById("taskPillar");
-  if (!select) return;
-
-  select.innerHTML = `
-    <option value="">Sélectionner</option>
-    ${AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("")}
-  `;
-}
-
-function openCreateTaskModal() {
-  const modal = document.getElementById("createTaskModal");
-  if (!modal) return;
-  populateTaskAssignedDropdown();
-  populateTaskPillarDropdown();
-  modal.style.display = "block";
-}
-
-function closeCreateTaskModal() {
-  const modal = document.getElementById("createTaskModal");
-  if (modal) modal.style.display = "none";
-}
-
-async function createNewTask() {
-  const currentUser = getCurrentUser();
-  const messageBox = document.getElementById("taskCreateMessage");
-  const sb = getSb();
-
-  if (!currentUser || !messageBox || !sb) return;
-
-  if (currentUser.user_type !== "supervisor" && currentUser.user_type !== "admin") {
-    messageBox.innerHTML = `<div class="error-box">Seuls les superviseurs et admins peuvent créer une tâche.</div>`;
-    return;
-  }
-
-  const title = document.getElementById("taskTitle")?.value.trim() || "";
-  const pillarName = document.getElementById("taskPillar")?.value || "";
-  const assignedToId = document.getElementById("taskAssignedTo")?.value || "";
-  const priority = document.getElementById("taskPriority")?.value || "Moyenne";
-  const dueDate = document.getElementById("taskDueDate")?.value || null;
-  const description = document.getElementById("taskDescription")?.value.trim() || "";
-
-  if (!title || !pillarName || !assignedToId) {
-    messageBox.innerHTML = `<div class="error-box">Veuillez renseigner le titre, le pilier et le membre assigné.</div>`;
-    return;
-  }
-
-  const pillar = AppState.pillars.find(p => p.name === pillarName);
-  if (!pillar) {
-    messageBox.innerHTML = `<div class="error-box">Pilier introuvable.</div>`;
-    return;
-  }
-
-  const payload = {
-    title,
-    pillar_id: pillar.id,
-    assigned_to_id: assignedToId,
-    priority,
-    status: "Non commencée",
-    progress_score: 0,
-    progress: 0,
-    supervisor_score: 0,
-    supervisor_progress: 0,
-    supervisor_status: "Non évalué",
-    due_date: dueDate,
-    description,
-    created_by: currentUser.id
-  };
-
-  const { error } = await sb.from("tasks").insert([payload]);
-
-  if (error) {
-    console.error(error);
-    messageBox.innerHTML = `<div class="error-box">Erreur lors de la création de la tâche.</div>`;
-    return;
-  }
-
-  messageBox.innerHTML = `<div class="success-box">Tâche créée avec succès.</div>`;
-  await reloadAndRerender();
-  closeCreateTaskModal();
-}
-
-async function deleteTask(taskId) {
-  const task = AppState.tasks.find(t => t.id === taskId);
-  const sb = getSb();
-  if (!task || !sb) return;
-
-  if (!canDeleteTask(task)) {
-    alert("Seuls les superviseurs et les admins peuvent supprimer les tâches.");
-    return;
-  }
-
-  const confirmed = confirm(`Supprimer la tâche "${task.title}" ?`);
-  if (!confirmed) return;
-
-  const { error } = await sb.from("tasks").delete().eq("id", taskId);
-
-  if (error) {
-    console.error(error);
-    alert("Impossible de supprimer la tâche.");
-    return;
-  }
-
-  await reloadAndRerender();
-}
+function initRegisterPage() {}
+function initPillarCreation() {}
+function initTaskCreation() {}
 
 function initGlobalActions() {
   const closeBtn = document.getElementById("closeTaskModalBtn");
@@ -718,50 +416,14 @@ async function saveTaskUpdate() {
     payload.supervisor_comment = appendComment(task.supervisor_comment, currentUser.name, newSupervisorComment);
   }
 
-  if (status === "Terminée" && (payload.progress ?? task.progress) < 100) {
-    payload.progress_score = 10;
-    payload.progress = 100;
-  }
-
-  const { error } = await sb
-    .from("tasks")
-    .update(payload)
-    .eq("id", taskId);
-
+  const { error } = await sb.from("tasks").update(payload).eq("id", taskId);
   if (error) {
-    console.error(error);
-    alert("Erreur lors de la mise à jour.");
+    alert(`Erreur mise à jour: ${error.message}`);
     return;
   }
 
-  const commentsToInsert = [];
-
-  if (newStaffComment && (isAssignedUser || isAdmin)) {
-    commentsToInsert.push({
-      task_id: taskId,
-      author_id: currentUser.id,
-      author_role: currentUser.user_type,
-      comment_text: newStaffComment,
-      comment_type: "staff"
-    });
-  }
-
-  if (newSupervisorComment && (isSupervisor || isAdmin)) {
-    commentsToInsert.push({
-      task_id: taskId,
-      author_id: currentUser.id,
-      author_role: currentUser.user_type,
-      comment_text: newSupervisorComment,
-      comment_type: "supervisor"
-    });
-  }
-
-  if (commentsToInsert.length) {
-    await sb.from("task_comments").insert(commentsToInsert);
-  }
-
-  await reloadAndRerender();
   closeTaskModal();
+  await reloadAndRerender();
 }
 
 function initExportAndPrint() {
@@ -776,61 +438,36 @@ function initExportAndPrint() {
 }
 
 function getCurrentTableDataForExport() {
-  const search = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
-  const pillar = document.getElementById("pillarFilter")?.value || "";
-  const supervisorId = document.getElementById("supervisorFilter")?.value || "";
-
-  return AppState.tasks.filter(t => {
-    const matchSearch =
-      t.title.toLowerCase().includes(search) ||
-      t.assigned_to_name.toLowerCase().includes(search) ||
-      t.supervisor_name.toLowerCase().includes(search) ||
-      (t.pillar || "").toLowerCase().includes(search);
-
-    const matchPillar = !pillar || t.pillar === pillar;
-    const matchSupervisor = !supervisorId || String(t.supervisor_id) === String(supervisorId);
-
-    return matchSearch && matchPillar && matchSupervisor;
-  });
+  return AppState.tasks;
 }
 
 function exportCurrentViewToXlsx() {
-  try {
-    const rows = getCurrentTableDataForExport();
-
-    const exportData = rows.map(task => ({
-      ID: task.id,
-      Tache: task.title,
-      Pilier: task.pillar || "",
-      Assigne_a: task.assigned_to_name || "",
-      Role_assigne: task.assigned_to_role || "",
-      Superviseur: task.supervisor_name || "",
-      Role_superviseur: task.supervisor_role || "",
-      Priorite: task.priority || "",
-      Statut: task.status || "",
-      Score_staff: task.progress_score ?? 0,
-      Progression_staff_pourcent: task.progress ?? 0,
-      Commentaire_staff: task.staff_comment || "",
-      Score_superviseur: task.supervisor_score ?? 0,
-      Progression_superviseur_pourcent: task.supervisor_progress ?? 0,
-      Appreciation_superviseur: task.supervisor_status || "",
-      Commentaire_superviseur: task.supervisor_comment || "",
-      Echeance: task.due_date || "",
-      En_retard: isLate(task) ? "Oui" : "Non"
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Taches");
-
-    const now = new Date();
-    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
-
-    XLSX.writeFile(workbook, `UNW_TaskManager_dashboard_${stamp}.xlsx`);
-  } catch (error) {
-    console.error("Erreur export XLSX :", error);
-    alert("Impossible d’exporter les données.");
+  if (typeof XLSX === "undefined") {
+    alert("Librairie XLSX indisponible.");
+    return;
   }
+
+  const rows = getCurrentTableDataForExport();
+
+  const exportData = rows.map(task => ({
+    ID: task.id,
+    Tache: task.title,
+    Pilier: task.pillar || "",
+    Assigne_a: task.assigned_to_name || "",
+    Superviseur: task.supervisor_name || "",
+    Priorite: task.priority || "",
+    Statut: task.status || "",
+    Score_staff: task.progress_score ?? 0,
+    Progression_staff_pourcent: task.progress ?? 0,
+    Score_superviseur: task.supervisor_score ?? 0,
+    Progression_superviseur_pourcent: task.supervisor_progress ?? 0,
+    Echeance: task.due_date || ""
+  }));
+
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Taches");
+  XLSX.writeFile(workbook, "UNW_TaskManager.xlsx");
 }
 
 function printCurrentPage() {
@@ -841,33 +478,29 @@ function renderTaskRows(tasks) {
   return tasks.map(task => `
     <tr>
       <td>${task.id}</td>
-      <td>
-        <strong>${task.title}</strong><br>
-        <span class="muted">${task.pillar || ""}</span>
-      </td>
-      <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role}</span></td>
-      <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role}</span></td>
+      <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span></td>
+      <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role || ""}</span></td>
+      <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role || ""}</span></td>
       <td>${getPriorityBadge(task.priority)}</td>
       <td>${getStatusBadge(task.status)}</td>
       <td>
         <div class="progress-track">
           <div class="progress-fill" style="width:${task.progress || 0}%"></div>
         </div>
-        Score: ${task.progress_score ?? 0} / 10<br>${task.progress || 0}%
+        ${task.progress || 0}%
       </td>
-      <td style="white-space: pre-line;">${task.staff_comment || '<span class="muted">—</span>'}</td>
+      <td style="white-space:pre-line;">${task.staff_comment || "—"}</td>
       <td>
         <div class="progress-track">
           <div class="progress-fill supervisor" style="width:${task.supervisor_progress || 0}%"></div>
         </div>
-        Score: ${task.supervisor_score ?? 0} / 10<br>${task.supervisor_progress || 0}%<br>${getSupervisorBadge(task.supervisor_status)}
+        ${task.supervisor_progress || 0}%<br>${getSupervisorBadge(task.supervisor_status)}
       </td>
-      <td style="white-space: pre-line;">${task.supervisor_comment || '<span class="muted">—</span>'}</td>
+      <td style="white-space:pre-line;">${task.supervisor_comment || "—"}</td>
       <td class="${isLate(task) ? 'late' : ''}">${task.due_date || ""}</td>
-      <td>
-        <div class="table-actions no-print">
+      <td class="no-print">
+        <div class="table-actions">
           <button class="action-btn" type="button" onclick="openTaskModal(${task.id})">Mettre à jour</button>
-          ${canDeleteTask(task) ? `<button class="action-btn secondary-danger" type="button" onclick="deleteTask(${task.id})">Supprimer</button>` : ``}
         </div>
       </td>
     </tr>
@@ -892,102 +525,26 @@ function renderKPIs(targetId, tasks) {
 }
 
 function renderDashboardPage() {
-  const searchInput = document.getElementById("searchInput");
-  const searchBtn = document.getElementById("searchBtn");
-  const pillarFilter = document.getElementById("pillarFilter");
-  const supervisorFilter = document.getElementById("supervisorFilter");
   const tbody = document.getElementById("tasksTbody");
+  if (!tbody) return;
 
-  if (!searchInput || !searchBtn || !pillarFilter || !supervisorFilter || !tbody) return;
-
-  pillarFilter.innerHTML =
-    `<option value="">Tous les piliers</option>` +
-    AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
-
-  const supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
-  supervisorFilter.innerHTML =
-    `<option value="">Tous les superviseurs</option>` +
-    supervisors.map(s => `<option value="${s.id}">${s.name}</option>`).join("");
-
-  const applyFilters = () => {
-    const search = (searchInput.value || "").toLowerCase().trim();
-    const pillar = pillarFilter.value;
-    const supervisorId = supervisorFilter.value;
-
-    const filtered = AppState.tasks.filter(t => {
-      const matchSearch =
-        t.title.toLowerCase().includes(search) ||
-        t.assigned_to_name.toLowerCase().includes(search) ||
-        t.supervisor_name.toLowerCase().includes(search) ||
-        (t.pillar || "").toLowerCase().includes(search);
-
-      const matchPillar = !pillar || t.pillar === pillar;
-      const matchSupervisor = !supervisorId || String(t.supervisor_id) === String(supervisorId);
-
-      return matchSearch && matchPillar && matchSupervisor;
-    });
-
-    tbody.innerHTML = renderTaskRows(filtered);
-    renderKPIs("dashboardKpis", filtered);
-  };
-
-  searchBtn.addEventListener("click", applyFilters);
-  searchInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") applyFilters();
-  });
-  pillarFilter.addEventListener("change", applyFilters);
-  supervisorFilter.addEventListener("change", applyFilters);
-
-  tbody.innerHTML = renderTaskRows(AppState.tasks);
   renderKPIs("dashboardKpis", AppState.tasks);
+  tbody.innerHTML = renderTaskRows(AppState.tasks);
 }
 
 function renderMyTasksPage() {
   const currentUser = getCurrentUser();
   const tbody = document.getElementById("myTasksTbody");
   const title = document.getElementById("myTasksTitle");
-  const searchInput = document.getElementById("myTasksSearchInput");
-  const searchBtn = document.getElementById("myTasksSearchBtn");
 
   if (!currentUser || !tbody || !title) return;
 
   const myTasks = AppState.tasks.filter(t => t.assigned_to_id === currentUser.id);
   title.textContent = `Mes tâches — ${currentUser.name}`;
-
-  const applySearch = () => {
-    const search = (searchInput?.value || "").toLowerCase().trim();
-
-    const filtered = myTasks.filter(t =>
-      t.title.toLowerCase().includes(search) ||
-      (t.pillar || "").toLowerCase().includes(search) ||
-      (t.status || "").toLowerCase().includes(search) ||
-      (t.priority || "").toLowerCase().includes(search) ||
-      (t.supervisor_name || "").toLowerCase().includes(search) ||
-      (t.staff_comment || "").toLowerCase().includes(search) ||
-      (t.supervisor_comment || "").toLowerCase().includes(search)
-    );
-
-    renderKPIs("myTasksKpis", filtered);
-
-    if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche trouvée.</span></td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = renderTaskRows(filtered);
-  };
-
-  if (searchBtn) searchBtn.addEventListener("click", applySearch);
-  if (searchInput) {
-    searchInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") applySearch();
-    });
-  }
-
   renderKPIs("myTasksKpis", myTasks);
   tbody.innerHTML = myTasks.length
     ? renderTaskRows(myTasks)
-    : `<tr><td colspan="12"><span class="muted">Aucune tâche assignée pour le moment.</span></td></tr>`;
+    : `<tr><td colspan="12"><span class="muted">Aucune tâche assignée.</span></td></tr>`;
 }
 
 function renderMyTeamPage() {
@@ -1004,45 +561,19 @@ function renderMyTeamPage() {
   title.textContent = `Mon équipe — ${currentUser.name}`;
   renderKPIs("myTeamKpis", teamTasks);
 
-  if (!teamMembers.length) {
-    membersBox.innerHTML = `<div class="empty">Vous n'avez aucun membre d'équipe rattaché comme superviseur.</div>`;
-    tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche d'équipe à afficher.</span></td></tr>`;
-    return;
-  }
+  membersBox.innerHTML = teamMembers.length
+    ? teamMembers.map(member => `<div class="member-card"><h4>${member.name}</h4><div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div></div>`).join("")
+    : `<div class="empty">Aucun membre rattaché.</div>`;
 
-  membersBox.innerHTML = teamMembers.map(member => {
-    const memberTasks = teamTasks.filter(t => t.assigned_to_id === member.id);
-    const done = memberTasks.filter(t => t.status === "Terminée").length;
-    const inProgress = memberTasks.filter(t => t.status === "En cours").length;
-    const late = memberTasks.filter(t => isLate(t)).length;
-
-    return `
-      <div class="member-card">
-        <h4>${member.name}</h4>
-        <div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div>
-        <div class="kpi-inline">
-          <span>Total tâches : <strong>${memberTasks.length}</strong></span>
-          <span>En cours : <strong>${inProgress}</strong></span>
-          <span>Terminées : <strong>${done}</strong></span>
-          <span>En retard : <strong>${late}</strong></span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  tbody.innerHTML = renderTaskRows(teamTasks);
+  tbody.innerHTML = teamTasks.length
+    ? renderTaskRows(teamTasks)
+    : `<tr><td colspan="12"><span class="muted">Aucune tâche d'équipe.</span></td></tr>`;
 }
 
 async function reloadAndRerender() {
   await loadReferenceData();
 
   const page = document.body.dataset.page;
-  if (page === "register") {
-    populateRegistrationPillarDropdown();
-    populateRegistrationSupervisorDropdown();
-    renderRegisteredUsersTable();
-    renderCreatedPillarsTable();
-  }
   if (page === "dashboard") renderDashboardPage();
   if (page === "my-tasks") renderMyTasksPage();
   if (page === "my-team") renderMyTeamPage();
