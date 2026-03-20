@@ -5,6 +5,10 @@ const AppState = {
   currentUser: null
 };
 
+function getSb() {
+  return window.supabaseClient;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await bootstrapApp();
@@ -19,12 +23,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 ========================= */
 
 async function bootstrapApp() {
+  const sb = getSb();
+  if (!sb) {
+    throw new Error("Client Supabase indisponible.");
+  }
+
   const page = document.body.dataset.page || "";
 
   if (page === "login") {
     const {
       data: { session }
-    } = await supabase.auth.getSession();
+    } = await sb.auth.getSession();
 
     if (session) {
       window.location.href = "index.html";
@@ -42,7 +51,7 @@ async function bootstrapApp() {
 
   const {
     data: { session }
-  } = await supabase.auth.getSession();
+  } = await sb.auth.getSession();
 
   if (!session) {
     window.location.href = "login.html";
@@ -70,12 +79,13 @@ async function bootstrapApp() {
 ========================= */
 
 function initLoginPage() {
+  const sb = getSb();
   const loginBtn = document.getElementById("loginBtn");
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
   const messageBox = document.getElementById("loginMessage");
 
-  if (!loginBtn || !emailInput || !passwordInput || !messageBox) return;
+  if (!sb || !loginBtn || !emailInput || !passwordInput || !messageBox) return;
 
   const submitLogin = async () => {
     const email = emailInput.value.trim();
@@ -88,7 +98,7 @@ function initLoginPage() {
 
     messageBox.innerHTML = `<div class="info-box">Connexion en cours...</div>`;
 
-    const { error } = await supabase.auth.signInWithPassword({
+    const { error } = await sb.auth.signInWithPassword({
       email,
       password
     });
@@ -102,14 +112,14 @@ function initLoginPage() {
     const {
       data: { user },
       error: userError
-    } = await supabase.auth.getUser();
+    } = await sb.auth.getUser();
 
     if (userError || !user) {
       messageBox.innerHTML = `<div class="error-box">Connexion réussie, mais impossible de récupérer le compte.</div>`;
       return;
     }
 
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await sb
       .from("profiles")
       .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
       .eq("id", user.id)
@@ -122,7 +132,7 @@ function initLoginPage() {
     }
 
     if (profile.is_active === false) {
-      await supabase.auth.signOut();
+      await sb.auth.signOut();
       messageBox.innerHTML = `<div class="error-box">Votre compte est désactivé.</div>`;
       return;
     }
@@ -146,11 +156,12 @@ function initLoginPage() {
 }
 
 function initLogout() {
+  const sb = getSb();
   const logoutBtn = document.getElementById("logoutBtn");
-  if (!logoutBtn) return;
+  if (!sb || !logoutBtn) return;
 
   logoutBtn.addEventListener("click", async () => {
-    await supabase.auth.signOut();
+    await sb.auth.signOut();
     window.location.href = "login.html";
   });
 }
@@ -160,16 +171,18 @@ function initLogout() {
 ========================= */
 
 async function loadCurrentUser() {
+  const sb = getSb();
+
   const {
     data: { user },
     error: userError
-  } = await supabase.auth.getUser();
+  } = await sb.auth.getUser();
 
   if (userError || !user) {
     throw userError || new Error("Utilisateur non connecté.");
   }
 
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await sb
     .from("profiles")
     .select(`
       id,
@@ -191,14 +204,11 @@ async function loadCurrentUser() {
 }
 
 async function loadReferenceData() {
-  const [pillarsRes, usersRes, tasksRes] = await Promise.all([
-    supabase
-      .from("pillars")
-      .select("*")
-      .order("name", { ascending: true }),
+  const sb = getSb();
 
-    supabase
-      .from("profiles")
+  const [pillarsRes, usersRes, tasksRes] = await Promise.all([
+    sb.from("pillars").select("*").order("name", { ascending: true }),
+    sb.from("profiles")
       .select(`
         id,
         full_name,
@@ -211,11 +221,7 @@ async function loadReferenceData() {
       `)
       .eq("is_active", true)
       .order("full_name", { ascending: true }),
-
-    supabase
-      .from("tasks_enriched")
-      .select("*")
-      .order("id", { ascending: true })
+    sb.from("tasks_enriched").select("*").order("id", { ascending: true })
   ]);
 
   if (pillarsRes.error) throw pillarsRes.error;
@@ -564,8 +570,9 @@ function populatePillarSupervisorDropdown() {
 async function createNewPillar() {
   const currentUser = getCurrentUser();
   const messageBox = document.getElementById("pillarMessage");
+  const sb = getSb();
 
-  if (!currentUser || !messageBox) return;
+  if (!currentUser || !messageBox || !sb) return;
 
   if (currentUser.user_type !== "supervisor" && currentUser.user_type !== "admin") {
     messageBox.innerHTML = `<div class="error-box">Seuls les superviseurs et admins peuvent créer un pilier.</div>`;
@@ -581,7 +588,7 @@ async function createNewPillar() {
     return;
   }
 
-  const { error } = await supabase.from("pillars").insert([{
+  const { error } = await sb.from("pillars").insert([{
     name,
     full_name: fullName,
     supervisor_profile_id: supervisorId
@@ -595,28 +602,6 @@ async function createNewPillar() {
 
   messageBox.innerHTML = `<div class="success-box">Pilier créé avec succès.</div>`;
   await reloadAndRerender();
-}
-
-function renderCreatedPillarsTable() {
-  const tbody = document.getElementById("pillarsTbody");
-  if (!tbody) return;
-
-  if (!AppState.pillars.length) {
-    tbody.innerHTML = `<tr><td colspan="4"><span class="muted">Aucun pilier disponible.</span></td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = AppState.pillars.map(pillar => {
-    const supervisor = AppState.users.find(u => u.id === pillar.supervisor_profile_id);
-    return `
-      <tr>
-        <td>${pillar.id}</td>
-        <td>${pillar.name}</td>
-        <td>${pillar.full_name}</td>
-        <td>${supervisor ? supervisor.name : "Non défini"}</td>
-      </tr>
-    `;
-  }).join("");
 }
 
 /* =========================
@@ -681,8 +666,9 @@ function closeCreateTaskModal() {
 async function createNewTask() {
   const currentUser = getCurrentUser();
   const messageBox = document.getElementById("taskCreateMessage");
+  const sb = getSb();
 
-  if (!currentUser || !messageBox) return;
+  if (!currentUser || !messageBox || !sb) return;
 
   if (currentUser.user_type !== "supervisor" && currentUser.user_type !== "admin") {
     messageBox.innerHTML = `<div class="error-box">Seuls les superviseurs et admins peuvent créer une tâche.</div>`;
@@ -723,7 +709,7 @@ async function createNewTask() {
     created_by: currentUser.id
   };
 
-  const { error } = await supabase.from("tasks").insert([payload]);
+  const { error } = await sb.from("tasks").insert([payload]);
 
   if (error) {
     console.error(error);
@@ -738,7 +724,8 @@ async function createNewTask() {
 
 async function deleteTask(taskId) {
   const task = AppState.tasks.find(t => t.id === taskId);
-  if (!task) return;
+  const sb = getSb();
+  if (!task || !sb) return;
 
   if (!canDeleteTask(task)) {
     alert("Seuls les superviseurs et les admins peuvent supprimer les tâches.");
@@ -748,7 +735,7 @@ async function deleteTask(taskId) {
   const confirmed = confirm(`Supprimer la tâche "${task.title}" ?`);
   if (!confirmed) return;
 
-  const { error } = await supabase.from("tasks").delete().eq("id", taskId);
+  const { error } = await sb.from("tasks").delete().eq("id", taskId);
 
   if (error) {
     console.error(error);
@@ -801,7 +788,8 @@ function closeTaskModal() {
 
 async function saveTaskUpdate() {
   const currentUser = getCurrentUser();
-  if (!currentUser) return;
+  const sb = getSb();
+  if (!currentUser || !sb) return;
 
   const taskId = Number(document.getElementById("editTaskId").value);
   const task = AppState.tasks.find(t => t.id === taskId);
@@ -842,7 +830,7 @@ async function saveTaskUpdate() {
     payload.progress = 100;
   }
 
-  const { error } = await supabase
+  const { error } = await sb
     .from("tasks")
     .update(payload)
     .eq("id", taskId);
@@ -876,7 +864,7 @@ async function saveTaskUpdate() {
   }
 
   if (commentsToInsert.length) {
-    await supabase.from("task_comments").insert(commentsToInsert);
+    await sb.from("task_comments").insert(commentsToInsert);
   }
 
   await reloadAndRerender();
