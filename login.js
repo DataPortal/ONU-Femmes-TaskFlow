@@ -16,18 +16,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // IMPORTANT :
+  // on ne redirige vers index QUE si session + user + profile valide
   try {
-    const { data, error } = await sb.auth.getSession();
-    if (error) {
-      console.error("Erreur session :", error);
+    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+
+    if (sessionError) {
+      console.error("Erreur session :", sessionError);
     }
 
-    if (data?.session) {
-      window.location.href = "index.html";
-      return;
+    if (sessionData?.session) {
+      const {
+        data: { user },
+        error: userError
+      } = await sb.auth.getUser();
+
+      if (!userError && user) {
+        const { data: profile, error: profileError } = await sb
+          .from("profiles")
+          .select("id, is_active")
+          .eq("id", user.id)
+          .single();
+
+        if (!profileError && profile && profile.is_active === true) {
+          window.location.href = "index.html";
+          return;
+        }
+      }
+
+      // si session cassée ou profil absent, on nettoie
+      await sb.auth.signOut();
     }
   } catch (err) {
-    console.error("Erreur vérification session :", err);
+    console.error("Erreur vérification session/profil :", err);
   }
 
   async function handleLogin() {
