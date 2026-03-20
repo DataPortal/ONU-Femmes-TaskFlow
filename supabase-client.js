@@ -10,12 +10,18 @@
   const { createClient } = window.supabase;
 
   if (typeof createClient !== "function") {
-    console.error("createClient introuvable.");
+    console.error("createClient introuvable dans window.supabase.");
     return;
   }
 
   if (!window.sb) {
-    window.sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+    window.sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    });
   }
 
   console.log("Supabase client initialisé avec succès.");
