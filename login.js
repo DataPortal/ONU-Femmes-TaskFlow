@@ -1,12 +1,14 @@
 window.addEventListener("load", async function () {
   console.log("login.js chargé");
 
+  const form = document.getElementById("loginForm");
   const btn = document.getElementById("loginBtn");
   const email = document.getElementById("loginEmail");
   const password = document.getElementById("loginPassword");
   const message = document.getElementById("loginMessage");
 
   function showMessage(text, type = "info") {
+    if (!message) return;
     let className = "info-box";
     if (type === "error") className = "error-box";
     if (type === "success") className = "success-box";
@@ -22,8 +24,8 @@ window.addEventListener("load", async function () {
     return window.sb;
   }
 
-  if (!btn || !email || !password || !message) {
-    console.error("Éléments de connexion introuvables", { btn, email, password, message });
+  if (!form || !btn || !email || !password || !message) {
+    console.error("Éléments de connexion introuvables", { form, btn, email, password, message });
     return;
   }
 
@@ -34,10 +36,10 @@ window.addEventListener("load", async function () {
     return;
   }
 
-  console.log("Bouton trouvé, client Supabase prêt");
+  console.log("Formulaire et client Supabase prêts");
 
   async function doLogin() {
-    console.log("Clic détecté sur Connexion");
+    console.log("Soumission de connexion détectée");
 
     const emailValue = email.value.trim();
     const passwordValue = password.value;
@@ -57,7 +59,7 @@ window.addEventListener("load", async function () {
         password: passwordValue
       });
 
-      console.log("Résultat signInWithPassword", error);
+      console.log("Résultat signInWithPassword :", error);
 
       if (error) {
         showMessage(`Connexion impossible : ${error.message}`, "error");
@@ -81,7 +83,7 @@ window.addEventListener("load", async function () {
         .single();
 
       if (profileError || !profile) {
-        showMessage("Profil introuvable dans profiles.", "error");
+        showMessage(`Profil introuvable dans profiles.${profileError ? " " + profileError.message : ""}`, "error");
         return;
       }
 
@@ -96,7 +98,6 @@ window.addEventListener("load", async function () {
       setTimeout(() => {
         window.location.replace("index.html");
       }, 700);
-
     } catch (err) {
       console.error("Erreur login :", err);
       showMessage(`Erreur technique : ${err.message || err}`, "error");
@@ -106,15 +107,17 @@ window.addEventListener("load", async function () {
     }
   }
 
-  btn.onclick = doLogin;
-
-  email.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") doLogin();
+  form.addEventListener("submit", async function (e) {
+    e.preventDefault();
+    await doLogin();
   });
 
-  password.addEventListener("keydown", function (e) {
-    if (e.key === "Enter") doLogin();
+  btn.addEventListener("click", async function (e) {
+    e.preventDefault();
+    await doLogin();
   });
+
+  window.handleLogin = doLogin;
 
   showMessage("Page prête. Vous pouvez vous connecter.", "info");
 });
