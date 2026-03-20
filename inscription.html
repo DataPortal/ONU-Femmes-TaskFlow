@@ -6,7 +6,6 @@
   <title>ONU Femmes — Inscription</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body data-page="register">
   <header>
     <div class="header-inner">
@@ -34,12 +33,8 @@
   </nav>
 
   <main class="container">
-
     <div id="pageDebugMessage"></div>
 
-    <!-- ============================= -->
-    <!-- CRÉATION PILIER -->
-    <!-- ============================= -->
     <section class="card">
       <h2 class="section-title">Créer un pilier</h2>
 
@@ -50,19 +45,20 @@
 
       <div class="form-group">
         <label for="pillarSupervisor">Superviseur</label>
-        <select id="pillarSupervisor"></select>
+        <select id="pillarSupervisor">
+          <option value="">Sélectionner un superviseur</option>
+        </select>
       </div>
 
-      <button id="createPillarBtn">Créer le pilier</button>
+      <div class="modal-actions" style="justify-content:flex-start;">
+        <button id="createPillarBtn" type="button">Créer le pilier</button>
+      </div>
 
-      <div id="pillarMessage"></div>
+      <div id="pillarMessage" style="margin-top:12px;"></div>
     </section>
 
-    <!-- ============================= -->
-    <!-- INSCRIPTION UTILISATEUR -->
-    <!-- ============================= -->
     <section class="card" style="margin-top:20px;">
-      <h2 class="section-title">Inscrire un membre</h2>
+      <h2 class="section-title">Affecter ou mettre à jour un membre</h2>
 
       <div class="form-group">
         <label for="userName">Nom complet</label>
@@ -84,34 +80,38 @@
 
       <div class="form-group">
         <label for="userPillar">Pilier</label>
-        <select id="userPillar"></select>
+        <select id="userPillar">
+          <option value="">Sélectionner un pilier</option>
+        </select>
       </div>
 
       <div class="form-group">
         <label for="userSupervisor">Superviseur</label>
-        <select id="userSupervisor"></select>
+        <select id="userSupervisor">
+          <option value="">Sélectionner un superviseur</option>
+        </select>
       </div>
 
-      <button id="createUserBtn">Créer le membre</button>
+      <div class="modal-actions" style="justify-content:flex-start;">
+        <button id="createUserBtn" type="button">Enregistrer</button>
+      </div>
 
-      <div id="userMessage"></div>
+      <div id="userMessage" style="margin-top:12px;"></div>
+
+      <div class="empty" style="margin-top:16px;">
+        Cette page met à jour un utilisateur déjà existant dans <strong>Supabase Authentication</strong> et dans
+        <strong>profiles</strong>. Si l’email n’existe pas encore, créez d’abord le compte dans Supabase.
+      </div>
     </section>
 
-    <!-- ============================= -->
-    <!-- LISTE DES PILIERS -->
-    <!-- ============================= -->
     <section class="card" style="margin-top:20px;">
       <h2 class="section-title">Liste des piliers</h2>
-
       <div id="pillarsList"></div>
     </section>
-
   </main>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="script.js"></script>
-
 </body>
 </html>
