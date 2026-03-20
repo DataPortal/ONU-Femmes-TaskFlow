@@ -10,7 +10,7 @@
   const { createClient } = window.supabase;
 
   if (typeof createClient !== "function") {
-    console.error("createClient introuvable dans window.supabase.");
+    console.error("createClient introuvable.");
     return;
   }
 
