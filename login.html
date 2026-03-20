@@ -4,63 +4,80 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ONU Femmes — Connexion</title>
+
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+
+<body data-page="login">
+
+  <!-- HEADER -->
   <header>
     <div class="header-inner">
       <div class="brand">
         <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
         <div>
-          <h1>ONU Femmes Task Manager</h1>
-          <p>Connexion sécurisée à la plateforme</p>
+          <h1>ONU Femmes TaskFlow</h1>
+          <p>Connexion sécurisée</p>
         </div>
       </div>
     </div>
   </header>
 
-  <main class="container login-page">
-    <section class="login-card">
+  <!-- LOGIN -->
+  <main class="login-page">
+
+    <div class="login-card">
+
       <div class="login-card-header">
-        <h2 class="section-title">Se connecter</h2>
-        <p class="muted">Utilisez votre compte créé dans Supabase Authentication.</p>
+        <h2 class="section-title">Connexion</h2>
+        <p class="muted">
+          Accédez à votre espace de gestion des tâches
+        </p>
       </div>
 
+      <!-- MESSAGE -->
+      <div id="loginMessage"></div>
+
+      <!-- EMAIL -->
       <div class="form-group">
-        <label for="loginEmail">Adresse email</label>
+        <label>Email</label>
         <input
-          id="loginEmail"
           type="email"
-          placeholder="hypolite.reoutar@unwomen.org"
-          autocomplete="username"
+          id="loginEmail"
+          placeholder="prenom.nom@unwomen.org"
+          required
         />
       </div>
 
+      <!-- PASSWORD -->
       <div class="form-group">
-        <label for="loginPassword">Mot de passe</label>
+        <label>Mot de passe</label>
         <input
-          id="loginPassword"
           type="password"
-          placeholder="Votre mot de passe"
-          autocomplete="current-password"
+          id="loginPassword"
+          placeholder="********"
+          required
         />
       </div>
 
+      <!-- ACTION -->
       <div class="login-actions">
-        <button id="loginBtn" type="button">Connexion</button>
+        <button id="loginBtn">Connexion</button>
       </div>
 
-      <div id="loginMessage" style="margin-top:14px;"></div>
-
-      <div class="empty" style="margin-top:18px;">
-        Après connexion, l’application vérifie votre profil dans
-        <strong>profiles</strong>, puis vous redirige vers le dashboard.
+      <!-- INFO -->
+      <div class="info-box" style="margin-top:15px;">
+        Utilisez votre compte Supabase (email + mot de passe).
       </div>
-    </section>
+
+    </div>
+
   </main>
 
+  <!-- SCRIPTS (ORDRE CRITIQUE) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="login.js"></script>
+
 </body>
 </html>
