@@ -221,30 +221,11 @@ tbody td{
   white-space:nowrap;
 }
 
-.badge-grey{
-  background:#e5e7eb;
-  color:#374151;
-}
-
-.badge-blue{
-  background:#dbeafe;
-  color:#1d4ed8;
-}
-
-.badge-green{
-  background:#d1fae5;
-  color:#065f46;
-}
-
-.badge-yellow{
-  background:#fef3c7;
-  color:#92400e;
-}
-
-.badge-red{
-  background:#fee2e2;
-  color:#991b1b;
-}
+.badge-grey{ background:#e5e7eb; color:#374151; }
+.badge-blue{ background:#dbeafe; color:#1d4ed8; }
+.badge-green{ background:#d1fae5; color:#065f46; }
+.badge-yellow{ background:#fef3c7; color:#92400e; }
+.badge-red{ background:#fee2e2; color:#991b1b; }
 
 .progress-track{
   width:180px;
