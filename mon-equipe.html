@@ -12,7 +12,7 @@
       <div class="brand">
         <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
         <div>
-          <h1>ONU Femmes - RDC Task Management Portal</h1>
+          <h1>ONU Femmes Task Manager</h1>
           <p>Suivi des membres supervisés et de leurs tâches</p>
         </div>
       </div>
@@ -20,7 +20,7 @@
       <div class="top-tools no-print">
         <select id="currentUserSelect"></select>
         <div id="currentUserLabel"></div>
-        <button id="logoutBtn" class="secondary no-print" type="button">Déconnexion</button>
+        <button id="logoutBtn" class="secondary" type="button">Déconnexion</button>
       </div>
     </div>
   </header>
@@ -47,7 +47,7 @@
         <h3 class="section-title">Lecture rapide</h3>
         <div class="empty">
           Cette page affiche automatiquement les membres dont le champ
-          <strong>supervisor_id</strong> correspond à l’utilisateur sélectionné,
+          <strong>supervisor_id</strong> correspond à l’utilisateur connecté,
           ainsi que toutes les tâches de ces membres.
         </div>
       </div>
@@ -159,9 +159,8 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
