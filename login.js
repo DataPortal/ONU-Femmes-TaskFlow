@@ -13,7 +13,7 @@ window.addEventListener("load", async function () {
     message.innerHTML = `<div class="${className}">${text}</div>`;
   }
 
-  async function waitForClient(maxWaitMs = 5000) {
+  async function waitForClient(maxWaitMs = 8000) {
     const start = Date.now();
     while (!window.sb) {
       if (Date.now() - start > maxWaitMs) return null;
@@ -23,7 +23,9 @@ window.addEventListener("load", async function () {
   }
 
   if (!form || !btn || !email || !password || !message) {
-    console.error("Éléments de connexion introuvables", { form, btn, email, password, message });
+    console.error("Éléments de connexion introuvables.", {
+      form, btn, email, password, message
+    });
     return;
   }
 
