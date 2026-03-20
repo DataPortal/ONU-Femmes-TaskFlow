@@ -46,9 +46,10 @@ async function bootstrapApp() {
     throw new Error(`Erreur session: ${sessionError.message}`);
   }
 
-  if (!sessionData?.session) {
-    window.location.href = "login.html";
-    return;
+ if (!sessionData?.session) {
+  window.location.replace("login.html");
+  return;
+}
   }
 
   await loadCurrentUser();
