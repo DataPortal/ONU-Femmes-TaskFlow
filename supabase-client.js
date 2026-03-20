@@ -7,7 +7,7 @@
     return;
   }
 
-  if (!window.supabaseClient) {
-    window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!window.sb) {
+    window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   }
 })();
