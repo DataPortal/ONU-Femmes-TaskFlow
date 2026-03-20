@@ -36,14 +36,15 @@ async function bootstrapApp() {
   const page = document.body.dataset.page || "";
 
   const { data: sessionData, error: sessionError } = await sb.auth.getSession();
-  if (sessionError) {
-    throw new Error(`Erreur session: ${sessionError.message}`);
-  }
 
-  if (!sessionData?.session) {
-    window.location.replace("login.html");
-    return;
-  }
+if (sessionError) {
+  throw new Error(`Erreur session: ${sessionError.message}`);
+}
+
+if (!sessionData?.session) {
+  window.location.replace("login.html");
+  return;
+}
 
   await loadCurrentUser();
   await loadReferenceData();
