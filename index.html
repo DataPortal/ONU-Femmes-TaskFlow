@@ -6,7 +6,7 @@
   <title>ONU Femmes — Connexion</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="login">
+<body>
   <header>
     <div class="header-inner">
       <div class="brand">
@@ -53,7 +53,7 @@
       <div id="loginMessage" style="margin-top:14px;"></div>
 
       <div class="empty" style="margin-top:18px;">
-        Après connexion, l’application récupère automatiquement votre profil dans
+        Après connexion, l’application vérifie votre profil dans
         <strong>profiles</strong>, puis vous redirige vers le dashboard.
       </div>
     </section>
@@ -61,6 +61,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
-  <script src="script.js"></script>
+  <script src="login.js"></script>
 </body>
 </html>
