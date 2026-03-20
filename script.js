@@ -65,6 +65,7 @@ async function bootstrapApp() {
   if (page === "dashboard") renderDashboardPage();
   if (page === "my-tasks") renderMyTasksPage();
   if (page === "my-team") renderMyTeamPage();
+  if (page === "register") renderRegisterPage();
 }
 
 async function loadCurrentUser() {
@@ -122,7 +123,6 @@ async function loadReferenceData() {
     pillar: getPillarNameByIdFromArray(u.pillar_id, AppState.pillars)
   }));
 
-  // 1er essai : vue enrichie
   const tasksViewRes = await sb.from("tasks_enriched").select("*").order("id", { ascending: true });
 
   if (!tasksViewRes.error) {
@@ -156,7 +156,6 @@ async function loadReferenceData() {
 
   console.warn("tasks_enriched indisponible, fallback sur tasks :", tasksViewRes.error.message);
 
-  // 2e essai : fallback simple sur tasks
   const tasksRes = await sb.from("tasks").select("*").order("id", { ascending: true });
   if (tasksRes.error) throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}`);
 
@@ -241,7 +240,7 @@ function initLogout() {
 
   logoutBtn.addEventListener("click", async () => {
     await sb.auth.signOut();
-    window.location.href = "login.html";
+    window.location.replace("login.html");
   });
 }
 
@@ -260,6 +259,17 @@ function showGlobalError(message) {
   }
 
   alert(message);
+}
+
+function setMessage(targetId, text, type = "info") {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+
+  let className = "info-box";
+  if (type === "error") className = "error-box";
+  if (type === "success") className = "success-box";
+
+  el.innerHTML = `<div class="${className}">${text}</div>`;
 }
 
 function clamp(v, min, max) {
@@ -321,6 +331,12 @@ function canDeleteTask(task) {
     (currentUser.user_type === "supervisor" && task.supervisor_id === currentUser.id);
 }
 
+function isSupervisorOrAdmin() {
+  const currentUser = getCurrentUser();
+  if (!currentUser) return false;
+  return currentUser.user_type === "admin" || currentUser.user_type === "supervisor";
+}
+
 function initInitializationPage() {
   const initBtn = document.getElementById("initializeAppBtn");
   const resetBtn = document.getElementById("resetAppBtn");
@@ -337,9 +353,315 @@ function initInitializationPage() {
   });
 }
 
-function initRegisterPage() {}
-function initPillarCreation() {}
-function initTaskCreation() {}
+/* =========================
+   REGISTER / PILIERS
+========================= */
+
+function initRegisterPage() {
+  const page = document.body.dataset.page;
+  if (page !== "register") return;
+
+  populateRegisterDropdowns();
+
+  const createUserBtn = document.getElementById("createUserBtn");
+  if (createUserBtn) {
+    createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
+  }
+}
+
+function initPillarCreation() {
+  const page = document.body.dataset.page;
+  if (page !== "register") return;
+
+  const createPillarBtn = document.getElementById("createPillarBtn");
+  if (createPillarBtn) {
+    createPillarBtn.addEventListener("click", createNewPillar);
+  }
+}
+
+function populateRegisterDropdowns() {
+  const pillarSupervisor = document.getElementById("pillarSupervisor");
+  const userPillar = document.getElementById("userPillar");
+  const userSupervisor = document.getElementById("userSupervisor");
+
+  const supervisors = AppState.users.filter(
+    u => u.user_type === "supervisor" || u.user_type === "admin"
+  );
+
+  if (pillarSupervisor) {
+    pillarSupervisor.innerHTML =
+      `<option value="">Sélectionner un superviseur</option>` +
+      supervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+  }
+
+  if (userPillar) {
+    userPillar.innerHTML =
+      `<option value="">Sélectionner un pilier</option>` +
+      AppState.pillars.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+  }
+
+  if (userSupervisor) {
+    userSupervisor.innerHTML =
+      `<option value="">Sélectionner un superviseur</option>` +
+      supervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+  }
+}
+
+async function createNewPillar() {
+  const sb = getSb();
+  const currentUser = getCurrentUser();
+
+  if (!sb || !currentUser) return;
+
+  if (!isSupervisorOrAdmin()) {
+    setMessage("pillarMessage", "Seuls les superviseurs et admins peuvent créer un pilier.", "error");
+    return;
+  }
+
+  const name = (document.getElementById("pillarName")?.value || "").trim();
+  const supervisorId = document.getElementById("pillarSupervisor")?.value || "";
+
+  if (!name || !supervisorId) {
+    setMessage("pillarMessage", "Veuillez renseigner le nom du pilier et le superviseur.", "error");
+    return;
+  }
+
+  const { error } = await sb.from("pillars").insert([{
+    name,
+    full_name: name,
+    supervisor_profile_id: supervisorId
+  }]);
+
+  if (error) {
+    setMessage("pillarMessage", `Impossible de créer le pilier : ${error.message}`, "error");
+    return;
+  }
+
+  setMessage("pillarMessage", "Pilier créé avec succès.", "success");
+
+  const pillarNameInput = document.getElementById("pillarName");
+  const pillarSupervisorSelect = document.getElementById("pillarSupervisor");
+  if (pillarNameInput) pillarNameInput.value = "";
+  if (pillarSupervisorSelect) pillarSupervisorSelect.value = "";
+
+  await reloadAndRerender();
+}
+
+async function createOrAssignUserFromRegisterPage() {
+  const sb = getSb();
+  const currentUser = getCurrentUser();
+
+  if (!sb || !currentUser) return;
+
+  if (!isSupervisorOrAdmin()) {
+    setMessage("userMessage", "Seuls les superviseurs et admins peuvent gérer les membres.", "error");
+    return;
+  }
+
+  const fullName = (document.getElementById("userName")?.value || "").trim();
+  const email = (document.getElementById("userEmail")?.value || "").trim().toLowerCase();
+  const role = document.getElementById("userRole")?.value || "staff";
+  const pillarId = document.getElementById("userPillar")?.value || "";
+  const supervisorId = document.getElementById("userSupervisor")?.value || "";
+
+  if (!fullName || !email || !pillarId || !supervisorId) {
+    setMessage("userMessage", "Veuillez renseigner le nom, l’email, le pilier et le superviseur.", "error");
+    return;
+  }
+
+  const existingUser = AppState.users.find(u => (u.email || "").toLowerCase() === email);
+
+  if (!existingUser) {
+    setMessage(
+      "userMessage",
+      "Aucun utilisateur Auth existant avec cet email. Créez d’abord le compte dans Supabase Authentication, puis revenez ici pour l’affecter au pilier et au superviseur.",
+      "error"
+    );
+    return;
+  }
+
+  const { error } = await sb
+    .from("profiles")
+    .update({
+      full_name: fullName,
+      role,
+      pillar_id: pillarId,
+      supervisor_id: supervisorId,
+      is_active: true
+    })
+    .eq("id", existingUser.id);
+
+  if (error) {
+    setMessage("userMessage", `Mise à jour du membre impossible : ${error.message}`, "error");
+    return;
+  }
+
+  setMessage("userMessage", "Membre affecté / mis à jour avec succès.", "success");
+
+  const userName = document.getElementById("userName");
+  const userEmail = document.getElementById("userEmail");
+  const userRole = document.getElementById("userRole");
+  const userPillar = document.getElementById("userPillar");
+  const userSupervisor = document.getElementById("userSupervisor");
+
+  if (userName) userName.value = "";
+  if (userEmail) userEmail.value = "";
+  if (userRole) userRole.value = "staff";
+  if (userPillar) userPillar.value = "";
+  if (userSupervisor) userSupervisor.value = "";
+
+  await reloadAndRerender();
+}
+
+function renderRegisterPage() {
+  populateRegisterDropdowns();
+
+  const pillarsList = document.getElementById("pillarsList");
+  if (pillarsList) {
+    if (!AppState.pillars.length) {
+      pillarsList.innerHTML = `<div class="empty">Aucun pilier disponible.</div>`;
+    } else {
+      pillarsList.innerHTML = AppState.pillars.map(p => {
+        const supervisor = AppState.users.find(u => u.id === p.supervisor_profile_id);
+        return `
+          <div class="member-card">
+            <h4>${p.name}</h4>
+            <div class="muted">Superviseur : ${supervisor ? supervisor.name : "Non défini"}</div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+}
+
+/* =========================
+   TASK CREATION
+========================= */
+
+function initTaskCreation() {
+  const page = document.body.dataset.page;
+  if (page !== "dashboard") return;
+
+  populateTaskCreationDropdowns();
+
+  const openBtn = document.getElementById("openCreateTaskModalBtn");
+  const closeBtn = document.getElementById("closeCreateTaskModalBtn");
+  const createBtn = document.getElementById("createTaskBtn");
+  const modal = document.getElementById("createTaskModal");
+
+  if (openBtn) openBtn.addEventListener("click", openCreateTaskModal);
+  if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
+  if (createBtn) createBtn.addEventListener("click", createNewTask);
+
+  window.addEventListener("click", e => {
+    if (e.target === modal) closeCreateTaskModal();
+  });
+}
+
+function populateTaskCreationDropdowns() {
+  const taskPillar = document.getElementById("taskPillar");
+  const taskAssignedTo = document.getElementById("taskAssignedTo");
+
+  if (taskPillar) {
+    taskPillar.innerHTML =
+      `<option value="">Sélectionner un pilier</option>` +
+      AppState.pillars.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+  }
+
+  if (taskAssignedTo) {
+    const eligibleUsers = AppState.users.filter(u => u.user_type === "staff" || u.user_type === "supervisor" || u.user_type === "admin");
+    taskAssignedTo.innerHTML =
+      `<option value="">Sélectionner un membre</option>` +
+      eligibleUsers.map(u => `<option value="${u.id}">${u.name} — ${u.pillar || "Sans pilier"}</option>`).join("");
+  }
+}
+
+function openCreateTaskModal() {
+  if (!isSupervisorOrAdmin()) {
+    setMessage("taskCreateMessage", "Seuls les superviseurs et admins peuvent créer une tâche.", "error");
+    return;
+  }
+
+  populateTaskCreationDropdowns();
+
+  const modal = document.getElementById("createTaskModal");
+  if (modal) modal.style.display = "block";
+}
+
+function closeCreateTaskModal() {
+  const modal = document.getElementById("createTaskModal");
+  if (modal) modal.style.display = "none";
+}
+
+async function createNewTask() {
+  const sb = getSb();
+  const currentUser = getCurrentUser();
+  if (!sb || !currentUser) return;
+
+  if (!isSupervisorOrAdmin()) {
+    setMessage("taskCreateMessage", "Seuls les superviseurs et admins peuvent créer une tâche.", "error");
+    return;
+  }
+
+  const title = (document.getElementById("taskTitle")?.value || "").trim();
+  const pillarId = document.getElementById("taskPillar")?.value || "";
+  const assignedToId = document.getElementById("taskAssignedTo")?.value || "";
+  const priority = document.getElementById("taskPriority")?.value || "Moyenne";
+  const dueDate = document.getElementById("taskDueDate")?.value || null;
+  const description = (document.getElementById("taskDescription")?.value || "").trim();
+
+  if (!title || !pillarId || !assignedToId) {
+    setMessage("taskCreateMessage", "Veuillez renseigner le titre, le pilier et le membre assigné.", "error");
+    return;
+  }
+
+  const payload = {
+    title,
+    pillar_id: pillarId,
+    assigned_to_id: assignedToId,
+    priority,
+    status: "Non commencée",
+    progress_score: 0,
+    progress: 0,
+    staff_comment: "",
+    supervisor_score: 0,
+    supervisor_progress: 0,
+    supervisor_status: "Non évalué",
+    supervisor_comment: "",
+    due_date: dueDate,
+    description,
+    created_by: currentUser.id
+  };
+
+  const { error } = await sb.from("tasks").insert([payload]);
+  if (error) {
+    setMessage("taskCreateMessage", `Création impossible : ${error.message}`, "error");
+    return;
+  }
+
+  setMessage("taskCreateMessage", "Tâche créée avec succès.", "success");
+
+  const taskTitle = document.getElementById("taskTitle");
+  const taskPillar = document.getElementById("taskPillar");
+  const taskAssignedTo = document.getElementById("taskAssignedTo");
+  const taskPriority = document.getElementById("taskPriority");
+  const taskDueDate = document.getElementById("taskDueDate");
+  const taskDescription = document.getElementById("taskDescription");
+
+  if (taskTitle) taskTitle.value = "";
+  if (taskPillar) taskPillar.value = "";
+  if (taskAssignedTo) taskAssignedTo.value = "";
+  if (taskPriority) taskPriority.value = "Moyenne";
+  if (taskDueDate) taskDueDate.value = "";
+  if (taskDescription) taskDescription.value = "";
+
+  await reloadAndRerender();
+  closeCreateTaskModal();
+}
+
+/* =========================
+   TASK UPDATE
+========================= */
 
 function initGlobalActions() {
   const closeBtn = document.getElementById("closeTaskModalBtn");
@@ -426,15 +748,21 @@ async function saveTaskUpdate() {
   await reloadAndRerender();
 }
 
+/* =========================
+   EXPORT / PRINT
+========================= */
+
 function initExportAndPrint() {
   const page = document.body.dataset.page;
   if (page !== "dashboard") return;
 
   const exportBtn = document.getElementById("exportXlsxBtn");
   const printBtn = document.getElementById("printPageBtn");
+  const searchBtn = document.getElementById("searchBtn");
 
   if (exportBtn) exportBtn.addEventListener("click", exportCurrentViewToXlsx);
   if (printBtn) printBtn.addEventListener("click", printCurrentPage);
+  if (searchBtn) searchBtn.addEventListener("click", renderDashboardPage);
 }
 
 function getCurrentTableDataForExport() {
@@ -473,6 +801,10 @@ function exportCurrentViewToXlsx() {
 function printCurrentPage() {
   window.print();
 }
+
+/* =========================
+   RENDERING
+========================= */
 
 function renderTaskRows(tasks) {
   return tasks.map(task => `
@@ -528,8 +860,42 @@ function renderDashboardPage() {
   const tbody = document.getElementById("tasksTbody");
   if (!tbody) return;
 
-  renderKPIs("dashboardKpis", AppState.tasks);
-  tbody.innerHTML = renderTaskRows(AppState.tasks);
+  const search = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
+  const pillarFilter = document.getElementById("pillarFilter");
+  const supervisorFilter = document.getElementById("supervisorFilter");
+
+  if (pillarFilter) {
+    pillarFilter.innerHTML =
+      `<option value="">Tous les piliers</option>` +
+      AppState.pillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
+  }
+
+  if (supervisorFilter) {
+    const supervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
+    supervisorFilter.innerHTML =
+      `<option value="">Tous les superviseurs</option>` +
+      supervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+  }
+
+  const selectedPillar = pillarFilter?.value || "";
+  const selectedSupervisor = supervisorFilter?.value || "";
+
+  const filteredTasks = AppState.tasks.filter(task => {
+    const matchSearch =
+      !search ||
+      task.title.toLowerCase().includes(search) ||
+      (task.assigned_to_name || "").toLowerCase().includes(search) ||
+      (task.supervisor_name || "").toLowerCase().includes(search) ||
+      (task.pillar || "").toLowerCase().includes(search);
+
+    const matchPillar = !selectedPillar || task.pillar === selectedPillar;
+    const matchSupervisor = !selectedSupervisor || String(task.supervisor_id) === String(selectedSupervisor);
+
+    return matchSearch && matchPillar && matchSupervisor;
+  });
+
+  renderKPIs("dashboardKpis", filteredTasks);
+  tbody.innerHTML = renderTaskRows(filteredTasks);
 }
 
 function renderMyTasksPage() {
@@ -562,7 +928,12 @@ function renderMyTeamPage() {
   renderKPIs("myTeamKpis", teamTasks);
 
   membersBox.innerHTML = teamMembers.length
-    ? teamMembers.map(member => `<div class="member-card"><h4>${member.name}</h4><div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div></div>`).join("")
+    ? teamMembers.map(member => `
+      <div class="member-card">
+        <h4>${member.name}</h4>
+        <div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div>
+      </div>
+    `).join("")
     : `<div class="empty">Aucun membre rattaché.</div>`;
 
   tbody.innerHTML = teamTasks.length
@@ -577,4 +948,5 @@ async function reloadAndRerender() {
   if (page === "dashboard") renderDashboardPage();
   if (page === "my-tasks") renderMyTasksPage();
   if (page === "my-team") renderMyTeamPage();
+  if (page === "register") renderRegisterPage();
 }
