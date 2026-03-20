@@ -1,10 +1,34 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const sb = await waitForSupabaseClient();
+window.addEventListener("load", async () => {
+  console.log("login.js chargé");
 
   const loginBtn = document.getElementById("loginBtn");
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
   const messageBox = document.getElementById("loginMessage");
+
+  function showMessage(text, type = "info") {
+    if (!messageBox) return;
+    let className = "info-box";
+    if (type === "error") className = "error-box";
+    if (type === "success") className = "success-box";
+    messageBox.innerHTML = `<div class="${className}">${text}</div>`;
+  }
+
+  async function waitForSupabaseClient(maxWaitMs = 5000) {
+    const start = Date.now();
+
+    while (!window.sb) {
+      if (Date.now() - start > maxWaitMs) {
+        console.error("Timeout: client Supabase indisponible.");
+        return null;
+      }
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+
+    return window.sb;
+  }
+
+  const sb = await waitForSupabaseClient();
 
   if (!sb) {
     showMessage("Client Supabase introuvable.", "error");
@@ -12,12 +36,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (!loginBtn || !emailInput || !passwordInput || !messageBox) {
-    console.error("Éléments login manquants.");
+    console.error("Éléments login introuvables.", {
+      loginBtn,
+      emailInput,
+      passwordInput,
+      messageBox
+    });
     return;
   }
 
-  // IMPORTANT :
-  // on ne redirige vers index QUE si session + user + profile valide
+  console.log("Éléments login trouvés");
+
+  // Vérifie une session déjà valide
   try {
     const { data: sessionData, error: sessionError } = await sb.auth.getSession();
 
@@ -39,12 +69,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           .single();
 
         if (!profileError && profile && profile.is_active === true) {
-          window.location.replace("login.html");
+          window.location.replace("index.html");
           return;
         }
       }
 
-      // si session cassée ou profil absent, on nettoie
       await sb.auth.signOut();
     }
   } catch (err) {
@@ -52,6 +81,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function handleLogin() {
+    console.log("Clic sur Connexion détecté");
+
     const email = emailInput.value.trim();
     const password = passwordInput.value;
 
@@ -60,18 +91,20 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    setLoading(true);
+    loginBtn.disabled = true;
+    loginBtn.textContent = "Connexion...";
     showMessage("Connexion en cours...", "info");
 
     try {
-      const { error: signInError } = await sb.auth.signInWithPassword({
+      const { data, error } = await sb.auth.signInWithPassword({
         email,
         password
       });
 
-      if (signInError) {
-        console.error("Erreur signInWithPassword :", signInError);
-        showMessage("Connexion impossible. Vérifiez vos identifiants.", "error");
+      console.log("Résultat signInWithPassword :", { data, error });
+
+      if (error) {
+        showMessage(`Connexion impossible : ${error.message}`, "error");
         return;
       }
 
@@ -92,9 +125,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         .eq("id", user.id)
         .single();
 
+      console.log("Résultat profile :", { profile, profileError });
+
       if (profileError) {
-        console.error("Erreur lecture profiles :", profileError);
-        showMessage("Compte connecté, mais profil introuvable dans profiles.", "error");
+        showMessage(`Profil introuvable : ${profileError.message}`, "error");
         return;
       }
 
@@ -112,13 +146,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       showMessage("Connexion réussie. Redirection...", "success");
 
       setTimeout(() => {
-        window.location.replace("login.html");";
+        window.location.replace("index.html");
       }, 700);
+
     } catch (err) {
       console.error("Erreur inattendue login :", err);
-      showMessage("Une erreur technique empêche la connexion.", "error");
+      showMessage(`Erreur technique : ${err.message || err}`, "error");
     } finally {
-      setLoading(false);
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Connexion";
     }
   }
 
@@ -132,29 +168,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (e.key === "Enter") handleLogin();
   });
 
-  function setLoading(isLoading) {
-    loginBtn.disabled = isLoading;
-    loginBtn.textContent = isLoading ? "Connexion..." : "Connexion";
-  }
-
-  function showMessage(text, type) {
-    let className = "info-box";
-    if (type === "error") className = "error-box";
-    if (type === "success") className = "success-box";
-    messageBox.innerHTML = `<div class="${className}">${text}</div>`;
-  }
+  showMessage("Page prête. Vous pouvez vous connecter.", "info");
 });
-
-async function waitForSupabaseClient(maxWaitMs = 5000) {
-  const start = Date.now();
-
-  while (!window.sb) {
-    if (Date.now() - start > maxWaitMs) {
-      console.error("Timeout: client Supabase indisponible.");
-      return null;
-    }
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
-
-  return window.sb;
-}
