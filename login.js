@@ -39,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           .single();
 
         if (!profileError && profile && profile.is_active === true) {
-          window.location.href = "index.html";
+          window.location.replace("login.html");
           return;
         }
       }
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       showMessage("Connexion réussie. Redirection...", "success");
 
       setTimeout(() => {
-        window.location.href = "index.html";
+        window.location.replace("login.html");";
       }, 700);
     } catch (err) {
       console.error("Erreur inattendue login :", err);
