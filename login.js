@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Si déjà connecté, aller directement au dashboard
   try {
     const {
       data: { session },
