@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ONU Femmes — Mes tâches</title>
+  <title>ONU Femmes — Dashboard des tâches</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="my-tasks">
+<body data-page="dashboard">
   <header>
     <div class="header-inner">
       <div class="brand">
         <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
         <div>
           <h1>ONU Femmes Task Manager</h1>
-          <p>Suivi individuel des tâches</p>
+          <p>Gestion intelligente des tâches par pilier, staff et superviseur</p>
         </div>
       </div>
 
@@ -26,24 +26,36 @@
   </header>
 
   <nav class="no-print">
-    <a href="index.html">Dashboard</a>
-    <a href="mes-taches.html" class="active">Mes tâches</a>
+    <a href="index.html" class="active">Dashboard</a>
+    <a href="mes-taches.html">Mes tâches</a>
     <a href="mon-equipe.html">Mon équipe</a>
     <a href="inscription.html">Inscription</a>
   </nav>
 
   <main class="container">
-    <h2 id="myTasksTitle" class="section-title">Mes tâches</h2>
+    <h2 class="section-title">Vue globale des tâches</h2>
 
-    <section id="myTasksKpis" class="dashboard"></section>
+    <section id="dashboardKpis" class="dashboard"></section>
 
     <section class="filters no-print">
-      <input type="text" id="myTasksSearchInput" placeholder="Rechercher dans mes tâches" />
-      <button id="myTasksSearchBtn" type="button">Rechercher</button>
+      <input type="text" id="searchInput" placeholder="Rechercher une tâche, un staff ou un superviseur" />
+      <button id="searchBtn" type="button">Rechercher</button>
+
+      <select id="pillarFilter">
+        <option value="">Tous les piliers</option>
+      </select>
+
+      <select id="supervisorFilter">
+        <option value="">Tous les superviseurs</option>
+      </select>
+
+      <button id="openCreateTaskModalBtn" type="button">+ Nouvelle tâche</button>
+      <button id="exportXlsxBtn" type="button">Exporter XLSX</button>
+      <button id="printPageBtn" class="secondary" type="button">Imprimer</button>
     </section>
 
     <section class="table-wrap">
-      <table id="myTasksTable">
+      <table id="tasksTable">
         <thead>
           <tr>
             <th>ID</th>
@@ -60,7 +72,7 @@
             <th class="no-print">Action</th>
           </tr>
         </thead>
-        <tbody id="myTasksTbody"></tbody>
+        <tbody id="tasksTbody"></tbody>
       </table>
     </section>
   </main>
@@ -146,6 +158,66 @@
     </div>
   </div>
 
+  <div id="createTaskModal" class="modal no-print">
+    <div class="modal-content">
+      <h3>Créer une nouvelle tâche</h3>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskTitle">Titre de la tâche</label>
+          <input id="taskTitle" type="text" placeholder="Ex. Préparer la note analytique" />
+        </div>
+
+        <div>
+          <label for="taskPillar">Pilier</label>
+          <select id="taskPillar">
+            <option value="">Sélectionner</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskAssignedTo">Assigner à</label>
+          <select id="taskAssignedTo">
+            <option value="">Sélectionner un membre du staff</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="taskPriority">Priorité</label>
+          <select id="taskPriority">
+            <option value="Basse">Basse</option>
+            <option value="Moyenne">Moyenne</option>
+            <option value="Haute">Haute</option>
+            <option value="Critique">Critique</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskDueDate">Échéance</label>
+          <input id="taskDueDate" type="date" />
+        </div>
+        <div></div>
+      </div>
+
+      <div>
+        <label for="taskDescription">Description</label>
+        <textarea id="taskDescription" placeholder="Détails ou objectifs de la tâche"></textarea>
+      </div>
+
+      <div id="taskCreateMessage"></div>
+
+      <div class="modal-actions">
+        <button id="closeCreateTaskModalBtn" class="secondary" type="button">Fermer</button>
+        <button id="createTaskBtn" type="button">Créer la tâche</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="script.js"></script>
