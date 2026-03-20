@@ -3,223 +3,51 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ONU Femmes — Dashboard des tâches</title>
+  <title>ONU Femmes — Connexion</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body data-page="dashboard">
+<body>
   <header>
     <div class="header-inner">
       <div class="brand">
         <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
         <div>
-          <h1>ONU Femmes RDC Task Management Portal</h1>
-          <p>Gestion intelligente des tâches par pilier, staff et superviseur</p>
+          <h1>ONU Femmes TaskFlow</h1>
+          <p>Connexion sécurisée</p>
         </div>
-      </div>
-
-      <div class="top-tools no-print">
-        <select id="currentUserSelect"></select>
-        <div id="currentUserLabel"></div>
-        <button id="logoutBtn" class="secondary" type="button">Déconnexion</button>
       </div>
     </div>
   </header>
 
-  <nav class="no-print">
-    <a href="index.html" class="active">Dashboard</a>
-    <a href="mes-taches.html">Mes tâches</a>
-    <a href="mon-equipe.html">Mon équipe</a>
-    <a href="inscription.html">Inscription</a>
-  </nav>
+  <main class="container login-page">
+    <section class="login-card">
+      <div class="login-card-header">
+        <h2 class="section-title">Connexion</h2>
+        <p class="muted">Accédez à votre espace de gestion des tâches</p>
+      </div>
 
-  <main class="container">
-    <div id="pageDebugMessage"></div>
+      <div id="loginMessage"></div>
 
-    <h2 class="section-title">Vue globale des tâches</h2>
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="loginEmail">Adresse email</label>
+          <input id="loginEmail" type="email" placeholder="prenom.nom@unwomen.org" required />
+        </div>
 
-    <section id="dashboardKpis" class="dashboard"></section>
+        <div class="form-group">
+          <label for="loginPassword">Mot de passe</label>
+          <input id="loginPassword" type="password" placeholder="********" required />
+        </div>
 
-    <section class="filters no-print">
-      <input type="text" id="searchInput" placeholder="Rechercher une tâche, un staff ou un superviseur" />
-      <button id="searchBtn" type="button">Rechercher</button>
-
-      <select id="pillarFilter">
-        <option value="">Tous les piliers</option>
-      </select>
-
-      <select id="supervisorFilter">
-        <option value="">Tous les superviseurs</option>
-      </select>
-
-      <button id="openCreateTaskModalBtn" type="button">+ Nouvelle tâche</button>
-      <button id="exportXlsxBtn" type="button">Exporter XLSX</button>
-      <button id="printPageBtn" class="secondary" type="button">Imprimer</button>
-    </section>
-
-    <section class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Tâche</th>
-            <th>Assigné à</th>
-            <th>Superviseur</th>
-            <th>Priorité</th>
-            <th>Statut</th>
-            <th>Progression staff</th>
-            <th>Commentaire staff</th>
-            <th>Évaluation superviseur</th>
-            <th>Commentaire superviseur</th>
-            <th>Échéance</th>
-            <th class="no-print">Action</th>
-          </tr>
-        </thead>
-        <tbody id="tasksTbody"></tbody>
-      </table>
+        <div class="login-actions">
+          <button id="loginBtn" type="submit">Connexion</button>
+        </div>
+      </form>
     </section>
   </main>
 
-  <div id="taskModal" class="modal no-print">
-    <div class="modal-content">
-      <h3>Mise à jour de la tâche</h3>
-      <input type="hidden" id="editTaskId" />
-
-      <div class="modal-row">
-        <div>
-          <label for="editStatus">Statut</label>
-          <select id="editStatus">
-            <option>Non commencée</option>
-            <option>En cours</option>
-            <option>Bloquée</option>
-            <option>Terminée</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="editProgressScore">Score staff (0 à 10)</label>
-          <select id="editProgressScore">
-            <option value="0">0 = 0%</option>
-            <option value="1">1 = 10%</option>
-            <option value="2">2 = 20%</option>
-            <option value="3">3 = 30%</option>
-            <option value="4">4 = 40%</option>
-            <option value="5">5 = 50%</option>
-            <option value="6">6 = 60%</option>
-            <option value="7">7 = 70%</option>
-            <option value="8">8 = 80%</option>
-            <option value="9">9 = 90%</option>
-            <option value="10">10 = 100%</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label for="editStaffComment">Commentaire du staff</label>
-        <textarea id="editStaffComment" placeholder="Ajouter une nouvelle mise à jour..."></textarea>
-      </div>
-
-      <div class="modal-row">
-        <div>
-          <label for="editSupervisorScore">Score superviseur (0 à 10)</label>
-          <select id="editSupervisorScore">
-            <option value="0">0 = 0%</option>
-            <option value="1">1 = 10%</option>
-            <option value="2">2 = 20%</option>
-            <option value="3">3 = 30%</option>
-            <option value="4">4 = 40%</option>
-            <option value="5">5 = 50%</option>
-            <option value="6">6 = 60%</option>
-            <option value="7">7 = 70%</option>
-            <option value="8">8 = 80%</option>
-            <option value="9">9 = 90%</option>
-            <option value="10">10 = 100%</option>
-          </select>
-        </div>
-
-        <div>
-          <label for="editSupervisorStatus">Appréciation superviseur</label>
-          <select id="editSupervisorStatus">
-            <option>Non évalué</option>
-            <option>Très satisfaisant</option>
-            <option>Acceptable</option>
-            <option>À améliorer</option>
-            <option>Critique</option>
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label for="editSupervisorComment">Commentaire du superviseur</label>
-        <textarea id="editSupervisorComment" placeholder="Ajouter un nouveau commentaire de supervision..."></textarea>
-      </div>
-
-      <div class="modal-actions">
-        <button id="closeTaskModalBtn" class="secondary" type="button">Fermer</button>
-        <button id="saveTaskBtn" type="button">Enregistrer</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="createTaskModal" class="modal no-print">
-    <div class="modal-content">
-      <h3>Créer une nouvelle tâche</h3>
-
-      <div class="modal-row">
-        <div>
-          <label for="taskTitle">Titre de la tâche</label>
-          <input id="taskTitle" type="text" placeholder="Ex. Préparer le rapport mensuel" />
-        </div>
-        <div>
-          <label for="taskPillar">Pilier</label>
-          <select id="taskPillar">
-            <option value="">Sélectionner un pilier</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="modal-row">
-        <div>
-          <label for="taskAssignedTo">Assigner à</label>
-          <select id="taskAssignedTo">
-            <option value="">Sélectionner un membre</option>
-          </select>
-        </div>
-        <div>
-          <label for="taskPriority">Priorité</label>
-          <select id="taskPriority">
-            <option value="Basse">Basse</option>
-            <option value="Moyenne">Moyenne</option>
-            <option value="Haute">Haute</option>
-            <option value="Critique">Critique</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="modal-row">
-        <div>
-          <label for="taskDueDate">Échéance</label>
-          <input id="taskDueDate" type="date" />
-        </div>
-        <div></div>
-      </div>
-
-      <div>
-        <label for="taskDescription">Description</label>
-        <textarea id="taskDescription" placeholder="Décrire l’objectif et les livrables attendus"></textarea>
-      </div>
-
-      <div id="taskCreateMessage"></div>
-
-      <div class="modal-actions">
-        <button id="closeCreateTaskModalBtn" class="secondary" type="button">Fermer</button>
-        <button id="createTaskBtn" type="button">Créer la tâche</button>
-      </div>
-    </div>
-  </div>
-
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
-  <script src="script.js"></script>
+  <script src="login.js"></script>
 </body>
 </html>
