@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     } = await window.sb.auth.getSession();
 
     if (error) {
-      console.error(error);
+      console.error("Erreur session :", error);
     }
 
     if (session) {
@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (!loginBtn || !emailInput || !passwordInput || !messageBox) {
-    console.error("Éléments login introuvables.");
+    console.error("Éléments de connexion introuvables.");
     return;
   }
 
@@ -107,11 +107,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   loginBtn.addEventListener("click", handleLogin);
 
-  passwordInput.addEventListener("keydown", e => {
+  emailInput.addEventListener("keydown", e => {
     if (e.key === "Enter") handleLogin();
   });
 
-  emailInput.addEventListener("keydown", e => {
+  passwordInput.addEventListener("keydown", e => {
     if (e.key === "Enter") handleLogin();
   });
 
