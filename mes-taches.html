@@ -10,9 +10,9 @@
   <header>
     <div class="header-inner">
       <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <img src="assets/img/logunw.png" alt="ONU Femmes" class="logo" />
         <div>
-          <h1>ONU Femmes - RDC Task Management Portal</h1>
+          <h1>ONU Femmes Task Manager</h1>
           <p>Suivi individuel des tâches</p>
         </div>
       </div>
@@ -20,7 +20,7 @@
       <div class="top-tools no-print">
         <select id="currentUserSelect"></select>
         <div id="currentUserLabel"></div>
-        <button id="logoutBtn" class="secondary no-print" type="button">Déconnexion</button>
+        <button id="logoutBtn" class="secondary" type="button">Déconnexion</button>
       </div>
     </div>
   </header>
@@ -38,11 +38,7 @@
     <section id="myTasksKpis" class="dashboard"></section>
 
     <section class="filters no-print">
-      <input
-        type="text"
-        id="myTasksSearchInput"
-        placeholder="Rechercher dans mes tâches"
-      />
+      <input type="text" id="myTasksSearchInput" placeholder="Rechercher dans mes tâches" />
       <button id="myTasksSearchBtn" type="button">Rechercher</button>
     </section>
 
@@ -150,9 +146,8 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
