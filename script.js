@@ -22,6 +22,15 @@ async function bootstrapApp() {
   const page = document.body.dataset.page || "";
 
   if (page === "login") {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      window.location.href = "index.html";
+      return;
+    }
+
     initLoginPage();
     return;
   }
@@ -214,11 +223,12 @@ async function loadReferenceData() {
   if (tasksRes.error) throw tasksRes.error;
 
   AppState.pillars = pillarsRes.data || [];
+
   AppState.users = (usersRes.data || []).map(u => ({
     ...u,
     name: u.full_name,
     user_type: u.role,
-    pillar: getPillarNameById(u.pillar_id)
+    pillar: getPillarNameByIdFromArray(u.pillar_id, pillarsRes.data || [])
   }));
 
   AppState.tasks = (tasksRes.data || []).map(t => ({
@@ -246,6 +256,11 @@ async function loadReferenceData() {
     created_by: t.created_by,
     created_at: t.created_at
   }));
+}
+
+function getPillarNameByIdFromArray(pillarId, pillarsArray) {
+  const pillar = pillarsArray.find(p => p.id === pillarId);
+  return pillar ? pillar.name : "";
 }
 
 function getPillarNameById(pillarId) {
@@ -421,6 +436,7 @@ function initRegisterPage() {
   populateRegistrationPillarDropdown();
   populateRegistrationSupervisorDropdown();
   renderRegisteredUsersTable();
+  renderCreatedPillarsTable();
 
   const pillarSelect = document.getElementById("regPillar");
   if (pillarSelect) {
@@ -528,7 +544,6 @@ function initPillarCreation() {
   if (page !== "register") return;
 
   populatePillarSupervisorDropdown();
-  renderCreatedPillarsTable();
 
   const createBtn = document.getElementById("createPillarBtn");
   if (createBtn) createBtn.addEventListener("click", createNewPillar);
