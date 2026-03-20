@@ -1,6 +1,4 @@
 window.addEventListener("load", async () => {
-  console.log("login.js chargé");
-
   const loginBtn = document.getElementById("loginBtn");
   const emailInput = document.getElementById("loginEmail");
   const passwordInput = document.getElementById("loginPassword");
@@ -16,15 +14,10 @@ window.addEventListener("load", async () => {
 
   async function waitForSupabaseClient(maxWaitMs = 5000) {
     const start = Date.now();
-
     while (!window.sb) {
-      if (Date.now() - start > maxWaitMs) {
-        console.error("Timeout: client Supabase indisponible.");
-        return null;
-      }
+      if (Date.now() - start > maxWaitMs) return null;
       await new Promise(resolve => setTimeout(resolve, 50));
     }
-
     return window.sb;
   }
 
@@ -36,53 +29,37 @@ window.addEventListener("load", async () => {
   }
 
   if (!loginBtn || !emailInput || !passwordInput || !messageBox) {
-    console.error("Éléments login introuvables.", {
-      loginBtn,
-      emailInput,
-      passwordInput,
-      messageBox
-    });
+    console.error("Éléments login introuvables.");
     return;
   }
 
-  console.log("Éléments login trouvés");
-
-  // Vérifie une session déjà valide
+  // IMPORTANT :
+  // pas de redirection auto ici
+  // on nettoie juste une éventuelle session cassée si besoin
   try {
-    const { data: sessionData, error: sessionError } = await sb.auth.getSession();
-
-    if (sessionError) {
-      console.error("Erreur session :", sessionError);
-    }
-
+    const { data: sessionData } = await sb.auth.getSession();
     if (sessionData?.session) {
       const {
-        data: { user },
-        error: userError
+        data: { user }
       } = await sb.auth.getUser();
 
-      if (!userError && user) {
+      if (user) {
         const { data: profile, error: profileError } = await sb
           .from("profiles")
           .select("id, is_active")
           .eq("id", user.id)
           .single();
 
-        if (!profileError && profile && profile.is_active === true) {
-          window.location.replace("index.html");
-          return;
+        if (profileError || !profile || profile.is_active !== true) {
+          await sb.auth.signOut();
         }
       }
-
-      await sb.auth.signOut();
     }
   } catch (err) {
-    console.error("Erreur vérification session/profil :", err);
+    console.error("Erreur vérification session :", err);
   }
 
   async function handleLogin() {
-    console.log("Clic sur Connexion détecté");
-
     const email = emailInput.value.trim();
     const password = passwordInput.value;
 
@@ -96,12 +73,7 @@ window.addEventListener("load", async () => {
     showMessage("Connexion en cours...", "info");
 
     try {
-      const { data, error } = await sb.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      console.log("Résultat signInWithPassword :", { data, error });
+      const { error } = await sb.auth.signInWithPassword({ email, password });
 
       if (error) {
         showMessage(`Connexion impossible : ${error.message}`, "error");
@@ -114,30 +86,22 @@ window.addEventListener("load", async () => {
       } = await sb.auth.getUser();
 
       if (userError || !user) {
-        console.error("Erreur getUser :", userError);
-        showMessage("Connexion réussie, mais impossible de récupérer le compte.", "error");
+        showMessage("Connexion réussie, mais utilisateur introuvable.", "error");
         return;
       }
 
       const { data: profile, error: profileError } = await sb
         .from("profiles")
-        .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
+        .select("id, is_active")
         .eq("id", user.id)
         .single();
 
-      console.log("Résultat profile :", { profile, profileError });
-
-      if (profileError) {
-        showMessage(`Profil introuvable : ${profileError.message}`, "error");
+      if (profileError || !profile) {
+        showMessage("Profil introuvable dans profiles.", "error");
         return;
       }
 
-      if (!profile) {
-        showMessage("Aucun profil trouvé pour cet utilisateur.", "error");
-        return;
-      }
-
-      if (profile.is_active === false) {
+      if (profile.is_active !== true) {
         await sb.auth.signOut();
         showMessage("Votre compte est désactivé.", "error");
         return;
@@ -150,7 +114,7 @@ window.addEventListener("load", async () => {
       }, 700);
 
     } catch (err) {
-      console.error("Erreur inattendue login :", err);
+      console.error(err);
       showMessage(`Erreur technique : ${err.message || err}`, "error");
     } finally {
       loginBtn.disabled = false;
@@ -159,14 +123,10 @@ window.addEventListener("load", async () => {
   }
 
   loginBtn.addEventListener("click", handleLogin);
-
   emailInput.addEventListener("keydown", e => {
     if (e.key === "Enter") handleLogin();
   });
-
   passwordInput.addEventListener("keydown", e => {
     if (e.key === "Enter") handleLogin();
   });
-
-  showMessage("Page prête. Vous pouvez vous connecter.", "info");
 });
