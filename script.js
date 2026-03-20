@@ -21,7 +21,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function waitForSupabaseClient(maxWaitMs = 5000) {
   const start = Date.now();
-
   while (!window.sb) {
     if (Date.now() - start > maxWaitMs) {
       throw new Error("Client Supabase indisponible.");
@@ -42,14 +41,14 @@ async function bootstrapApp() {
   }
 
   const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+
   if (sessionError) {
     throw new Error(`Erreur session: ${sessionError.message}`);
   }
 
- if (!sessionData?.session) {
-  window.location.replace("login.html");
-  return;
-}
+  if (!sessionData?.session) {
+    window.location.replace("login.html");
+    return;
   }
 
   await loadCurrentUser();
