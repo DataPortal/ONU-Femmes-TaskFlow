@@ -12,7 +12,7 @@
       <div class="brand">
         <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
         <div>
-          <h1>ONU Femmes - RDC Task Management Portal</h1>
+          <h1>ONU Femmes Task Manager</h1>
           <p>Initialisation du système</p>
         </div>
       </div>
@@ -23,99 +23,55 @@
     <h2 class="section-title">Initialiser l’application</h2>
 
     <section class="card" style="max-width: 980px;">
-      <h3 style="margin-top:0;">1. Créer le premier pilier</h3>
+      <h3 style="margin-top:0;">Créer la base fonctionnelle</h3>
 
       <div class="modal-row">
         <div>
           <label for="initPillarName">Nom court du pilier</label>
-          <input
-            id="initPillarName"
-            type="text"
-            placeholder="Ex. WPS"
-          />
+          <input id="initPillarName" type="text" placeholder="Ex. WPS" />
         </div>
 
         <div>
           <label for="initPillarFullName">Intitulé complet</label>
-          <input
-            id="initPillarFullName"
-            type="text"
-            placeholder="Ex. Women Peace and Security"
-          />
+          <input id="initPillarFullName" type="text" placeholder="Ex. Women Peace and Security" />
         </div>
       </div>
 
-      <h3>2. Créer le premier superviseur</h3>
-
       <div class="modal-row">
         <div>
-          <label for="initSupervisorName">Nom complet</label>
-          <input
-            id="initSupervisorName"
-            type="text"
-            placeholder="Ex. Sylvie Gougoua"
-          />
+          <label for="initSupervisorName">Nom superviseur</label>
+          <input id="initSupervisorName" type="text" placeholder="Ex. Sylvie Gougoua" />
         </div>
 
         <div>
-          <label for="initSupervisorEmail">Email</label>
-          <input
-            id="initSupervisorEmail"
-            type="email"
-            placeholder="nom@unwomen.org"
-          />
+          <label for="initSupervisorEmail">Email superviseur</label>
+          <input id="initSupervisorEmail" type="email" placeholder="nom@unwomen.org" />
         </div>
       </div>
 
       <div class="modal-row">
         <div>
           <label for="initSupervisorRole">Fonction</label>
-          <input
-            id="initSupervisorRole"
-            type="text"
-            placeholder="Ex. Programme Specialist WPS & HA"
-          />
+          <input id="initSupervisorRole" type="text" placeholder="Ex. Programme Specialist WPS & HA" />
         </div>
 
         <div>
-          <label for="initSupervisorOffice">Bureau / unité</label>
-          <input
-            id="initSupervisorOffice"
-            type="text"
-            placeholder="Ex. ONU Femmes RDC"
-          />
+          <label for="initSupervisorOffice">Bureau</label>
+          <input id="initSupervisorOffice" type="text" placeholder="Ex. ONU Femmes RDC" />
         </div>
       </div>
 
       <div class="modal-actions" style="justify-content:flex-start;">
-        <button id="initializeAppBtn" type="button">Initialiser l’application</button>
-        <button id="resetAppBtn" class="secondary" type="button">Réinitialiser toutes les données locales</button>
+        <button id="initializeAppBtn" type="button">Initialiser</button>
+        <button id="resetAppBtn" class="secondary" type="button">Réinitialiser</button>
       </div>
 
-      <div id="initMessage"></div>
-    </section>
-
-    <section class="grid-2" style="margin-top:24px;">
-      <div class="empty">
-        <strong>Ce que fait cette étape</strong><br><br>
-        Cette page permet de créer le premier <strong>pilier</strong> et le premier
-        <strong>superviseur</strong> du système. Une fois cette étape terminée,
-        l’application pourra fonctionner normalement avec l’inscription des membres,
-        la création des tâches et le suivi par équipe.
-      </div>
-
-      <div class="empty">
-        <strong>Logique du prototype</strong><br><br>
-        Les données créées ici sont stockées dans le navigateur via
-        <strong>localStorage</strong>. Cela permet de démarrer l’application
-        même si les fichiers <strong>pillars.json</strong>, <strong>users.json</strong>
-        et <strong>tasks.json</strong> sont vides.
-      </div>
+      <div id="initMessage" style="margin-top:12px;"></div>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-client.js"></script>
-<script src="script.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
