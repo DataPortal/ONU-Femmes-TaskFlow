@@ -7,7 +7,12 @@
     return;
   }
 
-  if (!window.sb) {
-    window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  try {
+    if (!window.sb) {
+      window.sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+    console.log("Supabase client initialisé avec succès.");
+  } catch (e) {
+    console.error("Erreur initialisation Supabase :", e);
   }
 })();
