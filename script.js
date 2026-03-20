@@ -6,11 +6,12 @@ const AppState = {
 };
 
 function getSb() {
-  return window.supabaseClient;
+  return window.sb || null;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
+    await waitForSupabaseClient();
     await bootstrapApp();
   } catch (error) {
     console.error("Erreur au démarrage :", error);
@@ -18,31 +19,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 });
 
+async function waitForSupabaseClient(maxWaitMs = 3000) {
+  const start = Date.now();
+
+  while (!window.sb) {
+    if (Date.now() - start > maxWaitMs) {
+      throw new Error("Client Supabase indisponible.");
+    }
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+}
+
 /* =========================
    BOOTSTRAP
 ========================= */
 
 async function bootstrapApp() {
   const sb = getSb();
+
   if (!sb) {
     throw new Error("Client Supabase indisponible.");
   }
 
   const page = document.body.dataset.page || "";
-
-  if (page === "login") {
-    const {
-      data: { session }
-    } = await sb.auth.getSession();
-
-    if (session) {
-      window.location.href = "index.html";
-      return;
-    }
-
-    initLoginPage();
-    return;
-  }
 
   if (page === "init") {
     await initInitializationPage();
@@ -72,98 +71,6 @@ async function bootstrapApp() {
   if (page === "dashboard") renderDashboardPage();
   if (page === "my-tasks") renderMyTasksPage();
   if (page === "my-team") renderMyTeamPage();
-}
-
-/* =========================
-   LOGIN / LOGOUT
-========================= */
-
-function initLoginPage() {
-  const sb = getSb();
-  const loginBtn = document.getElementById("loginBtn");
-  const emailInput = document.getElementById("loginEmail");
-  const passwordInput = document.getElementById("loginPassword");
-  const messageBox = document.getElementById("loginMessage");
-
-  if (!sb || !loginBtn || !emailInput || !passwordInput || !messageBox) return;
-
-  const submitLogin = async () => {
-    const email = emailInput.value.trim();
-    const password = passwordInput.value;
-
-    if (!email || !password) {
-      messageBox.innerHTML = `<div class="error-box">Veuillez renseigner votre email et votre mot de passe.</div>`;
-      return;
-    }
-
-    messageBox.innerHTML = `<div class="info-box">Connexion en cours...</div>`;
-
-    const { error } = await sb.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    if (error) {
-      console.error(error);
-      messageBox.innerHTML = `<div class="error-box">Connexion impossible. Vérifiez vos identifiants.</div>`;
-      return;
-    }
-
-    const {
-      data: { user },
-      error: userError
-    } = await sb.auth.getUser();
-
-    if (userError || !user) {
-      messageBox.innerHTML = `<div class="error-box">Connexion réussie, mais impossible de récupérer le compte.</div>`;
-      return;
-    }
-
-    const { data: profile, error: profileError } = await sb
-      .from("profiles")
-      .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
-      .eq("id", user.id)
-      .single();
-
-    if (profileError || !profile) {
-      console.error(profileError);
-      messageBox.innerHTML = `<div class="error-box">Compte connecté, mais profil introuvable dans profiles.</div>`;
-      return;
-    }
-
-    if (profile.is_active === false) {
-      await sb.auth.signOut();
-      messageBox.innerHTML = `<div class="error-box">Votre compte est désactivé.</div>`;
-      return;
-    }
-
-    messageBox.innerHTML = `<div class="success-box">Connexion réussie. Redirection en cours...</div>`;
-
-    setTimeout(() => {
-      window.location.href = "index.html";
-    }, 700);
-  };
-
-  loginBtn.addEventListener("click", submitLogin);
-
-  passwordInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") submitLogin();
-  });
-
-  emailInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") submitLogin();
-  });
-}
-
-function initLogout() {
-  const sb = getSb();
-  const logoutBtn = document.getElementById("logoutBtn");
-  if (!sb || !logoutBtn) return;
-
-  logoutBtn.addEventListener("click", async () => {
-    await sb.auth.signOut();
-    window.location.href = "login.html";
-  });
 }
 
 /* =========================
@@ -286,7 +193,7 @@ function getCurrentUser() {
 }
 
 /* =========================
-   HEADER
+   HEADER / LOGOUT
 ========================= */
 
 function initUserHeader() {
@@ -309,25 +216,28 @@ function initUserHeader() {
   }
 }
 
+function initLogout() {
+  const sb = getSb();
+  const logoutBtn = document.getElementById("logoutBtn");
+  if (!sb || !logoutBtn) return;
+
+  logoutBtn.addEventListener("click", async () => {
+    await sb.auth.signOut();
+    window.location.href = "login.html";
+  });
+}
+
 /* =========================
    OUTILS UI
 ========================= */
 
 function showGlobalError(message) {
-  const loginMessage = document.getElementById("loginMessage");
   const initMessage = document.getElementById("initMessage");
-
-  if (loginMessage) {
-    loginMessage.innerHTML = `<div class="error-box">${message}</div>`;
-    return;
-  }
-
   if (initMessage) {
     initMessage.innerHTML = `<div class="error-box">${message}</div>`;
     return;
   }
-
-  console.error(message);
+  alert(message);
 }
 
 function clamp(v, min, max) {
@@ -404,7 +314,7 @@ function canDeleteUser(targetUser) {
 }
 
 /* =========================
-   INIT APP PAGE
+   INIT PAGE
 ========================= */
 
 async function initInitializationPage() {
@@ -602,6 +512,28 @@ async function createNewPillar() {
 
   messageBox.innerHTML = `<div class="success-box">Pilier créé avec succès.</div>`;
   await reloadAndRerender();
+}
+
+function renderCreatedPillarsTable() {
+  const tbody = document.getElementById("pillarsTbody");
+  if (!tbody) return;
+
+  if (!AppState.pillars.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><span class="muted">Aucun pilier disponible.</span></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = AppState.pillars.map(pillar => {
+    const supervisor = AppState.users.find(u => u.id === pillar.supervisor_profile_id);
+    return `
+      <tr>
+        <td>${pillar.id}</td>
+        <td>${pillar.name}</td>
+        <td>${pillar.full_name}</td>
+        <td>${supervisor ? supervisor.name : "Non défini"}</td>
+      </tr>
+    `;
+  }).join("");
 }
 
 /* =========================
@@ -1081,102 +1013,4 @@ function renderMyTasksPage() {
   if (!currentUser || !tbody || !title) return;
 
   const myTasks = AppState.tasks.filter(t => t.assigned_to_id === currentUser.id);
-  title.textContent = `Mes tâches — ${currentUser.name}`;
-
-  const applySearch = () => {
-    const search = (searchInput?.value || "").toLowerCase().trim();
-
-    const filtered = myTasks.filter(t =>
-      t.title.toLowerCase().includes(search) ||
-      (t.pillar || "").toLowerCase().includes(search) ||
-      (t.status || "").toLowerCase().includes(search) ||
-      (t.priority || "").toLowerCase().includes(search) ||
-      (t.supervisor_name || "").toLowerCase().includes(search) ||
-      (t.staff_comment || "").toLowerCase().includes(search) ||
-      (t.supervisor_comment || "").toLowerCase().includes(search)
-    );
-
-    renderKPIs("myTasksKpis", filtered);
-
-    if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche trouvée.</span></td></tr>`;
-      return;
-    }
-
-    tbody.innerHTML = renderTaskRows(filtered);
-  };
-
-  if (searchBtn) searchBtn.addEventListener("click", applySearch);
-  if (searchInput) {
-    searchInput.addEventListener("keydown", e => {
-      if (e.key === "Enter") applySearch();
-    });
-  }
-
-  renderKPIs("myTasksKpis", myTasks);
-  tbody.innerHTML = myTasks.length
-    ? renderTaskRows(myTasks)
-    : `<tr><td colspan="12"><span class="muted">Aucune tâche assignée pour le moment.</span></td></tr>`;
-}
-
-function renderMyTeamPage() {
-  const currentUser = getCurrentUser();
-  const membersBox = document.getElementById("teamMembersList");
-  const tbody = document.getElementById("teamTasksTbody");
-  const title = document.getElementById("myTeamTitle");
-
-  if (!currentUser || !membersBox || !tbody || !title) return;
-
-  const teamMembers = AppState.users.filter(u => u.supervisor_id === currentUser.id);
-  const teamTasks = AppState.tasks.filter(t => t.supervisor_id === currentUser.id);
-
-  title.textContent = `Mon équipe — ${currentUser.name}`;
-  renderKPIs("myTeamKpis", teamTasks);
-
-  if (!teamMembers.length) {
-    membersBox.innerHTML = `<div class="empty">Vous n'avez aucun membre d'équipe rattaché comme superviseur.</div>`;
-    tbody.innerHTML = `<tr><td colspan="12"><span class="muted">Aucune tâche d'équipe à afficher.</span></td></tr>`;
-    return;
-  }
-
-  membersBox.innerHTML = teamMembers.map(member => {
-    const memberTasks = teamTasks.filter(t => t.assigned_to_id === member.id);
-    const done = memberTasks.filter(t => t.status === "Terminée").length;
-    const inProgress = memberTasks.filter(t => t.status === "En cours").length;
-    const late = memberTasks.filter(t => isLate(t)).length;
-
-    return `
-      <div class="member-card">
-        <h4>${member.name}</h4>
-        <div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div>
-        <div class="kpi-inline">
-          <span>Total tâches : <strong>${memberTasks.length}</strong></span>
-          <span>En cours : <strong>${inProgress}</strong></span>
-          <span>Terminées : <strong>${done}</strong></span>
-          <span>En retard : <strong>${late}</strong></span>
-        </div>
-      </div>
-    `;
-  }).join("");
-
-  tbody.innerHTML = renderTaskRows(teamTasks);
-}
-
-/* =========================
-   RELOAD
-========================= */
-
-async function reloadAndRerender() {
-  await loadReferenceData();
-
-  const page = document.body.dataset.page;
-  if (page === "register") {
-    populateRegistrationPillarDropdown();
-    populateRegistrationSupervisorDropdown();
-    renderRegisteredUsersTable();
-    renderCreatedPillarsTable();
-  }
-  if (page === "dashboard") renderDashboardPage();
-  if (page === "my-tasks") renderMyTasksPage();
-  if (page === "my-team") renderMyTeamPage();
-}
+  title.textContent = `Mes tâches — ${
