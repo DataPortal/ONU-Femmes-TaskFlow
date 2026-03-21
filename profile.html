@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ONU Femmes — Mon profil</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="profile">
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <div>
+          <h1>ONU Femmes Task Manager</h1>
+          <p>Gestion du profil</p>
+        </div>
+      </div>
+
+      <div class="top-tools no-print">
+        <button id="logoutBtn" class="secondary" type="button">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="no-print">
+    <a href="index.html">Dashboard</a>
+    <a href="mes-taches.html">Mes tâches</a>
+    <a href="mon-equipe.html">Mon équipe</a>
+    <a href="inscription.html">Inscription</a>
+    <a href="profile.html" class="active">Mon profil</a>
+  </nav>
+
+  <main class="container">
+    <div id="profileMessage"></div>
+
+    <section class="card">
+      <h2 class="section-title">Mon profil</h2>
+
+      <div class="form-group">
+        <label for="profileFullName">Nom complet</label>
+        <input id="profileFullName" type="text" />
+      </div>
+
+      <div class="form-group">
+        <label for="profileEmail">Email</label>
+        <input id="profileEmail" type="email" disabled />
+      </div>
+
+      <div class="form-group">
+        <label for="profileOffice">Bureau / Office</label>
+        <input id="profileOffice" type="text" />
+      </div>
+
+      <div class="form-group">
+        <label for="profilePillarDisplay">Pilier</label>
+        <input id="profilePillarDisplay" type="text" disabled />
+      </div>
+
+      <div class="form-group">
+        <label for="profileSupervisorDisplay">Superviseur</label>
+        <input id="profileSupervisorDisplay" type="text" disabled />
+      </div>
+
+      <div class="modal-actions" style="justify-content:flex-start;">
+        <button id="saveProfileBtn" type="button">Enregistrer les modifications</button>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2 class="section-title">Changer mon mot de passe</h2>
+
+      <div class="form-group">
+        <label for="newPassword">Nouveau mot de passe</label>
+        <input id="newPassword" type="password" />
+      </div>
+
+      <div class="form-group">
+        <label for="confirmNewPassword">Confirmer le nouveau mot de passe</label>
+        <input id="confirmNewPassword" type="password" />
+      </div>
+
+      <div class="modal-actions" style="justify-content:flex-start;">
+        <button id="changePasswordBtn" type="button">Changer le mot de passe</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>
