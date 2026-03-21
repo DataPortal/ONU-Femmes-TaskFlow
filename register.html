@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ONU Femmes — Inscription</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <div>
+          <h1>ONU Femmes Task Manager</h1>
+          <p>Inscription membre</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container login-page">
+    <section class="login-card">
+      <div class="login-card-header">
+        <h2 class="section-title">Créer un compte</h2>
+        <p class="muted">Le pilier et le superviseur choisis seront figés après inscription.</p>
+      </div>
+
+      <div id="registerMessage"></div>
+
+      <form id="registerForm" novalidate>
+        <div class="form-group">
+          <label for="registerFullName">Nom complet</label>
+          <input id="registerFullName" type="text" placeholder="Nom et prénom" />
+        </div>
+
+        <div class="form-group">
+          <label for="registerEmail">Email</label>
+          <input id="registerEmail" type="email" placeholder="prenom.nom@unwomen.org" />
+        </div>
+
+        <div class="form-group">
+          <label for="registerOffice">Bureau / Office</label>
+          <input id="registerOffice" type="text" placeholder="Ex. Kinshasa" />
+        </div>
+
+        <div class="form-group">
+          <label for="registerPillar">Pilier</label>
+          <select id="registerPillar">
+            <option value="">Sélectionner un pilier</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="registerSupervisor">Superviseur</label>
+          <select id="registerSupervisor">
+            <option value="">Sélectionner un superviseur</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="registerPassword">Mot de passe</label>
+          <input id="registerPassword" type="password" placeholder="********" />
+        </div>
+
+        <div class="form-group">
+          <label for="registerPasswordConfirm">Confirmer le mot de passe</label>
+          <input id="registerPasswordConfirm" type="password" placeholder="********" />
+        </div>
+
+        <div class="login-actions" style="gap:10px; flex-wrap:wrap;">
+          <button id="registerBtn" type="submit">Créer mon compte</button>
+          <a href="login.html" class="secondary action-btn" style="text-decoration:none;">Retour connexion</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="register.js"></script>
+</body>
+</html>
