@@ -108,33 +108,4 @@ window.addEventListener("DOMContentLoaded", async function () {
     const emailValue = email.value.trim();
 
     if (!emailValue) {
-      showMessage("Veuillez d’abord renseigner votre adresse email.", "error");
-      return;
-    }
-
-    showMessage("Envoi du lien de réinitialisation...", "info");
-
-    const { error } = await sb.auth.resetPasswordForEmail(emailValue, {
-      redirectTo: "https://dataportal.github.io/ONU-Femmes-TaskFlow/reset-password.html"
-    });
-
-    if (error) {
-      showMessage(`Erreur : ${error.message}`, "error");
-      return;
-    }
-
-    showMessage("Un email de réinitialisation a été envoyé.", "success");
-  }
-
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-    await doLogin();
-  });
-
-  if (forgotPasswordLink) {
-    forgotPasswordLink.addEventListener("click", async function (e) {
-      e.preventDefault();
-      await doForgotPassword();
-    });
-  }
-});
+      showMessage("Veuillez d’abord renseigner votre adresse email.",
