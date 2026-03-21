@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ONU Femmes — Connexion</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
+        <div>
+          <h1>ONU Femmes Task Manager</h1>
+          <p>Connexion sécurisée</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container login-page">
+    <section class="login-card">
+      <div class="login-card-header">
+        <h2 class="section-title">Connexion</h2>
+        <p class="muted">Accédez à votre espace de gestion des tâches</p>
+      </div>
+
+      <div id="loginMessage"></div>
+
+      <form id="loginForm" novalidate>
+        <div class="form-group">
+          <label for="loginEmail">Adresse email</label>
+          <input id="loginEmail" type="email" placeholder="prenom.nom@unwomen.org" />
+        </div>
+
+        <div class="form-group">
+          <label for="loginPassword">Mot de passe</label>
+          <input id="loginPassword" type="password" placeholder="********" />
+        </div>
+
+        <div class="login-actions" style="gap:10px; flex-wrap:wrap;">
+          <button id="loginBtn" type="submit">Connexion</button>
+          <a href="register.html" class="secondary action-btn" style="text-decoration:none;">S’inscrire</a>
+          <a href="#" id="forgotPasswordLink" class="secondary action-btn" style="text-decoration:none;">Mot de passe oublié</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>
