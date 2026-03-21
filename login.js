@@ -93,7 +93,7 @@ window.addEventListener("DOMContentLoaded", async function () {
       showMessage("Connexion réussie. Redirection...", "success");
 
       setTimeout(() => {
-        window.location.replace("index.html");
+        window.location.replace("dashboard.html");
       }, 700);
     } catch (err) {
       console.error("Erreur login :", err);
