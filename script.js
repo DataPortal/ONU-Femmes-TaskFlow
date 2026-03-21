@@ -36,15 +36,12 @@ async function bootstrapApp() {
   const page = document.body.dataset.page || "";
 
   const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+  if (sessionError) throw new Error(`Erreur session: ${sessionError.message}`);
 
-if (sessionError) {
-  throw new Error(`Erreur session: ${sessionError.message}`);
-}
-
-if (!sessionData?.session) {
-  window.location.replace("login.html");
-  return;
-}
+  if (!sessionData?.session) {
+    window.location.replace("login.html");
+    return;
+  }
 
   await loadCurrentUser();
   await loadReferenceData();
@@ -71,9 +68,7 @@ async function loadCurrentUser() {
     error: userError
   } = await sb.auth.getUser();
 
-  if (userError || !user) {
-    throw new Error("Utilisateur non connecté ou introuvable.");
-  }
+  if (userError || !user) throw new Error("Utilisateur non connecté ou introuvable.");
 
   const { data: profile, error: profileError } = await sb
     .from("profiles")
@@ -141,15 +136,13 @@ async function loadReferenceData() {
     return;
   }
 
-  console.warn("tasks_enriched indisponible, fallback sur tasks :", tasksViewRes.error.message);
-
   const tasksRes = await sb.from("tasks").select("*").order("id", { ascending: true });
   if (tasksRes.error) throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}`);
 
   AppState.tasks = (tasksRes.data || []).map(t => {
-    const assigned = AppState.users.find(u => u.id === t.assigned_to_id);
-    const supervisor = assigned ? AppState.users.find(u => u.id === assigned.supervisor_id) : null;
-    const pillar = AppState.pillars.find(p => p.id === t.pillar_id);
+    const assigned = AppState.users.find(u => String(u.id) === String(t.assigned_to_id));
+    const supervisor = assigned ? AppState.users.find(u => String(u.id) === String(assigned.supervisor_id)) : null;
+    const pillar = AppState.pillars.find(p => String(p.id) === String(t.pillar_id));
 
     return {
       id: t.id,
@@ -200,18 +193,13 @@ function getCurrentUser() {
 }
 
 function isAdmin() {
-  const user = getCurrentUser();
-  return !!user && user.user_type === "admin";
+  const u = getCurrentUser();
+  return !!u && u.user_type === "admin";
 }
 
 function isSupervisor() {
-  const user = getCurrentUser();
-  return !!user && user.user_type === "supervisor";
-}
-
-function isStaff() {
-  const user = getCurrentUser();
-  return !!user && user.user_type === "staff";
+  const u = getCurrentUser();
+  return !!u && u.user_type === "supervisor";
 }
 
 function isSupervisorOrAdmin() {
@@ -224,7 +212,7 @@ function getVisibleTasks() {
 
   if (currentUser.user_type === "admin") return AppState.tasks;
 
-  return AppState.tasks.filter(task => String(task.pillar_id) === String(currentUser.pillar_id));
+  return AppState.tasks.filter(t => String(t.pillar_id) === String(currentUser.pillar_id));
 }
 
 function canViewTask(task) {
@@ -238,7 +226,7 @@ function canViewTask(task) {
 function canExportDashboard() {
   const currentUser = getCurrentUser();
   if (!currentUser) return false;
-  return currentUser.user_type === "admin" || currentUser.user_type === "supervisor";
+  return ["admin", "supervisor"].includes(currentUser.user_type);
 }
 
 function canCreateTask() {
@@ -366,9 +354,7 @@ function getSupervisorBadge(status) {
   return `<span class="badge badge-grey">${status}</span>`;
 }
 
-/* =========================
-   REGISTER / PILIERS
-========================= */
+/* === REGISTER / PILIERS === */
 
 function initRegisterPage() {
   const page = document.body.dataset.page;
@@ -457,12 +443,6 @@ async function createNewPillar() {
   }
 
   setMessage("pillarMessage", "Pilier créé avec succès.", "success");
-
-  const pillarNameInput = document.getElementById("pillarName");
-  const pillarSupervisorSelect = document.getElementById("pillarSupervisor");
-  if (pillarNameInput) pillarNameInput.value = "";
-  if (pillarSupervisorSelect) pillarSupervisorSelect.value = "";
-
   await reloadAndRerender();
 }
 
@@ -495,11 +475,7 @@ async function createOrAssignUserFromRegisterPage() {
   const existingUser = AppState.users.find(u => (u.email || "").toLowerCase() === email);
 
   if (!existingUser) {
-    setMessage(
-      "userMessage",
-      "Aucun utilisateur Auth existant avec cet email. Créez d’abord le compte dans Supabase Authentication, puis revenez ici pour l’affecter.",
-      "error"
-    );
+    setMessage("userMessage", "Créez d’abord le compte utilisateur dans Authentication ou utilisez la page d’auto-inscription.", "error");
     return;
   }
 
@@ -520,14 +496,6 @@ async function createOrAssignUserFromRegisterPage() {
   }
 
   setMessage("userMessage", "Membre affecté / mis à jour avec succès.", "success");
-
-  ["userName", "userEmail", "userPillar", "userSupervisor"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  const userRole = document.getElementById("userRole");
-  if (userRole) userRole.value = "staff";
-
   await reloadAndRerender();
 }
 
@@ -560,9 +528,7 @@ function renderRegisterPage() {
   }).join("");
 }
 
-/* =========================
-   TASK CREATION
-========================= */
+/* === TASK CREATION === */
 
 function initTaskCreation() {
   const page = document.body.dataset.page;
@@ -687,21 +653,11 @@ async function createNewTask() {
   }
 
   setMessage("taskCreateMessage", "Tâche créée avec succès.", "success");
-
-  ["taskTitle", "taskPillar", "taskAssignedTo", "taskDueDate", "taskDescription"].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  const taskPriority = document.getElementById("taskPriority");
-  if (taskPriority) taskPriority.value = "Moyenne";
-
   await reloadAndRerender();
   closeCreateTaskModal();
 }
 
-/* =========================
-   TASK UPDATE
-========================= */
+/* === TASK UPDATE === */
 
 function initGlobalActions() {
   const closeBtn = document.getElementById("closeTaskModalBtn");
@@ -720,7 +676,7 @@ function openTaskModal(taskId) {
   const modal = document.getElementById("taskModal");
   if (!modal) return;
 
-  const task = AppState.tasks.find(t => t.id === taskId);
+  const task = AppState.tasks.find(t => String(t.id) === String(taskId));
   if (!task || !canViewTask(task)) return;
 
   document.getElementById("editTaskId").value = task.id;
@@ -745,7 +701,7 @@ async function saveTaskUpdate() {
   if (!currentUser || !sb) return;
 
   const taskId = Number(document.getElementById("editTaskId").value);
-  const task = AppState.tasks.find(t => t.id === taskId);
+  const task = AppState.tasks.find(t => Number(t.id) === taskId);
   if (!task || !canViewTask(task)) return;
 
   let progressScore = Number(document.getElementById("editProgressScore").value);
@@ -788,9 +744,7 @@ async function saveTaskUpdate() {
   await reloadAndRerender();
 }
 
-/* =========================
-   EXPORT / PRINT
-========================= */
+/* === EXPORT / PRINT === */
 
 function initExportAndPrint() {
   const page = document.body.dataset.page;
@@ -884,9 +838,7 @@ function printCurrentPage() {
   window.print();
 }
 
-/* =========================
-   RENDERING
-========================= */
+/* === RENDERING === */
 
 function renderTaskRows(tasks) {
   return tasks.map(task => `
