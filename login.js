@@ -1,13 +1,12 @@
 console.log("login.js chargé");
 
 window.addEventListener("DOMContentLoaded", async function () {
-  console.log("DOMContentLoaded déclenché");
-
   const form = document.getElementById("loginForm");
   const btn = document.getElementById("loginBtn");
   const email = document.getElementById("loginEmail");
   const password = document.getElementById("loginPassword");
   const message = document.getElementById("loginMessage");
+  const forgotPasswordLink = document.getElementById("forgotPasswordLink");
 
   function showMessage(text, type = "info") {
     if (!message) return;
@@ -19,30 +18,17 @@ window.addEventListener("DOMContentLoaded", async function () {
 
   async function waitForClient(maxWaitMs = 8000) {
     const start = Date.now();
-
     while (!window.sb) {
-      if (Date.now() - start > maxWaitMs) {
-        console.error("Timeout: client Supabase indisponible.");
-        return null;
-      }
+      if (Date.now() - start > maxWaitMs) return null;
       await new Promise(resolve => setTimeout(resolve, 50));
     }
-
     return window.sb;
   }
 
   if (!form || !btn || !email || !password || !message) {
-    console.error("Éléments de connexion introuvables.", {
-      form,
-      btn,
-      email,
-      password,
-      message
-    });
+    console.error("Éléments de connexion introuvables.");
     return;
   }
-
-  console.log("Éléments login trouvés");
 
   const sb = await waitForClient();
 
@@ -51,12 +37,9 @@ window.addEventListener("DOMContentLoaded", async function () {
     return;
   }
 
-  console.log("Client Supabase prêt");
   showMessage("Page prête. Vous pouvez vous connecter.", "info");
 
   async function doLogin() {
-    console.log("Tentative de connexion lancée");
-
     const emailValue = email.value.trim();
     const passwordValue = password.value;
 
@@ -75,8 +58,6 @@ window.addEventListener("DOMContentLoaded", async function () {
         password: passwordValue
       });
 
-      console.log("Résultat signInWithPassword :", error);
-
       if (error) {
         showMessage(`Connexion impossible : ${error.message}`, "error");
         return;
@@ -86,8 +67,6 @@ window.addEventListener("DOMContentLoaded", async function () {
         data: { user },
         error: userError
       } = await sb.auth.getUser();
-
-      console.log("Utilisateur connecté :", user, userError);
 
       if (userError || !user) {
         showMessage("Connexion réussie, mais utilisateur introuvable.", "error");
@@ -99,8 +78,6 @@ window.addEventListener("DOMContentLoaded", async function () {
         .select("id, is_active")
         .eq("id", user.id)
         .single();
-
-      console.log("Profil récupéré :", profile, profileError);
 
       if (profileError || !profile) {
         showMessage("Profil introuvable dans profiles.", "error");
@@ -127,15 +104,37 @@ window.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
+  async function doForgotPassword() {
+    const emailValue = email.value.trim();
+
+    if (!emailValue) {
+      showMessage("Veuillez d’abord renseigner votre adresse email.", "error");
+      return;
+    }
+
+    showMessage("Envoi du lien de réinitialisation...", "info");
+
+    const { error } = await sb.auth.resetPasswordForEmail(emailValue, {
+      redirectTo: "https://dataportal.github.io/ONU-Femmes-TaskFlow/reset-password.html"
+    });
+
+    if (error) {
+      showMessage(`Erreur : ${error.message}`, "error");
+      return;
+    }
+
+    showMessage("Un email de réinitialisation a été envoyé.", "success");
+  }
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
-    console.log("Submit formulaire détecté");
     await doLogin();
   });
 
-  btn.addEventListener("click", function () {
-    console.log("Clic bouton Connexion détecté");
-  });
-
-  console.log("Listeners attachés");
+  if (forgotPasswordLink) {
+    forgotPasswordLink.addEventListener("click", async function (e) {
+      e.preventDefault();
+      await doForgotPassword();
+    });
+  }
 });
