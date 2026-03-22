@@ -1,5 +1,6 @@
 window.addEventListener("DOMContentLoaded", async function () {
-  const sb = await waitForClient();
+  const authUI = window.AuthUI;
+  const sb = await authUI?.waitForClient();
 
   const message = document.getElementById("profileMessage");
   const saveProfileBtn = document.getElementById("saveProfileBtn");
@@ -14,15 +15,8 @@ window.addEventListener("DOMContentLoaded", async function () {
   const newPassword = document.getElementById("newPassword");
   const confirmNewPassword = document.getElementById("confirmNewPassword");
 
-  function showMessage(text, type = "info") {
-    let className = "info-box";
-    if (type === "error") className = "error-box";
-    if (type === "success") className = "success-box";
-    message.innerHTML = `<div class="${className}">${text}</div>`;
-  }
-
-  if (!sb) {
-    showMessage("Client Supabase introuvable.", "error");
+  if (!authUI || !sb) {
+    authUI?.showMessage(message, "Client Supabase introuvable.", "error");
     return;
   }
 
@@ -46,7 +40,7 @@ window.addEventListener("DOMContentLoaded", async function () {
     .single();
 
   if (profileError || !profile) {
-    showMessage("Profil introuvable.", "error");
+    authUI.showMessage(message, "Profil introuvable.", "error");
     return;
   }
 
@@ -58,8 +52,12 @@ window.addEventListener("DOMContentLoaded", async function () {
   const pillars = pillarsRes.data || [];
   const supervisors = supervisorsRes.data || [];
 
-  const pillar = pillars.find(p => String(p.id) === String(profile.pillar_id));
-  const supervisor = supervisors.find(s => String(s.id) === String(profile.supervisor_id));
+  const pillar = pillars.find(function (item) {
+    return String(item.id) === String(profile.pillar_id);
+  });
+  const supervisor = supervisors.find(function (item) {
+    return String(item.id) === String(profile.supervisor_id);
+  });
 
   fullName.value = profile.full_name || "";
   email.value = profile.email || "";
@@ -67,12 +65,12 @@ window.addEventListener("DOMContentLoaded", async function () {
   pillarDisplay.value = pillar ? pillar.name : "";
   supervisorDisplay.value = supervisor ? supervisor.full_name : "";
 
-  saveProfileBtn.addEventListener("click", async function () {
+  saveProfileBtn?.addEventListener("click", async function () {
     const vFullName = fullName.value.trim();
     const vOffice = office.value.trim();
 
     if (!vFullName) {
-      showMessage("Le nom complet est obligatoire.", "error");
+      authUI.showMessage(message, "Le nom complet est obligatoire.", "error");
       return;
     }
 
@@ -85,59 +83,37 @@ window.addEventListener("DOMContentLoaded", async function () {
       .eq("id", user.id);
 
     if (error) {
-      showMessage(`Erreur mise à jour profil : ${error.message}`, "error");
+      authUI.showMessage(message, `Erreur mise à jour profil : ${error.message}`, "error");
       return;
     }
 
-    showMessage("Profil mis à jour avec succès.", "success");
+    authUI.showMessage(message, "Profil mis à jour avec succès.", "success");
   });
 
-  changePasswordBtn.addEventListener("click", async function () {
-    const p1 = newPassword.value;
-    const p2 = confirmNewPassword.value;
+  changePasswordBtn?.addEventListener("click", async function () {
+    const passwordError = authUI.validatePasswordPair(newPassword.value, confirmNewPassword.value);
 
-    if (!p1 || !p2) {
-      showMessage("Veuillez renseigner les deux champs mot de passe.", "error");
-      return;
-    }
-
-    if (p1 !== p2) {
-      showMessage("Les mots de passe ne correspondent pas.", "error");
-      return;
-    }
-
-    if (p1.length < 8) {
-      showMessage("Le mot de passe doit contenir au moins 8 caractères.", "error");
+    if (passwordError) {
+      authUI.showMessage(message, passwordError, "error");
       return;
     }
 
     const { error } = await sb.auth.updateUser({
-      password: p1
+      password: newPassword.value
     });
 
     if (error) {
-      showMessage(`Erreur changement mot de passe : ${error.message}`, "error");
+      authUI.showMessage(message, `Erreur changement mot de passe : ${error.message}`, "error");
       return;
     }
 
     newPassword.value = "";
     confirmNewPassword.value = "";
-    showMessage("Mot de passe modifié avec succès.", "success");
+    authUI.showMessage(message, "Mot de passe modifié avec succès.", "success");
   });
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async function () {
-      await sb.auth.signOut();
-      window.location.replace("login.html");
-    });
-  }
+  logoutBtn?.addEventListener("click", async function () {
+    await sb.auth.signOut();
+    window.location.replace("login.html");
+  });
 });
-
-async function waitForClient(maxWaitMs = 8000) {
-  const start = Date.now();
-  while (!window.sb) {
-    if (Date.now() - start > maxWaitMs) return null;
-    await new Promise(resolve => setTimeout(resolve, 50));
-  }
-  return window.sb;
-}
