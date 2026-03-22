@@ -8,49 +8,32 @@ window.addEventListener("DOMContentLoaded", async function () {
   const message = document.getElementById("loginMessage");
   const forgotPasswordLink = document.getElementById("forgotPasswordLink");
 
-  function showMessage(text, type = "info") {
-    if (!message) return;
-    let className = "info-box";
-    if (type === "error") className = "error-box";
-    if (type === "success") className = "success-box";
-    message.innerHTML = `<div class="${className}">${text}</div>`;
-  }
-
-  async function waitForClient(maxWaitMs = 8000) {
-    const start = Date.now();
-    while (!window.sb) {
-      if (Date.now() - start > maxWaitMs) return null;
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-    return window.sb;
-  }
-
   if (!form || !btn || !email || !password || !message) {
     console.error("Éléments de connexion introuvables.");
     return;
   }
 
-  const sb = await waitForClient();
+  const authUI = window.AuthUI;
+  const sb = await authUI?.waitForClient();
 
-  if (!sb) {
-    showMessage("Client Supabase introuvable.", "error");
+  if (!authUI || !sb) {
+    authUI?.showMessage(message, "Client Supabase introuvable.", "error");
     return;
   }
 
-  showMessage("Page prête. Vous pouvez vous connecter.", "info");
+  authUI.showMessage(message, "Page prête. Vous pouvez vous connecter.", "info");
 
   async function doLogin() {
-    const emailValue = email.value.trim();
+    const emailValue = authUI.normalizeEmail(email.value);
     const passwordValue = password.value;
 
     if (!emailValue || !passwordValue) {
-      showMessage("Veuillez renseigner votre email et votre mot de passe.", "error");
+      authUI.showMessage(message, "Veuillez renseigner votre email et votre mot de passe.", "error");
       return;
     }
 
-    btn.disabled = true;
-    btn.textContent = "Connexion...";
-    showMessage("Connexion en cours...", "info");
+    authUI.setButtonLoading(btn, true, "Connexion...", "Connexion");
+    authUI.showMessage(message, "Connexion en cours...", "info");
 
     try {
       const { error } = await sb.auth.signInWithPassword({
@@ -59,7 +42,7 @@ window.addEventListener("DOMContentLoaded", async function () {
       });
 
       if (error) {
-        showMessage(`Connexion impossible : ${error.message}`, "error");
+        authUI.showMessage(message, `Connexion impossible : ${error.message}`, "error");
         return;
       }
 
@@ -69,7 +52,7 @@ window.addEventListener("DOMContentLoaded", async function () {
       } = await sb.auth.getUser();
 
       if (userError || !user) {
-        showMessage("Connexion réussie, mais utilisateur introuvable.", "error");
+        authUI.showMessage(message, "Connexion réussie, mais utilisateur introuvable.", "error");
         return;
       }
 
@@ -80,32 +63,62 @@ window.addEventListener("DOMContentLoaded", async function () {
         .single();
 
       if (profileError || !profile) {
-        showMessage("Profil introuvable dans profiles.", "error");
+        authUI.showMessage(message, "Profil introuvable dans profiles.", "error");
         return;
       }
 
       if (profile.is_active !== true) {
         await sb.auth.signOut();
-        showMessage("Votre compte est désactivé.", "error");
+        authUI.showMessage(message, "Votre compte est désactivé.", "error");
         return;
       }
 
-      showMessage("Connexion réussie. Redirection...", "success");
+      authUI.showMessage(message, "Connexion réussie. Redirection...", "success");
 
-      setTimeout(() => {
+      setTimeout(function () {
         window.location.replace("dashboard.html");
       }, 700);
     } catch (err) {
       console.error("Erreur login :", err);
-      showMessage(`Erreur technique : ${err.message || err}`, "error");
+      authUI.showMessage(message, `Erreur technique : ${err.message || err}`, "error");
     } finally {
-      btn.disabled = false;
-      btn.textContent = "Connexion";
+      authUI.setButtonLoading(btn, false, "Connexion...", "Connexion");
     }
   }
 
   async function doForgotPassword() {
-    const emailValue = email.value.trim();
+    const emailValue = authUI.normalizeEmail(email.value);
 
     if (!emailValue) {
-      showMessage("Veuillez d’abord renseigner votre adresse email.",
+      authUI.showMessage(message, "Veuillez d’abord renseigner votre adresse email.", "error");
+      return;
+    }
+
+    const redirectTo = new URL("reset-password.html", window.location.href).href;
+
+    authUI.showMessage(message, "Envoi du lien de réinitialisation...", "info");
+
+    const { error } = await sb.auth.resetPasswordForEmail(emailValue, { redirectTo });
+
+    if (error) {
+      authUI.showMessage(message, `Réinitialisation impossible : ${error.message}`, "error");
+      return;
+    }
+
+    authUI.showMessage(
+      message,
+      "Un lien de réinitialisation a été envoyé à votre adresse email.",
+      "success"
+    );
+  }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    await doLogin();
+  });
+
+  forgotPasswordLink?.addEventListener("click", async function (event) {
+    event.preventDefault();
+    await doForgotPassword();
+  });
+});
