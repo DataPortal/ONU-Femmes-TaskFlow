@@ -924,7 +924,7 @@ function renderTaskRows(tasks, options = {}) {
     <tr>
       <td>${task.id}</td>
       <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span></td>
-      ${showDescription ? `<td style="white-space:pre-line;">${task.description || "—"}</td>` : ""}
+      ${showDescription ? `<td class="description-cell">${task.description || "—"}</td>` : ""}
       <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role || ""}</span></td>
       <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role || ""}</span></td>
       <td>${getPriorityBadge(task.priority)}</td>
