@@ -37,6 +37,23 @@
     <h2 id="myTasksTitle" class="section-title">Mes tâches</h2>
     <section id="myTasksKpis" class="dashboard"></section>
 
+    <section class="filters no-print">
+      <select id="myTasksAssignedToFilter">
+        <option value="">Tous les assignés</option>
+      </select>
+
+      <select id="myTasksStatusFilter">
+        <option value="">Tous les statuts</option>
+        <option value="Non commencée">Non commencée</option>
+        <option value="En cours">En cours</option>
+        <option value="Bloquée">Bloquée</option>
+        <option value="Terminée">Terminée</option>
+      </select>
+
+      <input type="date" id="myTasksStartDateFilter" aria-label="Date de début" />
+      <input type="date" id="myTasksEndDateFilter" aria-label="Date de fin" />
+    </section>
+
     <section class="table-wrap">
       <table>
         <thead>
