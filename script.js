@@ -790,6 +790,7 @@ function getFilteredDashboardTasks() {
     const matchSearch =
       !search ||
       task.title.toLowerCase().includes(search) ||
+      (task.description || "").toLowerCase().includes(search) ||
       (task.assigned_to_name || "").toLowerCase().includes(search) ||
       (task.supervisor_name || "").toLowerCase().includes(search) ||
       (task.pillar || "").toLowerCase().includes(search);
@@ -840,11 +841,14 @@ function printCurrentPage() {
 
 /* === RENDERING === */
 
-function renderTaskRows(tasks) {
+function renderTaskRows(tasks, options = {}) {
+  const { showDescription = false } = options;
+
   return tasks.map(task => `
     <tr>
       <td>${task.id}</td>
       <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span></td>
+      ${showDescription ? `<td style="white-space:pre-line;">${task.description || "—"}</td>` : ""}
       <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role || ""}</span></td>
       <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role || ""}</span></td>
       <td>${getPriorityBadge(task.priority)}</td>
@@ -926,7 +930,7 @@ function renderDashboardPage() {
   const filteredTasks = getFilteredDashboardTasks();
 
   renderKPIs("dashboardKpis", filteredTasks);
-  tbody.innerHTML = renderTaskRows(filteredTasks);
+  tbody.innerHTML = renderTaskRows(filteredTasks, { showDescription: true });
 }
 
 function renderMyTasksPage() {
@@ -940,8 +944,8 @@ function renderMyTasksPage() {
   title.textContent = `Mes tâches — ${currentUser.name}`;
   renderKPIs("myTasksKpis", myTasks);
   tbody.innerHTML = myTasks.length
-    ? renderTaskRows(myTasks)
-    : `<tr><td colspan="12"><span class="muted">Aucune tâche assignée.</span></td></tr>`;
+    ? renderTaskRows(myTasks, { showDescription: true })
+    : `<tr><td colspan="13"><span class="muted">Aucune tâche assignée.</span></td></tr>`;
 }
 
 function renderMyTeamPage() {
