@@ -53,6 +53,7 @@ async function bootstrapApp() {
   initPillarCreation();
   initRegisterPage();
   initExportAndPrint();
+  initMyTasksFilters();
 
   if (page === "dashboard") renderDashboardPage();
   if (page === "my-tasks") renderMyTasksPage();
@@ -318,6 +319,60 @@ function isLate(task) {
   today.setHours(0, 0, 0, 0);
   const due = new Date(task.due_date);
   return due < today && task.status !== "Terminée";
+}
+
+function isTaskWithinDateRange(task, startDate, endDate) {
+  if (!startDate && !endDate) return true;
+  if (!task.due_date) return false;
+
+  const dueDate = new Date(task.due_date);
+  dueDate.setHours(0, 0, 0, 0);
+
+  if (startDate) {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    if (dueDate < start) return false;
+  }
+
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    if (dueDate > end) return false;
+  }
+
+  return true;
+}
+
+function applyTaskFilters(tasks, filters = {}) {
+  const {
+    search = "",
+    pillar = "",
+    supervisorId = "",
+    assignedToId = "",
+    status = "",
+    startDate = "",
+    endDate = ""
+  } = filters;
+
+  const normalizedSearch = (search || "").toLowerCase().trim();
+
+  return tasks.filter(task => {
+    const matchSearch =
+      !normalizedSearch ||
+      task.title.toLowerCase().includes(normalizedSearch) ||
+      (task.description || "").toLowerCase().includes(normalizedSearch) ||
+      (task.assigned_to_name || "").toLowerCase().includes(normalizedSearch) ||
+      (task.supervisor_name || "").toLowerCase().includes(normalizedSearch) ||
+      (task.pillar || "").toLowerCase().includes(normalizedSearch);
+
+    const matchPillar = !pillar || task.pillar === pillar;
+    const matchSupervisor = !supervisorId || String(task.supervisor_id) === String(supervisorId);
+    const matchAssignedTo = !assignedToId || String(task.assigned_to_id) === String(assignedToId);
+    const matchStatus = !status || task.status === status;
+    const matchDateRange = isTaskWithinDateRange(task, startDate, endDate);
+
+    return matchSearch && matchPillar && matchSupervisor && matchAssignedTo && matchStatus && matchDateRange;
+  });
 }
 
 function appendComment(existingText, authorName, newText) {
@@ -756,6 +811,10 @@ function initExportAndPrint() {
   const searchInput = document.getElementById("searchInput");
   const pillarFilter = document.getElementById("pillarFilter");
   const supervisorFilter = document.getElementById("supervisorFilter");
+  const assignedToFilter = document.getElementById("assignedToFilter");
+  const statusFilter = document.getElementById("statusFilter");
+  const startDateFilter = document.getElementById("startDateFilter");
+  const endDateFilter = document.getElementById("endDateFilter");
 
   if (exportBtn) {
     if (canExportDashboard()) {
@@ -775,30 +834,47 @@ function initExportAndPrint() {
   }
   if (pillarFilter) pillarFilter.addEventListener("change", renderDashboardPage);
   if (supervisorFilter) supervisorFilter.addEventListener("change", renderDashboardPage);
+  if (assignedToFilter) assignedToFilter.addEventListener("change", renderDashboardPage);
+  if (statusFilter) statusFilter.addEventListener("change", renderDashboardPage);
+  if (startDateFilter) startDateFilter.addEventListener("change", renderDashboardPage);
+  if (endDateFilter) endDateFilter.addEventListener("change", renderDashboardPage);
+}
+
+function initMyTasksFilters() {
+  const page = document.body.dataset.page;
+  if (page !== "my-tasks") return;
+
+  const assignedToFilter = document.getElementById("myTasksAssignedToFilter");
+  const statusFilter = document.getElementById("myTasksStatusFilter");
+  const startDateFilter = document.getElementById("myTasksStartDateFilter");
+  const endDateFilter = document.getElementById("myTasksEndDateFilter");
+
+  if (assignedToFilter) assignedToFilter.addEventListener("change", renderMyTasksPage);
+  if (statusFilter) statusFilter.addEventListener("change", renderMyTasksPage);
+  if (startDateFilter) startDateFilter.addEventListener("change", renderMyTasksPage);
+  if (endDateFilter) endDateFilter.addEventListener("change", renderMyTasksPage);
 }
 
 function getFilteredDashboardTasks() {
   const visibleTasks = getVisibleTasks();
-  const search = (document.getElementById("searchInput")?.value || "").toLowerCase().trim();
-  const pillarFilter = document.getElementById("pillarFilter");
-  const supervisorFilter = document.getElementById("supervisorFilter");
 
-  const selectedPillar = pillarFilter?.value || "";
-  const selectedSupervisor = supervisorFilter?.value || "";
+  return applyTaskFilters(visibleTasks, {
+    search: document.getElementById("searchInput")?.value || "",
+    pillar: document.getElementById("pillarFilter")?.value || "",
+    supervisorId: document.getElementById("supervisorFilter")?.value || "",
+    assignedToId: document.getElementById("assignedToFilter")?.value || "",
+    status: document.getElementById("statusFilter")?.value || "",
+    startDate: document.getElementById("startDateFilter")?.value || "",
+    endDate: document.getElementById("endDateFilter")?.value || ""
+  });
+}
 
-  return visibleTasks.filter(task => {
-    const matchSearch =
-      !search ||
-      task.title.toLowerCase().includes(search) ||
-      (task.description || "").toLowerCase().includes(search) ||
-      (task.assigned_to_name || "").toLowerCase().includes(search) ||
-      (task.supervisor_name || "").toLowerCase().includes(search) ||
-      (task.pillar || "").toLowerCase().includes(search);
-
-    const matchPillar = !selectedPillar || task.pillar === selectedPillar;
-    const matchSupervisor = !selectedSupervisor || String(task.supervisor_id) === String(selectedSupervisor);
-
-    return matchSearch && matchPillar && matchSupervisor;
+function getFilteredMyTasks(tasks) {
+  return applyTaskFilters(tasks, {
+    assignedToId: document.getElementById("myTasksAssignedToFilter")?.value || "",
+    status: document.getElementById("myTasksStatusFilter")?.value || "",
+    startDate: document.getElementById("myTasksStartDateFilter")?.value || "",
+    endDate: document.getElementById("myTasksEndDateFilter")?.value || ""
   });
 }
 
@@ -902,13 +978,16 @@ function renderDashboardPage() {
   const currentUser = getCurrentUser();
   const pillarFilter = document.getElementById("pillarFilter");
   const supervisorFilter = document.getElementById("supervisorFilter");
+  const assignedToFilter = document.getElementById("assignedToFilter");
 
   let visiblePillars = AppState.pillars;
   let visibleSupervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
+  let visibleAssignees = AppState.users;
 
   if (currentUser && currentUser.user_type !== "admin") {
     visiblePillars = AppState.pillars.filter(p => String(p.id) === String(currentUser.pillar_id));
     visibleSupervisors = visibleSupervisors.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
+    visibleAssignees = AppState.users.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
   }
 
   if (pillarFilter) {
@@ -927,6 +1006,14 @@ function renderDashboardPage() {
     supervisorFilter.value = visibleSupervisors.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
   }
 
+  if (assignedToFilter) {
+    const currentValue = assignedToFilter.value || "";
+    assignedToFilter.innerHTML =
+      `<option value="">Tous les assignés</option>` +
+      visibleAssignees.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+    assignedToFilter.value = visibleAssignees.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
+  }
+
   const filteredTasks = getFilteredDashboardTasks();
 
   renderKPIs("dashboardKpis", filteredTasks);
@@ -937,15 +1024,33 @@ function renderMyTasksPage() {
   const currentUser = getCurrentUser();
   const tbody = document.getElementById("myTasksTbody");
   const title = document.getElementById("myTasksTitle");
+  const assignedToFilter = document.getElementById("myTasksAssignedToFilter");
 
   if (!currentUser || !tbody || !title) return;
 
   const myTasks = getVisibleTasks().filter(t => String(t.assigned_to_id) === String(currentUser.id));
+
+  if (assignedToFilter) {
+    const currentValue = assignedToFilter.value || "";
+    const assignees = [];
+
+    if (myTasks.length) {
+      assignees.push({ id: currentUser.id, name: currentUser.name });
+    }
+
+    assignedToFilter.innerHTML =
+      `<option value="">Tous les assignés</option>` +
+      assignees.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+    assignedToFilter.value = assignees.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
+  }
+
+  const filteredTasks = getFilteredMyTasks(myTasks);
+
   title.textContent = `Mes tâches — ${currentUser.name}`;
-  renderKPIs("myTasksKpis", myTasks);
-  tbody.innerHTML = myTasks.length
-    ? renderTaskRows(myTasks, { showDescription: true })
-    : `<tr><td colspan="13"><span class="muted">Aucune tâche assignée.</span></td></tr>`;
+  renderKPIs("myTasksKpis", filteredTasks);
+  tbody.innerHTML = filteredTasks.length
+    ? renderTaskRows(filteredTasks, { showDescription: true })
+    : `<tr><td colspan="13"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
 }
 
 function renderMyTeamPage() {
