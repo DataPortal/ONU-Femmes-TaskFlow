@@ -5,6 +5,15 @@ const AppState = {
   currentUser: null
 };
 
+const STATUS = {
+  ON_TRACK: "En bonne voie",
+  DUE_SOON: "Échéance imminente",
+  LATE: "En retard",
+  DONE: "Achevé"
+};
+
+const IMMINENT_DAYS_THRESHOLD = 2;
+
 function getSb() {
   return window.sb || null;
 }
@@ -133,7 +142,7 @@ async function loadReferenceData() {
       description: t.description || "",
       created_by: t.created_by,
       created_at: t.created_at
-    }));
+    })).map(hydrateTaskStatus);
     return;
   }
 
@@ -170,7 +179,7 @@ async function loadReferenceData() {
       created_by: t.created_by,
       created_at: t.created_at
     };
-  });
+  }).map(hydrateTaskStatus);
 }
 
 function getPillarNameByIdFromArray(pillarId, pillarsArray) {
@@ -313,12 +322,50 @@ function scoreToPercent(score) {
   return clamp(Number(score), 0, 10) * 10;
 }
 
+function toLocalDateOnly(dateValue) {
+  const date = new Date(dateValue);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getProgressPercent(task) {
+  if (typeof task.progress === "number") return clamp(task.progress, 0, 100);
+  if (task.progress !== undefined && task.progress !== null && task.progress !== "") {
+    return clamp(Number(task.progress), 0, 100);
+  }
+  if (task.progress_score !== undefined && task.progress_score !== null && task.progress_score !== "") {
+    return scoreToPercent(task.progress_score);
+  }
+  return 0;
+}
+
+function computeAutomaticStatus(task) {
+  const progressPercent = getProgressPercent(task);
+  if (progressPercent >= 100) return STATUS.DONE;
+  if (!task.due_date) return STATUS.ON_TRACK;
+
+  const today = toLocalDateOnly(new Date());
+  const dueDate = toLocalDateOnly(task.due_date);
+  const diffMs = dueDate.getTime() - today.getTime();
+  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (daysRemaining < 0) return STATUS.LATE;
+  if (daysRemaining <= IMMINENT_DAYS_THRESHOLD) return STATUS.DUE_SOON;
+  return STATUS.ON_TRACK;
+}
+
+function hydrateTaskStatus(task) {
+  return {
+    ...task,
+    status: computeAutomaticStatus(task)
+  };
+}
+
 function isLate(task) {
-  if (!task.due_date) return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const due = new Date(task.due_date);
-  return due < today && task.status !== "Terminée";
+  return computeAutomaticStatus(task) === STATUS.LATE;
+}
+
+function isDueSoon(task) {
+  return computeAutomaticStatus(task) === STATUS.DUE_SOON;
 }
 
 function isTaskWithinDateRange(task, startDate, endDate) {
@@ -389,9 +436,10 @@ function appendComment(existingText, authorName, newText) {
 }
 
 function getStatusBadge(status) {
-  if (status === "Terminée") return `<span class="badge badge-green">${status}</span>`;
-  if (status === "En cours") return `<span class="badge badge-blue">${status}</span>`;
-  if (status === "Bloquée") return `<span class="badge badge-red">${status}</span>`;
+  if (status === STATUS.DONE) return `<span class="badge badge-green">${status}</span>`;
+  if (status === STATUS.DUE_SOON) return `<span class="badge badge-orange">${status}</span>`;
+  if (status === STATUS.LATE) return `<span class="badge badge-red">${status}</span>`;
+  if (status === STATUS.ON_TRACK) return `<span class="badge badge-blue">${status}</span>`;
   return `<span class="badge badge-grey">${status}</span>`;
 }
 
@@ -594,6 +642,7 @@ function initTaskCreation() {
   const openBtn = document.getElementById("openCreateTaskModalBtn");
   const closeBtn = document.getElementById("closeCreateTaskModalBtn");
   const createBtn = document.getElementById("createTaskBtn");
+  const dueDateInput = document.getElementById("taskDueDate");
   const modal = document.getElementById("createTaskModal");
 
   if (openBtn) {
@@ -607,9 +656,21 @@ function initTaskCreation() {
 
   if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
   if (createBtn) createBtn.addEventListener("click", createNewTask);
+  if (dueDateInput) dueDateInput.addEventListener("change", updateCreateTaskAutoStatus);
 
   window.addEventListener("click", e => {
     if (e.target === modal) closeCreateTaskModal();
+  });
+}
+
+function updateCreateTaskAutoStatus() {
+  const dueDateInput = document.getElementById("taskDueDate");
+  const autoStatusInput = document.getElementById("taskAutoStatus");
+  if (!autoStatusInput) return;
+
+  autoStatusInput.value = computeAutomaticStatus({
+    due_date: dueDateInput?.value || null,
+    progress: 0
   });
 }
 
@@ -647,6 +708,14 @@ function openCreateTaskModal() {
 
   populateTaskCreationDropdowns();
 
+  const planningDateInput = document.getElementById("taskPlanningDate");
+  const autoStatusInput = document.getElementById("taskAutoStatus");
+  if (planningDateInput) planningDateInput.value = new Date().toISOString().slice(0, 10);
+  if (autoStatusInput) autoStatusInput.value = STATUS.ON_TRACK;
+  const dueDateInput = document.getElementById("taskDueDate");
+  if (dueDateInput) dueDateInput.value = "";
+  updateCreateTaskAutoStatus();
+
   const modal = document.getElementById("createTaskModal");
   if (modal) modal.style.display = "block";
 }
@@ -673,8 +742,8 @@ async function createNewTask() {
   const dueDate = document.getElementById("taskDueDate")?.value || null;
   const description = (document.getElementById("taskDescription")?.value || "").trim();
 
-  if (!title || !pillarId || !assignedToId) {
-    setMessage("taskCreateMessage", "Veuillez renseigner le titre, le pilier et le membre assigné.", "error");
+  if (!title || !pillarId || !assignedToId || !dueDate) {
+    setMessage("taskCreateMessage", "Veuillez renseigner le titre, le pilier, le membre assigné et l’échéance.", "error");
     return;
   }
 
@@ -688,7 +757,7 @@ async function createNewTask() {
     pillar_id: pillarId,
     assigned_to_id: assignedToId,
     priority,
-    status: "Non commencée",
+    status: computeAutomaticStatus({ due_date: dueDate, progress: 0 }),
     progress_score: 0,
     progress: 0,
     staff_comment: "",
@@ -735,7 +804,7 @@ function openTaskModal(taskId) {
   if (!task || !canViewTask(task)) return;
 
   document.getElementById("editTaskId").value = task.id;
-  document.getElementById("editStatus").value = task.status || "Non commencée";
+  document.getElementById("editStatus").value = computeAutomaticStatus(task);
   document.getElementById("editProgressScore").value = task.progress_score ?? 0;
   document.getElementById("editStaffComment").value = "";
   document.getElementById("editSupervisorScore").value = task.supervisor_score ?? 0;
@@ -765,14 +834,17 @@ async function saveTaskUpdate() {
   progressScore = clamp(progressScore, 0, 10);
   supervisorScore = clamp(supervisorScore, 0, 10);
 
-  const status = document.getElementById("editStatus").value;
-  const supervisorStatus = document.getElementById("editSupervisorStatus").value;
-  const newStaffComment = document.getElementById("editStaffComment").value.trim();
-  const newSupervisorComment = document.getElementById("editSupervisorComment").value.trim();
-
   const isAssignedUser = String(currentUser.id) === String(task.assigned_to_id);
   const isSupervisorOnPillar = currentUser.user_type === "supervisor" && String(task.pillar_id) === String(currentUser.pillar_id);
   const isAdminUser = currentUser.user_type === "admin";
+
+  const status = computeAutomaticStatus({
+    ...task,
+    progress: isAssignedUser || isAdminUser ? scoreToPercent(progressScore) : task.progress
+  });
+  const supervisorStatus = document.getElementById("editSupervisorStatus").value;
+  const newStaffComment = document.getElementById("editStaffComment").value.trim();
+  const newSupervisorComment = document.getElementById("editSupervisorComment").value.trim();
 
   const payload = { status };
 
@@ -921,7 +993,7 @@ function renderTaskRows(tasks, options = {}) {
   const { showDescription = false } = options;
 
   return tasks.map(task => `
-    <tr>
+    <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
       <td>${task.id}</td>
       <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span></td>
       ${showDescription ? `<td class="description-cell">${task.description || "—"}</td>` : ""}
@@ -943,7 +1015,7 @@ function renderTaskRows(tasks, options = {}) {
         ${task.supervisor_progress || 0}%<br>${getSupervisorBadge(task.supervisor_status)}
       </td>
       <td style="white-space:pre-line;">${task.supervisor_comment || "—"}</td>
-      <td class="${isLate(task) ? 'late' : ''}">${task.due_date || ""}</td>
+      <td class="${isLate(task) ? 'late' : isDueSoon(task) ? 'soon' : ''}">${task.due_date || ""}</td>
       <td class="no-print">
         <div class="table-actions">
           <button class="action-btn" type="button" onclick="openTaskModal(${task.id})">Mettre à jour</button>
@@ -959,14 +1031,16 @@ function renderKPIs(targetId, tasks) {
   if (!el) return;
 
   const total = tasks.length;
-  const inProgress = tasks.filter(t => t.status === "En cours").length;
-  const completed = tasks.filter(t => t.status === "Terminée").length;
-  const late = tasks.filter(t => isLate(t)).length;
+  const onTrack = tasks.filter(t => computeAutomaticStatus(t) === STATUS.ON_TRACK).length;
+  const dueSoon = tasks.filter(t => computeAutomaticStatus(t) === STATUS.DUE_SOON).length;
+  const completed = tasks.filter(t => computeAutomaticStatus(t) === STATUS.DONE).length;
+  const late = tasks.filter(t => computeAutomaticStatus(t) === STATUS.LATE).length;
 
   el.innerHTML = `
     <div class="card"><h3>Total des tâches</h3><div class="value">${total}</div></div>
-    <div class="card"><h3>En cours</h3><div class="value">${inProgress}</div></div>
-    <div class="card"><h3>Terminées</h3><div class="value">${completed}</div></div>
+    <div class="card"><h3>En bonne voie</h3><div class="value">${onTrack}</div></div>
+    <div class="card"><h3>Échéance imminente</h3><div class="value">${dueSoon}</div></div>
+    <div class="card"><h3>Achevées</h3><div class="value">${completed}</div></div>
     <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
   `;
 }
