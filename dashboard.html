@@ -61,10 +61,10 @@
 
       <select id="statusFilter">
         <option value="">Tous les statuts</option>
-        <option value="Non commencée">Non commencée</option>
-        <option value="En cours">En cours</option>
-        <option value="Bloquée">Bloquée</option>
-        <option value="Terminée">Terminée</option>
+        <option value="En bonne voie">En bonne voie</option>
+        <option value="Échéance imminente">Échéance imminente</option>
+        <option value="En retard">En retard</option>
+        <option value="Achevé">Achevé</option>
       </select>
 
       <input type="date" id="startDateFilter" aria-label="Date de début" />
@@ -122,12 +122,13 @@
       <div class="modal-row">
         <div>
           <label for="editStatus">Statut</label>
-          <select id="editStatus">
-            <option>Non commencée</option>
-            <option>En cours</option>
-            <option>Bloquée</option>
-            <option>Terminée</option>
+          <select id="editStatus" disabled>
+            <option>En bonne voie</option>
+            <option>Échéance imminente</option>
+            <option>En retard</option>
+            <option>Achevé</option>
           </select>
+          <small class="muted">Calculé automatiquement selon l’échéance et la progression.</small>
         </div>
 
         <div>
@@ -234,8 +235,20 @@
 
       <div class="modal-row">
         <div>
+          <label for="taskPlanningDate">Date de planification</label>
+          <input id="taskPlanningDate" type="date" disabled />
+        </div>
+        <div>
           <label for="taskDueDate">Échéance</label>
-          <input id="taskDueDate" type="date" />
+          <input id="taskDueDate" type="date" required />
+        </div>
+      </div>
+
+      <div class="modal-row">
+        <div>
+          <label for="taskAutoStatus">Statut</label>
+          <input id="taskAutoStatus" type="text" value="En bonne voie" disabled />
+          <small class="muted">Le statut sera mis à jour automatiquement.</small>
         </div>
         <div></div>
       </div>
