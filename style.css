@@ -1,6 +1,7 @@
 :root{
   --uw-blue:#448BCA;
   --uw-orange:#F58220;
+  --table-header-bg:#2f6ea5;
   --bg:#f5f7fa;
   --card:#ffffff;
   --text:#1f2937;
@@ -198,7 +199,7 @@ table{
 }
 
 thead th{
-  background:var(--uw-orange);
+  background:var(--table-header-bg);
   color:#fff;
   text-align:left;
   padding:12px;
@@ -226,6 +227,7 @@ tbody td{
 .badge-green{ background:#d1fae5; color:#065f46; }
 .badge-yellow{ background:#fef3c7; color:#92400e; }
 .badge-red{ background:#fee2e2; color:#991b1b; }
+.badge-orange{ background:#ffedd5; color:#9a3412; }
 
 .progress-track{
   width:180px;
@@ -253,6 +255,19 @@ tbody td{
 .late{
   color:var(--danger);
   font-weight:700;
+}
+
+.soon{
+  color:#c2410c;
+  font-weight:700;
+}
+
+.row-due-soon td{
+  background:#fff7ed;
+}
+
+.row-late td{
+  background:#fee2e2;
 }
 
 .grid-2{
