@@ -673,7 +673,23 @@ function updateCreateTaskAutoStatus() {
     progress: 0
   });
 }
+function normalizeStatus(status) {
+  return String(status || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
 
+function getStatusCandidates(status) {
+  const normalized = normalizeStatus(status);
+  if (!status || normalized === status) return [status];
+  return [status, normalized];
+}
+
+function isStatusConstraintError(error) {
+  if (!error) return false;
+  const raw = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
+  return raw.includes("tasks_status_check") || raw.includes("violates check constraint");
+}
 function populateTaskCreationDropdowns() {
   const taskPillar = document.getElementById("taskPillar");
   const taskAssignedTo = document.getElementById("taskAssignedTo");
