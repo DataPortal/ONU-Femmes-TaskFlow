@@ -2,7 +2,9 @@ const AppState = {
   pillars: [],
   users: [],
   tasks: [],
-  currentUser: null
+  currentUser: null,
+  pillarActivitiesById: {},
+  taskActivitiesById: {}
 };
 
 const STATUS = {
@@ -13,9 +15,33 @@ const STATUS = {
 };
 
 const IMMINENT_DAYS_THRESHOLD = 2;
+const PILLAR_ACTIVITIES_STORAGE_KEY = "unw_pillar_activities";
+const TASK_ACTIVITIES_STORAGE_KEY = "unw_task_activities";
 
 function getSb() {
   return window.sb || null;
+}
+
+function safeParseJson(raw, fallback = {}) {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function loadLocalActivityMaps() {
+  AppState.pillarActivitiesById = safeParseJson(localStorage.getItem(PILLAR_ACTIVITIES_STORAGE_KEY), {});
+  AppState.taskActivitiesById = safeParseJson(localStorage.getItem(TASK_ACTIVITIES_STORAGE_KEY), {});
+}
+
+function persistPillarActivities() {
+  localStorage.setItem(PILLAR_ACTIVITIES_STORAGE_KEY, JSON.stringify(AppState.pillarActivitiesById || {}));
+}
+
+function persistTaskActivities() {
+  localStorage.setItem(TASK_ACTIVITIES_STORAGE_KEY, JSON.stringify(AppState.taskActivitiesById || {}));
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -53,6 +79,7 @@ async function bootstrapApp() {
   }
 
   await loadCurrentUser();
+  loadLocalActivityMaps();
   await loadReferenceData();
 
   initUserHeader();
@@ -108,6 +135,11 @@ async function loadReferenceData() {
   if (usersRes.error) throw new Error(`Lecture profiles impossible: ${usersRes.error.message}`);
 
   AppState.pillars = pillarsRes.data || [];
+  AppState.pillarActivitiesById = {
+    ...AppState.pillarActivitiesById,
+    ...extractPillarActivitiesFromDb(AppState.pillars)
+  };
+  persistPillarActivities();
   AppState.users = (usersRes.data || []).map(u => ({
     ...u,
     name: u.full_name,
@@ -139,10 +171,12 @@ async function loadReferenceData() {
       supervisor_status: t.supervisor_status,
       supervisor_comment: t.supervisor_comment || "",
       due_date: t.due_date,
-      description: t.description || "",
+      description: stripActivityFromDescription(t.description),
       created_by: t.created_by,
-      created_at: t.created_at
+      created_at: t.created_at,
+      activity_name: t.activity_name || AppState.taskActivitiesById[String(t.id)] || extractActivityFromDescription(t.description)
     })).map(hydrateTaskStatus);
+    persistTaskActivitiesFromTasks();
     return;
   }
 
@@ -175,11 +209,55 @@ async function loadReferenceData() {
       supervisor_status: t.supervisor_status,
       supervisor_comment: t.supervisor_comment || "",
       due_date: t.due_date,
-      description: t.description || "",
+      description: stripActivityFromDescription(t.description),
       created_by: t.created_by,
-      created_at: t.created_at
+      created_at: t.created_at,
+      activity_name: t.activity_name || AppState.taskActivitiesById[String(t.id)] || extractActivityFromDescription(t.description)
     };
   }).map(hydrateTaskStatus);
+  persistTaskActivitiesFromTasks();
+}
+
+function persistTaskActivitiesFromTasks() {
+  AppState.tasks.forEach(task => {
+    if (task?.id && task.activity_name) {
+      AppState.taskActivitiesById[String(task.id)] = task.activity_name;
+    }
+  });
+  persistTaskActivities();
+}
+
+function extractPillarActivitiesFromDb(pillars) {
+  const mapped = {};
+  (pillars || []).forEach(pillar => {
+    const list = normalizeActivitiesList(pillar?.main_activities || pillar?.activities || []);
+    if (list.length) mapped[String(pillar.id)] = list;
+  });
+  return mapped;
+}
+
+function normalizeActivitiesList(value) {
+  if (Array.isArray(value)) {
+    return value.map(v => String(v || "").trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function extractActivityFromDescription(description) {
+  const text = String(description || "");
+  const match = text.match(/^\[Activité:\s*(.+?)\]/m);
+  return match ? match[1].trim() : "";
+}
+
+function stripActivityFromDescription(description) {
+  return String(description || "").replace(/^\[Activité:\s*.+?\]\s*/m, "").trim();
+}
+
+function getActivitiesForPillar(pillarId) {
+  return AppState.pillarActivitiesById[String(pillarId)] || [];
 }
 
 function getPillarNameByIdFromArray(pillarId, pillarsArray) {
@@ -266,8 +344,7 @@ function initUserHeader() {
   const selector = document.getElementById("currentUserSelect");
   const label = document.getElementById("currentUserLabel");
   const currentUser = getCurrentUser();
-
-  if (selector && currentUser) {
+    if (selector && currentUser) {
     selector.innerHTML = `<option value="${currentUser.id}">${currentUser.name} — ${currentUser.user_type}</option>`;
     selector.disabled = true;
   }
@@ -479,12 +556,18 @@ function initPillarCreation() {
   if (createPillarBtn) {
     createPillarBtn.addEventListener("click", createNewPillar);
   }
+
+  const saveActivitiesBtn = document.getElementById("savePillarActivitiesBtn");
+  const pillarActivitiesPillar = document.getElementById("pillarActivitiesPillar");
+  if (saveActivitiesBtn) saveActivitiesBtn.addEventListener("click", savePillarActivities);
+  if (pillarActivitiesPillar) pillarActivitiesPillar.addEventListener("change", loadActivitiesForSelectedPillar);
 }
 
 function populateRegisterDropdowns() {
   const pillarSupervisor = document.getElementById("pillarSupervisor");
   const userPillar = document.getElementById("userPillar");
   const userSupervisor = document.getElementById("userSupervisor");
+  const pillarActivitiesPillar = document.getElementById("pillarActivitiesPillar");
   const currentUser = getCurrentUser();
 
   let supervisors = AppState.users.filter(
@@ -515,6 +598,61 @@ function populateRegisterDropdowns() {
       `<option value="">Sélectionner un superviseur</option>` +
       supervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
   }
+
+  if (pillarActivitiesPillar) {
+    const currentValue = pillarActivitiesPillar.value || "";
+    pillarActivitiesPillar.innerHTML =
+      `<option value="">Sélectionner un pilier</option>` +
+      visiblePillars.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+    pillarActivitiesPillar.value = visiblePillars.some(p => String(p.id) === String(currentValue)) ? currentValue : "";
+    if (!pillarActivitiesPillar.value && visiblePillars.length === 1) {
+      pillarActivitiesPillar.value = String(visiblePillars[0].id);
+    }
+    loadActivitiesForSelectedPillar();
+  }
+}
+
+function loadActivitiesForSelectedPillar() {
+  const pillarId = document.getElementById("pillarActivitiesPillar")?.value || "";
+  const input = document.getElementById("pillarActivitiesInput");
+  if (!input) return;
+  input.value = pillarId ? getActivitiesForPillar(pillarId).join("\n") : "";
+}
+
+async function savePillarActivities() {
+  const sb = getSb();
+  const currentUser = getCurrentUser();
+  if (!sb || !currentUser) return;
+
+  if (!canCreatePillar()) {
+    setMessage("pillarActivitiesMessage", "Seuls les superviseurs et admins peuvent enregistrer les activités d’un pilier.", "error");
+    return;
+  }
+
+  const pillarId = document.getElementById("pillarActivitiesPillar")?.value || "";
+  const rawActivities = document.getElementById("pillarActivitiesInput")?.value || "";
+  const activities = normalizeActivitiesList(rawActivities);
+
+  if (!pillarId) {
+    setMessage("pillarActivitiesMessage", "Veuillez sélectionner un pilier.", "error");
+    return;
+  }
+
+  if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
+    setMessage("pillarActivitiesMessage", "Vous ne pouvez définir les activités que de votre pilier.", "error");
+    return;
+  }
+
+  AppState.pillarActivitiesById[String(pillarId)] = activities;
+  persistPillarActivities();
+
+  const { error } = await sb.from("pillars").update({ main_activities: activities }).eq("id", pillarId);
+  if (error && !`${error.message || ""}`.toLowerCase().includes("main_activities")) {
+    setMessage("pillarActivitiesMessage", `Impossible d’enregistrer les activités : ${error.message}`, "error");
+    return;
+  }
+
+  setMessage("pillarActivitiesMessage", "Activités enregistrées avec succès.", "success");
 }
 
 async function createNewPillar() {
@@ -553,7 +691,7 @@ async function createOrAssignUserFromRegisterPage() {
   const sb = getSb();
   const currentUser = getCurrentUser();
   if (!sb || !currentUser) return;
-
+  
   if (!canManageMembers()) {
     setMessage("userMessage", "Seuls les superviseurs et admins peuvent gérer les membres.", "error");
     return;
@@ -622,10 +760,12 @@ function renderRegisterPage() {
 
   pillarsList.innerHTML = visiblePillars.map(p => {
     const supervisor = AppState.users.find(u => String(u.id) === String(p.supervisor_profile_id));
+    const activities = getActivitiesForPillar(p.id);
     return `
       <div class="member-card">
         <h4>${p.name}</h4>
         <div class="muted">Superviseur : ${supervisor ? supervisor.name : "Non défini"}</div>
+        <div class="muted">Activités : ${activities.length ? activities.join(", ") : "Non définies"}</div>
       </div>
     `;
   }).join("");
@@ -643,6 +783,7 @@ function initTaskCreation() {
   const closeBtn = document.getElementById("closeCreateTaskModalBtn");
   const createBtn = document.getElementById("createTaskBtn");
   const dueDateInput = document.getElementById("taskDueDate");
+  const pillarInput = document.getElementById("taskPillar");
   const modal = document.getElementById("createTaskModal");
 
   if (openBtn) {
@@ -657,6 +798,7 @@ function initTaskCreation() {
   if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
   if (createBtn) createBtn.addEventListener("click", createNewTask);
   if (dueDateInput) dueDateInput.addEventListener("change", updateCreateTaskAutoStatus);
+  if (pillarInput) pillarInput.addEventListener("change", populateTaskActivityOptions);
 
   window.addEventListener("click", e => {
     if (e.target === modal) closeCreateTaskModal();
@@ -714,6 +856,23 @@ function populateTaskCreationDropdowns() {
       `<option value="">Sélectionner un membre</option>` +
       eligibleUsers.map(u => `<option value="${u.id}">${u.name} — ${u.pillar || "Sans pilier"}</option>`).join("");
   }
+
+  populateTaskActivityOptions();
+}
+
+function populateTaskActivityOptions() {
+  const activitySelect = document.getElementById("taskActivity");
+  const taskPillar = document.getElementById("taskPillar");
+  if (!activitySelect || !taskPillar) return;
+
+  const pillarId = taskPillar.value || "";
+  const activities = pillarId ? getActivitiesForPillar(pillarId) : [];
+  const previousValue = activitySelect.value || "";
+
+  activitySelect.innerHTML =
+    `<option value="">${activities.length ? "Sélectionner une activité" : "Aucune activité définie pour ce pilier"}</option>` +
+    activities.map(activity => `<option value="${activity}">${activity}</option>`).join("");
+  activitySelect.value = activities.includes(previousValue) ? previousValue : "";
 }
 
 function openCreateTaskModal() {
@@ -756,6 +915,7 @@ async function createNewTask() {
   const assignedToId = document.getElementById("taskAssignedTo")?.value || "";
   const priority = document.getElementById("taskPriority")?.value || "Moyenne";
   const dueDate = document.getElementById("taskDueDate")?.value || null;
+  const activityName = (document.getElementById("taskActivity")?.value || "").trim();
   const description = (document.getElementById("taskDescription")?.value || "").trim();
 
   if (!title || !pillarId || !assignedToId || !dueDate) {
@@ -782,7 +942,7 @@ async function createNewTask() {
     supervisor_status: "Non évalué",
     supervisor_comment: "",
     due_date: dueDate,
-    description,
+    description: activityName ? `[Activité: ${activityName}]\n${description}`.trim() : description,
     created_by: currentUser.id
   };
 
@@ -790,6 +950,21 @@ async function createNewTask() {
   if (error) {
     setMessage("taskCreateMessage", `Création impossible : ${error.message}`, "error");
     return;
+  }
+
+  if (activityName) {
+    const createdTaskRes = await sb
+      .from("tasks")
+      .select("id")
+      .eq("created_by", currentUser.id)
+      .eq("title", title)
+      .order("id", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!createdTaskRes.error && createdTaskRes.data?.id) {
+      AppState.taskActivitiesById[String(createdTaskRes.data.id)] = activityName;
+      persistTaskActivities();
+    }
   }
 
   setMessage("taskCreateMessage", "Tâche créée avec succès.", "success");
@@ -863,7 +1038,7 @@ async function saveTaskUpdate() {
   const newSupervisorComment = document.getElementById("editSupervisorComment").value.trim();
 
   const payload = { status };
-
+  
   if (isAssignedUser || isAdminUser) {
     payload.progress_score = progressScore;
     payload.progress = scoreToPercent(progressScore);
@@ -1011,7 +1186,7 @@ function renderTaskRows(tasks, options = {}) {
   return tasks.map(task => `
     <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
       <td>${task.id}</td>
-      <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span></td>
+      <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span><br><span class="muted">Activité : ${task.activity_name || "Non définie"}</span></td>
       ${showDescription ? `<td class="description-cell">${task.description || "—"}</td>` : ""}
       <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role || ""}</span></td>
       <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role || ""}</span></td>
