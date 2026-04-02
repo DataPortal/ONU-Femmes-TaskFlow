@@ -344,14 +344,15 @@ function initUserHeader() {
   const selector = document.getElementById("currentUserSelect");
   const label = document.getElementById("currentUserLabel");
   const currentUser = getCurrentUser();
-    if (selector && currentUser) {
+
+  if (selector && currentUser) {
     selector.innerHTML = `<option value="${currentUser.id}">${currentUser.name} — ${currentUser.user_type}</option>`;
     selector.disabled = true;
   }
 
   if (label && currentUser) {
     const supervisor = AppState.users.find(u => String(u.id) === String(currentUser.supervisor_id));
-    label.innerHTML = `
+       label.innerHTML = `
       <strong>${currentUser.name}</strong><br>
       <span class="muted">${currentUser.user_type} | ${currentUser.pillar || "Sans pilier"}</span><br>
       <span class="muted">Superviseur : ${supervisor ? supervisor.name : "Aucun"}</span>
@@ -691,7 +692,7 @@ async function createOrAssignUserFromRegisterPage() {
   const sb = getSb();
   const currentUser = getCurrentUser();
   if (!sb || !currentUser) return;
-  
+
   if (!canManageMembers()) {
     setMessage("userMessage", "Seuls les superviseurs et admins peuvent gérer les membres.", "error");
     return;
@@ -705,7 +706,7 @@ async function createOrAssignUserFromRegisterPage() {
 
   if (!fullName || !email || !pillarId || !supervisorId) {
     setMessage("userMessage", "Veuillez renseigner le nom, l’email, le pilier et le superviseur.", "error");
-    return;
+        return;
   }
 
   if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
@@ -928,7 +929,7 @@ async function createNewTask() {
     return;
   }
 
-  const payload = {
+  const basePayload = {
     title,
     pillar_id: pillarId,
     assigned_to_id: assignedToId,
@@ -946,9 +947,23 @@ async function createNewTask() {
     created_by: currentUser.id
   };
 
-  const { error } = await sb.from("tasks").insert([payload]);
-  if (error) {
-    setMessage("taskCreateMessage", `Création impossible : ${error.message}`, "error");
+  const statusCandidates = getStatusCandidates(basePayload.status);
+  let insertError = null;
+
+  for (const candidate of statusCandidates) {
+    const payload = { ...basePayload, status: candidate };
+    const { error } = await sb.from("tasks").insert([payload]);
+    if (!error) {
+      insertError = null;
+      break;
+    }
+
+    insertError = error;
+    if (!isStatusConstraintError(error)) break;
+  }
+
+  if (insertError) {
+    setMessage("taskCreateMessage", `Création impossible : ${insertError.message}`, "error");
     return;
   }
 
@@ -1038,23 +1053,35 @@ async function saveTaskUpdate() {
   const newSupervisorComment = document.getElementById("editSupervisorComment").value.trim();
 
   const payload = { status };
-  
+
   if (isAssignedUser || isAdminUser) {
     payload.progress_score = progressScore;
     payload.progress = scoreToPercent(progressScore);
     payload.staff_comment = appendComment(task.staff_comment, currentUser.name, newStaffComment);
   }
-
-  if (isSupervisorOnPillar || isAdminUser) {
+    if (isSupervisorOnPillar || isAdminUser) {
     payload.supervisor_score = supervisorScore;
     payload.supervisor_progress = scoreToPercent(supervisorScore);
     payload.supervisor_status = supervisorStatus;
     payload.supervisor_comment = appendComment(task.supervisor_comment, currentUser.name, newSupervisorComment);
   }
 
-  const { error } = await sb.from("tasks").update(payload).eq("id", taskId);
-  if (error) {
-    alert(`Erreur mise à jour: ${error.message}`);
+  const statusCandidates = getStatusCandidates(payload.status);
+  let updateError = null;
+
+  for (const candidate of statusCandidates) {
+    const attemptPayload = { ...payload, status: candidate };
+    const { error } = await sb.from("tasks").update(attemptPayload).eq("id", taskId);
+    if (!error) {
+      updateError = null;
+      break;
+    }
+    updateError = error;
+    if (!isStatusConstraintError(error)) break;
+  }
+
+  if (updateError) {
+    alert(`Erreur mise à jour: ${updateError.message}`);
     return;
   }
 
