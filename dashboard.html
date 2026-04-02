@@ -76,42 +76,42 @@
     </section>
 
     <section class="table-wrap">
-  <table id="tasksTable" class="tasks-table">
-    <colgroup>
-      <col />
-      <col />
-      <col class="description-column" />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-      <col />
-    </colgroup>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Tâche</th>
-        <th>Description</th>
-        <th>Assigné à</th>
-        <th>Superviseur</th>
-        <th>Priorité</th>
-        <th>Statut</th>
-        <th>Progression staff</th>
-        <th>Commentaire staff</th>
-        <th>Évaluation superviseur</th>
-        <th>Commentaire superviseur</th>
-        <th>Échéance</th>
-        <th class="no-print">Action</th>
-      </tr>
-    </thead>
-    <tbody id="tasksTbody"></tbody>
-  </table>
-</section>
+      <table id="tasksTable" class="tasks-table">
+        <colgroup>
+          <col />
+          <col />
+          <col class="description-column" />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+          <col />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tâche</th>
+            <th>Description</th>
+            <th>Assigné à</th>
+            <th>Superviseur</th>
+            <th>Priorité</th>
+            <th>Statut</th>
+            <th>Progression staff</th>
+            <th>Commentaire staff</th>
+            <th>Évaluation superviseur</th>
+            <th>Commentaire superviseur</th>
+            <th>Échéance</th>
+            <th class="no-print">Action</th>
+          </tr>
+        </thead>
+        <tbody id="tasksTbody"></tbody>
+      </table>
+    </section>
   </main>
 
   <div id="taskModal" class="modal no-print">
@@ -231,6 +231,18 @@
             <option value="Critique">Critique</option>
           </select>
         </div>
+      </div>
+
+      <!-- ✅ Champ ajouté -->
+      <div class="modal-row">
+        <div>
+          <label for="taskActivity">Activité principale</label>
+          <select id="taskActivity">
+            <option value="">Sélectionner une activité</option>
+          </select>
+          <small class="muted">Définie par le superviseur du pilier.</small>
+        </div>
+        <div></div>
       </div>
 
       <div class="modal-row">
