@@ -4,59 +4,88 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ONU Femmes — Administration</title>
+  <meta
+    name="description"
+    content="Portail d’administration des membres, piliers et activités du TaskFlow Management Portal - ONU Femmes RDC."
+  />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="register">
-  <header>
-    <div class="header-inner">
-      <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
-        <div>
-          <h1>TaskFlow Management Portal - ONU Femmes RDC</h1>
-          <p>Administration des membres et des piliers</p>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner container">
+      <div class="brand-block">
+        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+        <div class="brand-text">
+          <span class="eyebrow">TaskFlow Management Portal</span>
+          <h1>ONU Femmes RDC — Administration</h1>
+          <p>Administration des membres, des rôles et des piliers</p>
         </div>
       </div>
 
-      <div class="top-tools no-print">
-        <select id="currentUserSelect"></select>
-        <div id="currentUserLabel"></div>
-        <button id="logoutBtn" class="secondary" type="button">Déconnexion</button>
+      <div class="top-tools no-print" aria-label="Outils utilisateur">
+        <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
+        <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
+        <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
+        <button id="logoutBtn" class="btn btn-secondary" type="button">Déconnexion</button>
       </div>
     </div>
   </header>
 
-  <nav class="no-print">
-    <a href="dashboard.html">Dashboard</a>
-    <a href="mes-taches.html">Mes tâches</a>
-    <a href="mon-equipe.html">Mon équipe</a>
-    <a href="inscription.html" class="active">Inscription</a>
+  <!-- Navigation -->
+  <nav class="main-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html">Mon équipe</a>
+      <a href="inscription.html" class="active" aria-current="page">Inscription</a>
+    </div>
   </nav>
 
-  <main class="container">
-    <div id="pageDebugMessage"></div>
-    <div id="registerAccessNotice"></div>
+  <!-- Main -->
+  <main class="container main-content">
+    <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
+    <div id="registerAccessNotice" class="page-message" aria-live="polite"></div>
 
-    <h2 class="section-title">Affecter un membre existant</h2>
+    <!-- Intro -->
+    <section class="page-heading">
+      <div>
+        <span class="section-kicker">Administration</span>
+        <h2 class="section-title">Gestion des membres et des piliers</h2>
+        <p class="section-subtitle">
+          Affectez les utilisateurs existants, créez des piliers et définissez les activités principales
+          pour structurer le suivi opérationnel.
+        </p>
+      </div>
+    </section>
 
-    <section class="card" style="max-width:980px;">
-      <div class="empty" style="margin-bottom:16px;">
-        Cette page sert à rattacher un compte déjà créé à un pilier, un superviseur et un rôle.
-        Pour créer un nouvel accès utilisateur, utilisez la page publique <strong>Créer un compte</strong>.
+    <!-- Assign existing member -->
+    <section class="admin-card">
+      <div class="card-header">
+        <div>
+          <h3>Affecter un membre existant</h3>
+          <p>Associer un compte existant à un rôle, un pilier et un superviseur.</p>
+        </div>
       </div>
 
-      <div class="modal-row">
-        <div>
+      <div class="info-box">
+        Cette page sert à rattacher un compte déjà créé à un pilier, un superviseur et un rôle.
+        Pour créer un nouvel accès utilisateur, utilisez la page publique
+        <strong>Créer un compte</strong>.
+      </div>
+
+      <div class="form-grid two-columns">
+        <div class="field">
           <label for="userName">Nom complet</label>
           <input id="userName" type="text" placeholder="Ex. Hypolite Reoutar" />
         </div>
-        <div>
+
+        <div class="field">
           <label for="userEmail">Email</label>
           <input id="userEmail" type="email" placeholder="nom@unwomen.org" />
         </div>
-      </div>
 
-      <div class="modal-row">
-        <div>
+        <div class="field">
           <label for="userRole">Rôle</label>
           <select id="userRole">
             <option value="staff">Staff</option>
@@ -64,20 +93,20 @@
             <option value="admin">Admin</option>
           </select>
         </div>
-        <div>
+
+        <div class="field">
           <label for="userOffice">Bureau / unité</label>
           <input id="userOffice" type="text" placeholder="Ex. ONU Femmes RDC" />
         </div>
-      </div>
 
-      <div class="modal-row">
-        <div>
+        <div class="field">
           <label for="userPillar">Pilier</label>
           <select id="userPillar">
             <option value="">Sélectionner un pilier</option>
           </select>
         </div>
-        <div>
+
+        <div class="field">
           <label for="userSupervisor">Superviseur</label>
           <select id="userSupervisor">
             <option value="">Sélectionner un superviseur</option>
@@ -85,22 +114,31 @@
         </div>
       </div>
 
-      <div class="modal-actions" style="justify-content:flex-start;">
-        <button id="createUserBtn" type="button">Affecter / mettre à jour</button>
+      <div class="card-actions">
+        <button id="createUserBtn" class="btn btn-primary" type="button">
+          Affecter / mettre à jour
+        </button>
       </div>
 
-      <div id="userMessage" style="margin-top:12px;"></div>
+      <div id="userMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <h3 class="section-title" style="margin-top:24px;">Créer un nouveau pilier</h3>
-
-    <section class="card" style="max-width:980px;">
-      <div class="modal-row">
+    <!-- Create pillar -->
+    <section class="admin-card">
+      <div class="card-header">
         <div>
+          <h3>Créer un nouveau pilier</h3>
+          <p>Ajouter un pilier et lui rattacher un superviseur principal.</p>
+        </div>
+      </div>
+
+      <div class="form-grid two-columns">
+        <div class="field">
           <label for="pillarName">Nom du pilier</label>
           <input id="pillarName" type="text" placeholder="Ex. WPS" />
         </div>
-        <div>
+
+        <div class="field">
           <label for="pillarSupervisor">Superviseur du pilier</label>
           <select id="pillarSupervisor">
             <option value="">Sélectionner un superviseur</option>
@@ -108,44 +146,83 @@
         </div>
       </div>
 
-      <div class="modal-actions" style="justify-content:flex-start;">
-        <button id="createPillarBtn" type="button">Créer le pilier</button>
+      <div class="card-actions">
+        <button id="createPillarBtn" class="btn btn-primary" type="button">
+          Créer le pilier
+        </button>
       </div>
 
-      <div id="pillarMessage" style="margin-top:12px;"></div>
+      <div id="pillarMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <h3 class="section-title" style="margin-top:24px;">Définir les activités principales d’un pilier</h3>
-
-    <section class="card" style="max-width:980px;">
-      <div class="modal-row">
+    <!-- Define pillar activities -->
+    <section class="admin-card">
+      <div class="card-header">
         <div>
+          <h3>Définir les activités principales d’un pilier</h3>
+          <p>Enregistrez les activités structurantes utilisées lors de la création des tâches.</p>
+        </div>
+      </div>
+
+      <div class="form-grid single-column">
+        <div class="field">
           <label for="pillarActivitiesPillar">Pilier</label>
           <select id="pillarActivitiesPillar">
             <option value="">Sélectionner un pilier</option>
           </select>
         </div>
-        <div></div>
+
+        <div class="field">
+          <label for="pillarActivitiesInput">
+            Activités principales <span class="muted">(une activité par ligne)</span>
+          </label>
+          <textarea
+            id="pillarActivitiesInput"
+            rows="8"
+            placeholder="Ex. Plaidoyer institutionnel&#10;Renforcement des capacités&#10;Coordination inter-agences"
+          ></textarea>
+        </div>
       </div>
 
-      <div>
-        <label for="pillarActivitiesInput">Activités principales (une activité par ligne)</label>
-        <textarea id="pillarActivitiesInput" placeholder="Ex. Plaidoyer institutionnel&#10;Renforcement des capacités&#10;Coordination inter-agences"></textarea>
+      <div class="card-actions">
+        <button id="savePillarActivitiesBtn" class="btn btn-primary" type="button">
+          Enregistrer les activités
+        </button>
       </div>
 
-      <div class="modal-actions" style="justify-content:flex-start;">
-        <button id="savePillarActivitiesBtn" type="button">Enregistrer les activités</button>
-      </div>
-
-      <div id="pillarActivitiesMessage" style="margin-top:12px;"></div>
+      <div id="pillarActivitiesMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <h3 class="section-title" style="margin-top:24px;">Piliers disponibles</h3>
-    <section id="pillarsList" class="grid-2"></section>
+    <!-- Available pillars -->
+    <section class="admin-card">
+      <div class="card-header">
+        <div>
+          <h3>Piliers disponibles</h3>
+          <p>Vue synthétique des piliers actuellement enregistrés dans le système.</p>
+        </div>
+      </div>
 
-    <h3 class="section-title" style="margin-top:24px;">Membres dans votre périmètre</h3>
-    <p class="muted">Cliquez sur <strong>Modifier</strong> pour charger un membre dans le formulaire ci-dessus.</p>
-    <section id="registeredMembersList" class="grid-2"></section>
+      <section id="pillarsList" class="grid-list grid-2" aria-label="Liste des piliers"></section>
+    </section>
+
+    <!-- Members in scope -->
+    <section class="admin-card">
+      <div class="card-header">
+        <div>
+          <h3>Membres dans votre périmètre</h3>
+          <p>
+            Cliquez sur <strong>Modifier</strong> pour charger un membre dans le formulaire
+            d’affectation ci-dessus.
+          </p>
+        </div>
+      </div>
+
+      <section
+        id="registeredMembersList"
+        class="grid-list grid-2"
+        aria-label="Liste des membres enregistrés"
+      ></section>
+    </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
