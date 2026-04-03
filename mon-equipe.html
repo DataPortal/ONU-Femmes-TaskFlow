@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="my-team">
-  <!-- Header -->
   <header class="site-header">
     <div class="header-inner container">
       <div class="brand-block">
@@ -32,21 +31,19 @@
     </div>
   </header>
 
-  <!-- Navigation -->
   <nav class="main-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="mes-taches.html">Mes tâches</a>
       <a href="mon-equipe.html" class="active" aria-current="page">Mon équipe</a>
       <a href="inscription.html">Inscription</a>
+      <a href="profile.html">Mon profil</a>
     </div>
   </nav>
 
-  <!-- Main -->
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
 
-    <!-- Page heading -->
     <section class="page-heading">
       <div>
         <span class="section-kicker">Pilotage d’équipe</span>
@@ -57,14 +54,8 @@
       </div>
     </section>
 
-    <!-- KPIs -->
-    <section
-      id="myTeamKpis"
-      class="dashboard-kpis"
-      aria-label="Indicateurs clés de l’équipe"
-    ></section>
+    <section id="myTeamKpis" class="dashboard-kpis" aria-label="Indicateurs clés de l’équipe"></section>
 
-    <!-- Team overview -->
     <section class="split-layout">
       <article class="info-card">
         <div class="card-header">
@@ -91,7 +82,6 @@
       </article>
     </section>
 
-    <!-- Team tasks -->
     <section class="table-card">
       <div class="table-card-header">
         <h3>Tâches de l’équipe</h3>
@@ -136,7 +126,6 @@
     </section>
   </main>
 
-  <!-- Modal: Task update -->
   <div
     id="taskModal"
     class="modal no-print"
@@ -150,14 +139,7 @@
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
-        <button
-          id="closeTaskModalBtn"
-          class="modal-close"
-          type="button"
-          aria-label="Fermer"
-        >
-          ×
-        </button>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
       </div>
 
       <div class="modal-body">
@@ -172,9 +154,7 @@
               <option>En retard</option>
               <option>Achevé</option>
             </select>
-            <small class="muted">
-              Calculé automatiquement selon l’échéance et la progression.
-            </small>
+            <small class="muted">Calculé automatiquement selon l’échéance et la progression.</small>
           </div>
 
           <div class="field">
@@ -237,12 +217,8 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
-          Fermer
-        </button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">
-          Enregistrer
-        </button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
       </div>
     </div>
   </div>
