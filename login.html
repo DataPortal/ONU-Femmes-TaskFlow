@@ -2,47 +2,76 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Page de connexion sécurisée au TaskFlow Management Portal - ONU Femmes RDC."
+  />
   <title>ONU Femmes — Connexion</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <header>
-    <div class="header-inner">
-      <div class="brand">
-        <img src="assets/img/logunw.jpg" alt="ONU Femmes" class="logo" />
-        <div>
-          <h1>TaskFlow Management Portal - ONU Femmes RDC</h1>
-          <p>Connexion sécurisée</p>
+<body class="auth-page">
+  <!-- Header -->
+  <header class="site-header auth-header">
+    <div class="header-inner container">
+      <div class="brand-block">
+        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+        <div class="brand-text">
+          <span class="eyebrow">TaskFlow Management Portal</span>
+          <h1>ONU Femmes RDC</h1>
+          <p>Connexion sécurisée à l’espace de gestion des tâches</p>
         </div>
       </div>
     </div>
   </header>
 
+  <!-- Main -->
   <main class="container login-page">
-    <section class="login-card">
+    <section class="login-card auth-card" aria-labelledby="loginTitle">
       <div class="login-card-header">
-        <h2 class="section-title">Connexion</h2>
-        <p class="muted">Accédez à votre espace de gestion des tâches</p>
+        <span class="section-kicker">Authentification</span>
+        <h2 id="loginTitle" class="section-title">Connexion</h2>
+        <p class="section-subtitle">
+          Accédez à votre espace personnel de suivi, de coordination et de gestion des tâches.
+        </p>
       </div>
 
-      <div id="loginMessage"></div>
+      <div id="loginMessage" class="form-message" aria-live="polite"></div>
 
-      <form id="loginForm" novalidate>
+      <form id="loginForm" class="auth-form" novalidate>
         <div class="form-group">
           <label for="loginEmail">Adresse email</label>
-          <input id="loginEmail" type="email" placeholder="prenom.nom@unwomen.org" />
+          <input
+            id="loginEmail"
+            name="email"
+            type="email"
+            autocomplete="email"
+            placeholder="prenom.nom@unwomen.org"
+            required
+          />
         </div>
 
         <div class="form-group">
           <label for="loginPassword">Mot de passe</label>
-          <input id="loginPassword" type="password" placeholder="********" />
+          <input
+            id="loginPassword"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Entrez votre mot de passe"
+            required
+          />
         </div>
 
-        <div class="login-actions" style="gap:10px; flex-wrap:wrap;">
-          <button id="loginBtn" type="submit">Connexion</button>
-          <a href="register.html" class="secondary action-btn" style="text-decoration:none;">S’inscrire</a>
-          <a href="#" id="forgotPasswordLink" class="secondary action-btn" style="text-decoration:none;">Mot de passe oublié</a>
+        <div class="login-actions">
+          <button id="loginBtn" class="btn btn-primary btn-block" type="submit">
+            Connexion
+          </button>
+        </div>
+
+        <div class="auth-links">
+          <a href="inscription.html" class="text-link">Créer un compte / s’inscrire</a>
+          <a href="#" id="forgotPasswordLink" class="text-link">Mot de passe oublié</a>
         </div>
       </form>
     </section>
