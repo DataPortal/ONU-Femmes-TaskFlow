@@ -18,18 +18,105 @@ const IMMINENT_DAYS_THRESHOLD = 2;
 const PILLAR_ACTIVITIES_STORAGE_KEY = "unw_pillar_activities";
 const TASK_ACTIVITIES_STORAGE_KEY = "unw_task_activities";
 
+/* =========================
+   UTILITAIRES GÉNÉRAUX
+========================= */
+
 function getSb() {
   return window.sb || null;
+}
+
+function byId(id) {
+  return document.getElementById(id);
 }
 
 function safeParseJson(raw, fallback = {}) {
   if (!raw) return fallback;
   try {
     return JSON.parse(raw);
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function clamp(value, min, max) {
+  const n = Number(value);
+  if (Number.isNaN(n)) return min;
+  return Math.max(min, Math.min(max, n));
+}
+
+function scoreToPercent(score) {
+  return clamp(score, 0, 10) * 10;
+}
+
+function normalizeStatus(status) {
+  return String(status || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function getStatusCandidates(status) {
+  const normalized = normalizeStatus(status);
+  if (!status || normalized === status) return [status];
+  return [status, normalized];
+}
+
+function isStatusConstraintError(error) {
+  if (!error) return false;
+  const raw = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
+  return raw.includes("tasks_status_check") || raw.includes("violates check constraint");
+}
+
+function showGlobalError(message) {
+  const debugBox = byId("pageDebugMessage");
+  if (debugBox) {
+    debugBox.innerHTML = `<div class="error-box">${escapeHtml(message)}</div>`;
+    return;
+  }
+  alert(message);
+}
+
+function setMessage(targetId, text, type = "info") {
+  const el = byId(targetId);
+  if (!el) return;
+
+  let className = "info-box";
+  if (type === "error") className = "error-box";
+  if (type === "success") className = "success-box";
+
+  el.innerHTML = `<div class="${className}">${escapeHtml(text)}</div>`;
+}
+
+function clearMessage(targetId) {
+  const el = byId(targetId);
+  if (el) el.innerHTML = "";
+}
+
+function appendComment(existingText, authorName, newText) {
+  const clean = String(newText || "").trim();
+  if (!clean) return existingText || "";
+
+  const now = new Date();
+  const stamp =
+    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ` +
+    `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
+  const entry = `[${stamp}] ${authorName} : ${clean}`;
+  return existingText ? `${existingText}\n${entry}` : entry;
+}
+
+/* =========================
+   LOCAL STORAGE
+========================= */
 
 function loadLocalActivityMaps() {
   AppState.pillarActivitiesById = safeParseJson(localStorage.getItem(PILLAR_ACTIVITIES_STORAGE_KEY), {});
@@ -43,6 +130,140 @@ function persistPillarActivities() {
 function persistTaskActivities() {
   localStorage.setItem(TASK_ACTIVITIES_STORAGE_KEY, JSON.stringify(AppState.taskActivitiesById || {}));
 }
+
+function persistTaskActivitiesFromTasks() {
+  AppState.tasks.forEach(task => {
+    if (task?.id && task.activity_name) {
+      AppState.taskActivitiesById[String(task.id)] = task.activity_name;
+    }
+  });
+  persistTaskActivities();
+}
+
+/* =========================
+   DATE / STATUT
+========================= */
+
+function toLocalDateOnly(dateValue) {
+  const date = new Date(dateValue);
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+function getProgressPercent(task) {
+  if (typeof task.progress === "number") return clamp(task.progress, 0, 100);
+
+  if (task.progress !== undefined && task.progress !== null && task.progress !== "") {
+    return clamp(Number(task.progress), 0, 100);
+  }
+
+  if (task.progress_score !== undefined && task.progress_score !== null && task.progress_score !== "") {
+    return scoreToPercent(task.progress_score);
+  }
+
+  return 0;
+}
+
+function computeAutomaticStatus(task) {
+  const progressPercent = getProgressPercent(task);
+  if (progressPercent >= 100) return STATUS.DONE;
+  if (!task.due_date) return STATUS.ON_TRACK;
+
+  const today = toLocalDateOnly(new Date());
+  const dueDate = toLocalDateOnly(task.due_date);
+  const diffMs = dueDate.getTime() - today.getTime();
+  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+  if (daysRemaining < 0) return STATUS.LATE;
+  if (daysRemaining <= IMMINENT_DAYS_THRESHOLD) return STATUS.DUE_SOON;
+  return STATUS.ON_TRACK;
+}
+
+function hydrateTaskStatus(task) {
+  return {
+    ...task,
+    status: computeAutomaticStatus(task)
+  };
+}
+
+function isLate(task) {
+  return computeAutomaticStatus(task) === STATUS.LATE;
+}
+
+function isDueSoon(task) {
+  return computeAutomaticStatus(task) === STATUS.DUE_SOON;
+}
+
+function isTaskWithinDateRange(task, startDate, endDate) {
+  if (!startDate && !endDate) return true;
+  if (!task.due_date) return false;
+
+  const dueDate = new Date(task.due_date);
+  dueDate.setHours(0, 0, 0, 0);
+
+  if (startDate) {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    if (dueDate < start) return false;
+  }
+
+  if (endDate) {
+    const end = new Date(endDate);
+    end.setHours(0, 0, 0, 0);
+    if (dueDate > end) return false;
+  }
+
+  return true;
+}
+
+/* =========================
+   ACTIVITÉS / PILIERS
+========================= */
+
+function normalizeActivitiesList(value) {
+  if (Array.isArray(value)) {
+    return value.map(v => String(v || "").trim()).filter(Boolean);
+  }
+  if (typeof value === "string") {
+    return value.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+function extractPillarActivitiesFromDb(pillars) {
+  const mapped = {};
+  (pillars || []).forEach(pillar => {
+    const list = normalizeActivitiesList(pillar?.main_activities || pillar?.activities || []);
+    if (list.length) mapped[String(pillar.id)] = list;
+  });
+  return mapped;
+}
+
+function extractActivityFromDescription(description) {
+  const text = String(description || "");
+  const match = text.match(/^\[Activité:\s*(.+?)\]/m);
+  return match ? match[1].trim() : "";
+}
+
+function stripActivityFromDescription(description) {
+  return String(description || "").replace(/^\[Activité:\s*.+?\]\s*/m, "").trim();
+}
+
+function getActivitiesForPillar(pillarId) {
+  return AppState.pillarActivitiesById[String(pillarId)] || [];
+}
+
+function getPillarNameByIdFromArray(pillarId, pillarsArray) {
+  const pillar = pillarsArray.find(p => String(p.id) === String(pillarId));
+  return pillar ? pillar.name : "";
+}
+
+function getPillarNameById(pillarId) {
+  return getPillarNameByIdFromArray(pillarId, AppState.pillars);
+}
+
+/* =========================
+   SESSION / CHARGEMENT
+========================= */
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
@@ -84,6 +305,7 @@ async function bootstrapApp() {
 
   initUserHeader();
   initLogout();
+  initModalSystem();
   initGlobalActions();
   initTaskCreation();
   initPillarCreation();
@@ -140,6 +362,7 @@ async function loadReferenceData() {
     ...extractPillarActivitiesFromDb(AppState.pillars)
   };
   persistPillarActivities();
+
   AppState.users = (usersRes.data || []).map(u => ({
     ...u,
     name: u.full_name,
@@ -150,32 +373,35 @@ async function loadReferenceData() {
   const tasksViewRes = await sb.from("tasks_enriched").select("*").order("id", { ascending: true });
 
   if (!tasksViewRes.error) {
-    AppState.tasks = (tasksViewRes.data || []).map(t => ({
-      id: t.id,
-      title: t.title,
-      pillar_id: t.pillar_id,
-      pillar: t.pillar_name || "",
-      assigned_to_id: t.assigned_to_id,
-      assigned_to_name: t.assigned_to_name || "Non défini",
-      assigned_to_role: t.assigned_to_role || "",
-      supervisor_id: t.supervisor_id,
-      supervisor_name: t.supervisor_name || "Non défini",
-      supervisor_role: t.supervisor_role || "",
-      priority: t.priority,
-      status: t.status,
-      progress_score: t.progress_score,
-      progress: t.progress,
-      staff_comment: t.staff_comment || "",
-      supervisor_score: t.supervisor_score,
-      supervisor_progress: t.supervisor_progress,
-      supervisor_status: t.supervisor_status,
-      supervisor_comment: t.supervisor_comment || "",
-      due_date: t.due_date,
-      description: stripActivityFromDescription(t.description),
-      created_by: t.created_by,
-      created_at: t.created_at,
-      activity_name: t.activity_name || AppState.taskActivitiesById[String(t.id)] || extractActivityFromDescription(t.description)
-    })).map(hydrateTaskStatus);
+    AppState.tasks = (tasksViewRes.data || [])
+      .map(t => ({
+        id: t.id,
+        title: t.title,
+        pillar_id: t.pillar_id,
+        pillar: t.pillar_name || "",
+        assigned_to_id: t.assigned_to_id,
+        assigned_to_name: t.assigned_to_name || "Non défini",
+        assigned_to_role: t.assigned_to_role || "",
+        supervisor_id: t.supervisor_id,
+        supervisor_name: t.supervisor_name || "Non défini",
+        supervisor_role: t.supervisor_role || "",
+        priority: t.priority,
+        status: t.status,
+        progress_score: t.progress_score,
+        progress: t.progress,
+        staff_comment: t.staff_comment || "",
+        supervisor_score: t.supervisor_score,
+        supervisor_progress: t.supervisor_progress,
+        supervisor_status: t.supervisor_status,
+        supervisor_comment: t.supervisor_comment || "",
+        due_date: t.due_date,
+        description: stripActivityFromDescription(t.description),
+        created_by: t.created_by,
+        created_at: t.created_at,
+        activity_name: t.activity_name || AppState.taskActivitiesById[String(t.id)] || extractActivityFromDescription(t.description)
+      }))
+      .map(hydrateTaskStatus);
+
     persistTaskActivitiesFromTasks();
     return;
   }
@@ -183,91 +409,47 @@ async function loadReferenceData() {
   const tasksRes = await sb.from("tasks").select("*").order("id", { ascending: true });
   if (tasksRes.error) throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}`);
 
-  AppState.tasks = (tasksRes.data || []).map(t => {
-    const assigned = AppState.users.find(u => String(u.id) === String(t.assigned_to_id));
-    const supervisor = assigned ? AppState.users.find(u => String(u.id) === String(assigned.supervisor_id)) : null;
-    const pillar = AppState.pillars.find(p => String(p.id) === String(t.pillar_id));
+  AppState.tasks = (tasksRes.data || [])
+    .map(t => {
+      const assigned = AppState.users.find(u => String(u.id) === String(t.assigned_to_id));
+      const supervisor = assigned ? AppState.users.find(u => String(u.id) === String(assigned.supervisor_id)) : null;
+      const pillar = AppState.pillars.find(p => String(p.id) === String(t.pillar_id));
 
-    return {
-      id: t.id,
-      title: t.title,
-      pillar_id: t.pillar_id,
-      pillar: pillar ? pillar.name : "",
-      assigned_to_id: t.assigned_to_id,
-      assigned_to_name: assigned ? assigned.name : "Non défini",
-      assigned_to_role: assigned ? assigned.user_type : "",
-      supervisor_id: supervisor ? supervisor.id : null,
-      supervisor_name: supervisor ? supervisor.name : "Non défini",
-      supervisor_role: supervisor ? supervisor.user_type : "",
-      priority: t.priority,
-      status: t.status,
-      progress_score: t.progress_score,
-      progress: t.progress,
-      staff_comment: t.staff_comment || "",
-      supervisor_score: t.supervisor_score,
-      supervisor_progress: t.supervisor_progress,
-      supervisor_status: t.supervisor_status,
-      supervisor_comment: t.supervisor_comment || "",
-      due_date: t.due_date,
-      description: stripActivityFromDescription(t.description),
-      created_by: t.created_by,
-      created_at: t.created_at,
-      activity_name: t.activity_name || AppState.taskActivitiesById[String(t.id)] || extractActivityFromDescription(t.description)
-    };
-  }).map(hydrateTaskStatus);
+      return {
+        id: t.id,
+        title: t.title,
+        pillar_id: t.pillar_id,
+        pillar: pillar ? pillar.name : "",
+        assigned_to_id: t.assigned_to_id,
+        assigned_to_name: assigned ? assigned.name : "Non défini",
+        assigned_to_role: assigned ? assigned.user_type : "",
+        supervisor_id: supervisor ? supervisor.id : null,
+        supervisor_name: supervisor ? supervisor.name : "Non défini",
+        supervisor_role: supervisor ? supervisor.user_type : "",
+        priority: t.priority,
+        status: t.status,
+        progress_score: t.progress_score,
+        progress: t.progress,
+        staff_comment: t.staff_comment || "",
+        supervisor_score: t.supervisor_score,
+        supervisor_progress: t.supervisor_progress,
+        supervisor_status: t.supervisor_status,
+        supervisor_comment: t.supervisor_comment || "",
+        due_date: t.due_date,
+        description: stripActivityFromDescription(t.description),
+        created_by: t.created_by,
+        created_at: t.created_at,
+        activity_name: t.activity_name || AppState.taskActivitiesById[String(t.id)] || extractActivityFromDescription(t.description)
+      };
+    })
+    .map(hydrateTaskStatus);
+
   persistTaskActivitiesFromTasks();
 }
 
-function persistTaskActivitiesFromTasks() {
-  AppState.tasks.forEach(task => {
-    if (task?.id && task.activity_name) {
-      AppState.taskActivitiesById[String(task.id)] = task.activity_name;
-    }
-  });
-  persistTaskActivities();
-}
-
-function extractPillarActivitiesFromDb(pillars) {
-  const mapped = {};
-  (pillars || []).forEach(pillar => {
-    const list = normalizeActivitiesList(pillar?.main_activities || pillar?.activities || []);
-    if (list.length) mapped[String(pillar.id)] = list;
-  });
-  return mapped;
-}
-
-function normalizeActivitiesList(value) {
-  if (Array.isArray(value)) {
-    return value.map(v => String(v || "").trim()).filter(Boolean);
-  }
-  if (typeof value === "string") {
-    return value.split(/\r?\n|,/).map(v => v.trim()).filter(Boolean);
-  }
-  return [];
-}
-
-function extractActivityFromDescription(description) {
-  const text = String(description || "");
-  const match = text.match(/^\[Activité:\s*(.+?)\]/m);
-  return match ? match[1].trim() : "";
-}
-
-function stripActivityFromDescription(description) {
-  return String(description || "").replace(/^\[Activité:\s*.+?\]\s*/m, "").trim();
-}
-
-function getActivitiesForPillar(pillarId) {
-  return AppState.pillarActivitiesById[String(pillarId)] || [];
-}
-
-function getPillarNameByIdFromArray(pillarId, pillarsArray) {
-  const pillar = pillarsArray.find(p => String(p.id) === String(pillarId));
-  return pillar ? pillar.name : "";
-}
-
-function getPillarNameById(pillarId) {
-  return getPillarNameByIdFromArray(pillarId, AppState.pillars);
-}
+/* =========================
+   UTILISATEUR / DROITS
+========================= */
 
 function getCurrentUser() {
   if (!AppState.currentUser) return null;
@@ -340,29 +522,33 @@ function canDeleteTask(task) {
   return false;
 }
 
+/* =========================
+   HEADER / LOGOUT
+========================= */
+
 function initUserHeader() {
-  const selector = document.getElementById("currentUserSelect");
-  const label = document.getElementById("currentUserLabel");
+  const selector = byId("currentUserSelect");
+  const label = byId("currentUserLabel");
   const currentUser = getCurrentUser();
 
   if (selector && currentUser) {
-    selector.innerHTML = `<option value="${currentUser.id}">${currentUser.name} — ${currentUser.user_type}</option>`;
+    selector.innerHTML = `<option value="${escapeHtml(currentUser.id)}">${escapeHtml(currentUser.name)} — ${escapeHtml(currentUser.user_type)}</option>`;
     selector.disabled = true;
   }
 
   if (label && currentUser) {
     const supervisor = AppState.users.find(u => String(u.id) === String(currentUser.supervisor_id));
-       label.innerHTML = `
-      <strong>${currentUser.name}</strong><br>
-      <span class="muted">${currentUser.user_type} | ${currentUser.pillar || "Sans pilier"}</span><br>
-      <span class="muted">Superviseur : ${supervisor ? supervisor.name : "Aucun"}</span>
+    label.innerHTML = `
+      <strong>${escapeHtml(currentUser.name)}</strong><br>
+      <span class="muted">${escapeHtml(currentUser.user_type)} | ${escapeHtml(currentUser.pillar || "Sans pilier")}</span><br>
+      <span class="muted">Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Aucun")}</span>
     `;
   }
 }
 
 function initLogout() {
   const sb = getSb();
-  const logoutBtn = document.getElementById("logoutBtn");
+  const logoutBtn = byId("logoutBtn");
   if (!sb || !logoutBtn) return;
 
   logoutBtn.addEventListener("click", async () => {
@@ -371,102 +557,50 @@ function initLogout() {
   });
 }
 
-function showGlobalError(message) {
-  const debugBox = document.getElementById("pageDebugMessage");
-  if (debugBox) {
-    debugBox.innerHTML = `<div class="error-box">${message}</div>`;
-    return;
-  }
-  alert(message);
+/* =========================
+   MODALS
+========================= */
+
+function openModal(modalId) {
+  const modal = byId(modalId);
+  if (!modal) return;
+  modal.style.display = "block";
+  modal.setAttribute("aria-hidden", "false");
 }
 
-function setMessage(targetId, text, type = "info") {
-  const el = document.getElementById(targetId);
-  if (!el) return;
-
-  let className = "info-box";
-  if (type === "error") className = "error-box";
-  if (type === "success") className = "success-box";
-
-  el.innerHTML = `<div class="${className}">${text}</div>`;
+function closeModal(modalId) {
+  const modal = byId(modalId);
+  if (!modal) return;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
 }
 
-function clamp(v, min, max) {
-  if (Number.isNaN(v)) return min;
-  return Math.max(min, Math.min(max, v));
+function initModalSystem() {
+  document.addEventListener("click", event => {
+    const target = event.target;
+
+    if (target.matches(".modal-overlay")) {
+      const modal = target.closest(".modal");
+      if (modal?.id) closeModal(modal.id);
+    }
+
+    if (target.matches(".modal-close")) {
+      const modal = target.closest(".modal");
+      if (modal?.id) closeModal(modal.id);
+    }
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    document.querySelectorAll(".modal").forEach(modal => {
+      if (modal.style.display === "block") closeModal(modal.id);
+    });
+  });
 }
 
-function scoreToPercent(score) {
-  return clamp(Number(score), 0, 10) * 10;
-}
-
-function toLocalDateOnly(dateValue) {
-  const date = new Date(dateValue);
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function getProgressPercent(task) {
-  if (typeof task.progress === "number") return clamp(task.progress, 0, 100);
-  if (task.progress !== undefined && task.progress !== null && task.progress !== "") {
-    return clamp(Number(task.progress), 0, 100);
-  }
-  if (task.progress_score !== undefined && task.progress_score !== null && task.progress_score !== "") {
-    return scoreToPercent(task.progress_score);
-  }
-  return 0;
-}
-
-function computeAutomaticStatus(task) {
-  const progressPercent = getProgressPercent(task);
-  if (progressPercent >= 100) return STATUS.DONE;
-  if (!task.due_date) return STATUS.ON_TRACK;
-
-  const today = toLocalDateOnly(new Date());
-  const dueDate = toLocalDateOnly(task.due_date);
-  const diffMs = dueDate.getTime() - today.getTime();
-  const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-
-  if (daysRemaining < 0) return STATUS.LATE;
-  if (daysRemaining <= IMMINENT_DAYS_THRESHOLD) return STATUS.DUE_SOON;
-  return STATUS.ON_TRACK;
-}
-
-function hydrateTaskStatus(task) {
-  return {
-    ...task,
-    status: computeAutomaticStatus(task)
-  };
-}
-
-function isLate(task) {
-  return computeAutomaticStatus(task) === STATUS.LATE;
-}
-
-function isDueSoon(task) {
-  return computeAutomaticStatus(task) === STATUS.DUE_SOON;
-}
-
-function isTaskWithinDateRange(task, startDate, endDate) {
-  if (!startDate && !endDate) return true;
-  if (!task.due_date) return false;
-
-  const dueDate = new Date(task.due_date);
-  dueDate.setHours(0, 0, 0, 0);
-
-  if (startDate) {
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-    if (dueDate < start) return false;
-  }
-
-  if (endDate) {
-    const end = new Date(endDate);
-    end.setHours(0, 0, 0, 0);
-    if (dueDate > end) return false;
-  }
-
-  return true;
-}
+/* =========================
+   FILTRES
+========================= */
 
 function applyTaskFilters(tasks, filters = {}) {
   const {
@@ -479,16 +613,16 @@ function applyTaskFilters(tasks, filters = {}) {
     endDate = ""
   } = filters;
 
-  const normalizedSearch = (search || "").toLowerCase().trim();
+  const normalizedSearch = String(search || "").toLowerCase().trim();
 
   return tasks.filter(task => {
     const matchSearch =
       !normalizedSearch ||
-      task.title.toLowerCase().includes(normalizedSearch) ||
-      (task.description || "").toLowerCase().includes(normalizedSearch) ||
-      (task.assigned_to_name || "").toLowerCase().includes(normalizedSearch) ||
-      (task.supervisor_name || "").toLowerCase().includes(normalizedSearch) ||
-      (task.pillar || "").toLowerCase().includes(normalizedSearch);
+      String(task.title || "").toLowerCase().includes(normalizedSearch) ||
+      String(task.description || "").toLowerCase().includes(normalizedSearch) ||
+      String(task.assigned_to_name || "").toLowerCase().includes(normalizedSearch) ||
+      String(task.supervisor_name || "").toLowerCase().includes(normalizedSearch) ||
+      String(task.pillar || "").toLowerCase().includes(normalizedSearch);
 
     const matchPillar = !pillar || task.pillar === pillar;
     const matchSupervisor = !supervisorId || String(task.supervisor_id) === String(supervisorId);
@@ -500,42 +634,35 @@ function applyTaskFilters(tasks, filters = {}) {
   });
 }
 
-function appendComment(existingText, authorName, newText) {
-  const clean = (newText || "").trim();
-  if (!clean) return existingText || "";
-
-  const now = new Date();
-  const stamp =
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ` +
-    `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-  const entry = `[${stamp}] ${authorName} : ${clean}`;
-  return existingText ? `${existingText}\n${entry}` : entry;
-}
+/* =========================
+   BADGES
+========================= */
 
 function getStatusBadge(status) {
-  if (status === STATUS.DONE) return `<span class="badge badge-green">${status}</span>`;
-  if (status === STATUS.DUE_SOON) return `<span class="badge badge-orange">${status}</span>`;
-  if (status === STATUS.LATE) return `<span class="badge badge-red">${status}</span>`;
-  if (status === STATUS.ON_TRACK) return `<span class="badge badge-blue">${status}</span>`;
-  return `<span class="badge badge-grey">${status}</span>`;
+  if (status === STATUS.DONE) return `<span class="badge badge-green">${escapeHtml(status)}</span>`;
+  if (status === STATUS.DUE_SOON) return `<span class="badge badge-orange">${escapeHtml(status)}</span>`;
+  if (status === STATUS.LATE) return `<span class="badge badge-red">${escapeHtml(status)}</span>`;
+  if (status === STATUS.ON_TRACK) return `<span class="badge badge-blue">${escapeHtml(status)}</span>`;
+  return `<span class="badge badge-grey">${escapeHtml(status)}</span>`;
 }
 
 function getPriorityBadge(priority) {
-  if (priority === "Critique") return `<span class="badge badge-red">${priority}</span>`;
-  if (priority === "Haute") return `<span class="badge badge-yellow">${priority}</span>`;
-  if (priority === "Moyenne") return `<span class="badge badge-blue">${priority}</span>`;
-  return `<span class="badge badge-grey">${priority}</span>`;
+  if (priority === "Critique") return `<span class="badge badge-red">${escapeHtml(priority)}</span>`;
+  if (priority === "Haute") return `<span class="badge badge-yellow">${escapeHtml(priority)}</span>`;
+  if (priority === "Moyenne") return `<span class="badge badge-blue">${escapeHtml(priority)}</span>`;
+  return `<span class="badge badge-grey">${escapeHtml(priority)}</span>`;
 }
 
 function getSupervisorBadge(status) {
-  if (status === "Très satisfaisant") return `<span class="badge badge-green">${status}</span>`;
-  if (status === "Acceptable") return `<span class="badge badge-yellow">${status}</span>`;
-  if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${status}</span>`;
-  return `<span class="badge badge-grey">${status}</span>`;
+  if (status === "Très satisfaisant") return `<span class="badge badge-green">${escapeHtml(status)}</span>`;
+  if (status === "Acceptable") return `<span class="badge badge-yellow">${escapeHtml(status)}</span>`;
+  if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${escapeHtml(status)}</span>`;
+  return `<span class="badge badge-grey">${escapeHtml(status)}</span>`;
 }
 
-/* === REGISTER / PILIERS === */
+/* =========================
+   REGISTER / PILIERS
+========================= */
 
 function initRegisterPage() {
   const page = document.body.dataset.page;
@@ -543,7 +670,7 @@ function initRegisterPage() {
 
   populateRegisterDropdowns();
 
-  const createUserBtn = document.getElementById("createUserBtn");
+  const createUserBtn = byId("createUserBtn");
   if (createUserBtn) {
     createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
   }
@@ -553,22 +680,23 @@ function initPillarCreation() {
   const page = document.body.dataset.page;
   if (page !== "register") return;
 
-  const createPillarBtn = document.getElementById("createPillarBtn");
+  const createPillarBtn = byId("createPillarBtn");
   if (createPillarBtn) {
     createPillarBtn.addEventListener("click", createNewPillar);
   }
 
-  const saveActivitiesBtn = document.getElementById("savePillarActivitiesBtn");
-  const pillarActivitiesPillar = document.getElementById("pillarActivitiesPillar");
+  const saveActivitiesBtn = byId("savePillarActivitiesBtn");
+  const pillarActivitiesPillar = byId("pillarActivitiesPillar");
+
   if (saveActivitiesBtn) saveActivitiesBtn.addEventListener("click", savePillarActivities);
   if (pillarActivitiesPillar) pillarActivitiesPillar.addEventListener("change", loadActivitiesForSelectedPillar);
 }
 
 function populateRegisterDropdowns() {
-  const pillarSupervisor = document.getElementById("pillarSupervisor");
-  const userPillar = document.getElementById("userPillar");
-  const userSupervisor = document.getElementById("userSupervisor");
-  const pillarActivitiesPillar = document.getElementById("pillarActivitiesPillar");
+  const pillarSupervisor = byId("pillarSupervisor");
+  const userPillar = byId("userPillar");
+  const userSupervisor = byId("userSupervisor");
+  const pillarActivitiesPillar = byId("pillarActivitiesPillar");
   const currentUser = getCurrentUser();
 
   let supervisors = AppState.users.filter(
@@ -585,37 +713,40 @@ function populateRegisterDropdowns() {
   if (pillarSupervisor) {
     pillarSupervisor.innerHTML =
       `<option value="">Sélectionner un superviseur</option>` +
-      supervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+      supervisors.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)}</option>`).join("");
   }
 
   if (userPillar) {
     userPillar.innerHTML =
       `<option value="">Sélectionner un pilier</option>` +
-      visiblePillars.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+      visiblePillars.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");
   }
 
   if (userSupervisor) {
     userSupervisor.innerHTML =
       `<option value="">Sélectionner un superviseur</option>` +
-      supervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+      supervisors.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)}</option>`).join("");
   }
 
   if (pillarActivitiesPillar) {
     const currentValue = pillarActivitiesPillar.value || "";
     pillarActivitiesPillar.innerHTML =
       `<option value="">Sélectionner un pilier</option>` +
-      visiblePillars.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+      visiblePillars.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");
+
     pillarActivitiesPillar.value = visiblePillars.some(p => String(p.id) === String(currentValue)) ? currentValue : "";
+
     if (!pillarActivitiesPillar.value && visiblePillars.length === 1) {
       pillarActivitiesPillar.value = String(visiblePillars[0].id);
     }
+
     loadActivitiesForSelectedPillar();
   }
 }
 
 function loadActivitiesForSelectedPillar() {
-  const pillarId = document.getElementById("pillarActivitiesPillar")?.value || "";
-  const input = document.getElementById("pillarActivitiesInput");
+  const pillarId = byId("pillarActivitiesPillar")?.value || "";
+  const input = byId("pillarActivitiesInput");
   if (!input) return;
   input.value = pillarId ? getActivitiesForPillar(pillarId).join("\n") : "";
 }
@@ -630,8 +761,8 @@ async function savePillarActivities() {
     return;
   }
 
-  const pillarId = document.getElementById("pillarActivitiesPillar")?.value || "";
-  const rawActivities = document.getElementById("pillarActivitiesInput")?.value || "";
+  const pillarId = byId("pillarActivitiesPillar")?.value || "";
+  const rawActivities = byId("pillarActivitiesInput")?.value || "";
   const activities = normalizeActivitiesList(rawActivities);
 
   if (!pillarId) {
@@ -648,6 +779,7 @@ async function savePillarActivities() {
   persistPillarActivities();
 
   const { error } = await sb.from("pillars").update({ main_activities: activities }).eq("id", pillarId);
+
   if (error && !`${error.message || ""}`.toLowerCase().includes("main_activities")) {
     setMessage("pillarActivitiesMessage", `Impossible d’enregistrer les activités : ${error.message}`, "error");
     return;
@@ -665,8 +797,8 @@ async function createNewPillar() {
     return;
   }
 
-  const name = (document.getElementById("pillarName")?.value || "").trim();
-  const supervisorId = document.getElementById("pillarSupervisor")?.value || "";
+  const name = String(byId("pillarName")?.value || "").trim();
+  const supervisorId = byId("pillarSupervisor")?.value || "";
 
   if (!name || !supervisorId) {
     setMessage("pillarMessage", "Veuillez renseigner le nom du pilier et le superviseur.", "error");
@@ -698,15 +830,15 @@ async function createOrAssignUserFromRegisterPage() {
     return;
   }
 
-  const fullName = (document.getElementById("userName")?.value || "").trim();
-  const email = (document.getElementById("userEmail")?.value || "").trim().toLowerCase();
-  const role = document.getElementById("userRole")?.value || "staff";
-  const pillarId = document.getElementById("userPillar")?.value || "";
-  const supervisorId = document.getElementById("userSupervisor")?.value || "";
+  const fullName = String(byId("userName")?.value || "").trim();
+  const email = String(byId("userEmail")?.value || "").trim().toLowerCase();
+  const role = byId("userRole")?.value || "staff";
+  const pillarId = byId("userPillar")?.value || "";
+  const supervisorId = byId("userSupervisor")?.value || "";
 
   if (!fullName || !email || !pillarId || !supervisorId) {
     setMessage("userMessage", "Veuillez renseigner le nom, l’email, le pilier et le superviseur.", "error");
-        return;
+    return;
   }
 
   if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
@@ -744,35 +876,50 @@ async function createOrAssignUserFromRegisterPage() {
 function renderRegisterPage() {
   populateRegisterDropdowns();
 
-  const pillarsList = document.getElementById("pillarsList");
-  if (!pillarsList) return;
+  const pillarsList = byId("pillarsList");
+  const membersList = byId("registeredMembersList");
+  const currentUser = getCurrentUser();
+
+  if (!pillarsList || !membersList) return;
 
   let visiblePillars = AppState.pillars;
-  const currentUser = getCurrentUser();
+  let visibleMembers = AppState.users;
 
   if (currentUser && currentUser.user_type !== "admin") {
     visiblePillars = AppState.pillars.filter(p => String(p.id) === String(currentUser.pillar_id));
+    visibleMembers = AppState.users.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
   }
 
   if (!visiblePillars.length) {
     pillarsList.innerHTML = `<div class="empty">Aucun pilier disponible.</div>`;
-    return;
+  } else {
+    pillarsList.innerHTML = visiblePillars.map(p => {
+      const supervisor = AppState.users.find(u => String(u.id) === String(p.supervisor_profile_id));
+      const activities = getActivitiesForPillar(p.id);
+      return `
+        <div class="member-card">
+          <h4>${escapeHtml(p.name)}</h4>
+          <div class="muted">Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Non défini")}</div>
+          <div class="muted">Activités : ${escapeHtml(activities.length ? activities.join(", ") : "Non définies")}</div>
+        </div>
+      `;
+    }).join("");
   }
 
-  pillarsList.innerHTML = visiblePillars.map(p => {
-    const supervisor = AppState.users.find(u => String(u.id) === String(p.supervisor_profile_id));
-    const activities = getActivitiesForPillar(p.id);
-    return `
+  membersList.innerHTML = visibleMembers.length
+    ? visibleMembers.map(member => `
       <div class="member-card">
-        <h4>${p.name}</h4>
-        <div class="muted">Superviseur : ${supervisor ? supervisor.name : "Non défini"}</div>
-        <div class="muted">Activités : ${activities.length ? activities.join(", ") : "Non définies"}</div>
+        <h4>${escapeHtml(member.name)}</h4>
+        <div class="muted">${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}</div>
+        <div class="muted">${escapeHtml(member.email || "")}</div>
       </div>
-    `;
-  }).join("");
+    `).join("")
+    : `<div class="empty">Aucun membre trouvé.</div>`;
 }
 
-/* === TASK CREATION === */
+/* =========================
+   CRÉATION DE TÂCHE
+========================= */
 
 function initTaskCreation() {
   const page = document.body.dataset.page;
@@ -780,12 +927,12 @@ function initTaskCreation() {
 
   populateTaskCreationDropdowns();
 
-  const openBtn = document.getElementById("openCreateTaskModalBtn");
-  const closeBtn = document.getElementById("closeCreateTaskModalBtn");
-  const createBtn = document.getElementById("createTaskBtn");
-  const dueDateInput = document.getElementById("taskDueDate");
-  const pillarInput = document.getElementById("taskPillar");
-  const modal = document.getElementById("createTaskModal");
+  const openBtn = byId("openCreateTaskModalBtn");
+  const closeTopBtn = byId("closeCreateTaskModalBtn");
+  const closeBottomBtn = byId("closeCreateTaskModalBtnFooter");
+  const createBtn = byId("createTaskBtn");
+  const dueDateInput = byId("taskDueDate");
+  const pillarInput = byId("taskPillar");
 
   if (openBtn) {
     if (canCreateTask()) {
@@ -796,46 +943,16 @@ function initTaskCreation() {
     }
   }
 
-  if (closeBtn) closeBtn.addEventListener("click", closeCreateTaskModal);
+  if (closeTopBtn) closeTopBtn.addEventListener("click", closeCreateTaskModal);
+  if (closeBottomBtn) closeBottomBtn.addEventListener("click", closeCreateTaskModal);
   if (createBtn) createBtn.addEventListener("click", createNewTask);
   if (dueDateInput) dueDateInput.addEventListener("change", updateCreateTaskAutoStatus);
   if (pillarInput) pillarInput.addEventListener("change", populateTaskActivityOptions);
-
-  window.addEventListener("click", e => {
-    if (e.target === modal) closeCreateTaskModal();
-  });
 }
 
-function updateCreateTaskAutoStatus() {
-  const dueDateInput = document.getElementById("taskDueDate");
-  const autoStatusInput = document.getElementById("taskAutoStatus");
-  if (!autoStatusInput) return;
-
-  autoStatusInput.value = computeAutomaticStatus({
-    due_date: dueDateInput?.value || null,
-    progress: 0
-  });
-}
-function normalizeStatus(status) {
-  return String(status || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function getStatusCandidates(status) {
-  const normalized = normalizeStatus(status);
-  if (!status || normalized === status) return [status];
-  return [status, normalized];
-}
-
-function isStatusConstraintError(error) {
-  if (!error) return false;
-  const raw = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
-  return raw.includes("tasks_status_check") || raw.includes("violates check constraint");
-}
 function populateTaskCreationDropdowns() {
-  const taskPillar = document.getElementById("taskPillar");
-  const taskAssignedTo = document.getElementById("taskAssignedTo");
+  const taskPillar = byId("taskPillar");
+  const taskAssignedTo = byId("taskAssignedTo");
   const currentUser = getCurrentUser();
 
   let visiblePillars = AppState.pillars;
@@ -849,21 +966,21 @@ function populateTaskCreationDropdowns() {
   if (taskPillar) {
     taskPillar.innerHTML =
       `<option value="">Sélectionner un pilier</option>` +
-      visiblePillars.map(p => `<option value="${p.id}">${p.name}</option>`).join("");
+      visiblePillars.map(p => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`).join("");
   }
 
   if (taskAssignedTo) {
     taskAssignedTo.innerHTML =
       `<option value="">Sélectionner un membre</option>` +
-      eligibleUsers.map(u => `<option value="${u.id}">${u.name} — ${u.pillar || "Sans pilier"}</option>`).join("");
+      eligibleUsers.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)} — ${escapeHtml(u.pillar || "Sans pilier")}</option>`).join("");
   }
 
   populateTaskActivityOptions();
 }
 
 function populateTaskActivityOptions() {
-  const activitySelect = document.getElementById("taskActivity");
-  const taskPillar = document.getElementById("taskPillar");
+  const activitySelect = byId("taskActivity");
+  const taskPillar = byId("taskPillar");
   if (!activitySelect || !taskPillar) return;
 
   const pillarId = taskPillar.value || "";
@@ -872,8 +989,20 @@ function populateTaskActivityOptions() {
 
   activitySelect.innerHTML =
     `<option value="">${activities.length ? "Sélectionner une activité" : "Aucune activité définie pour ce pilier"}</option>` +
-    activities.map(activity => `<option value="${activity}">${activity}</option>`).join("");
+    activities.map(activity => `<option value="${escapeHtml(activity)}">${escapeHtml(activity)}</option>`).join("");
+
   activitySelect.value = activities.includes(previousValue) ? previousValue : "";
+}
+
+function updateCreateTaskAutoStatus() {
+  const dueDateInput = byId("taskDueDate");
+  const autoStatusInput = byId("taskAutoStatus");
+  if (!autoStatusInput) return;
+
+  autoStatusInput.value = computeAutomaticStatus({
+    due_date: dueDateInput?.value || null,
+    progress: 0
+  });
 }
 
 function openCreateTaskModal() {
@@ -884,21 +1013,27 @@ function openCreateTaskModal() {
 
   populateTaskCreationDropdowns();
 
-  const planningDateInput = document.getElementById("taskPlanningDate");
-  const autoStatusInput = document.getElementById("taskAutoStatus");
+  const planningDateInput = byId("taskPlanningDate");
+  const autoStatusInput = byId("taskAutoStatus");
+  const dueDateInput = byId("taskDueDate");
+  const titleInput = byId("taskTitle");
+  const descriptionInput = byId("taskDescription");
+  const activityInput = byId("taskActivity");
+
   if (planningDateInput) planningDateInput.value = new Date().toISOString().slice(0, 10);
   if (autoStatusInput) autoStatusInput.value = STATUS.ON_TRACK;
-  const dueDateInput = document.getElementById("taskDueDate");
   if (dueDateInput) dueDateInput.value = "";
-  updateCreateTaskAutoStatus();
+  if (titleInput) titleInput.value = "";
+  if (descriptionInput) descriptionInput.value = "";
+  if (activityInput) activityInput.value = "";
 
-  const modal = document.getElementById("createTaskModal");
-  if (modal) modal.style.display = "block";
+  clearMessage("taskCreateMessage");
+  updateCreateTaskAutoStatus();
+  openModal("createTaskModal");
 }
 
 function closeCreateTaskModal() {
-  const modal = document.getElementById("createTaskModal");
-  if (modal) modal.style.display = "none";
+  closeModal("createTaskModal");
 }
 
 async function createNewTask() {
@@ -911,13 +1046,13 @@ async function createNewTask() {
     return;
   }
 
-  const title = (document.getElementById("taskTitle")?.value || "").trim();
-  const pillarId = document.getElementById("taskPillar")?.value || "";
-  const assignedToId = document.getElementById("taskAssignedTo")?.value || "";
-  const priority = document.getElementById("taskPriority")?.value || "Moyenne";
-  const dueDate = document.getElementById("taskDueDate")?.value || null;
-  const activityName = (document.getElementById("taskActivity")?.value || "").trim();
-  const description = (document.getElementById("taskDescription")?.value || "").trim();
+  const title = String(byId("taskTitle")?.value || "").trim();
+  const pillarId = byId("taskPillar")?.value || "";
+  const assignedToId = byId("taskAssignedTo")?.value || "";
+  const priority = byId("taskPriority")?.value || "Moyenne";
+  const dueDate = byId("taskDueDate")?.value || null;
+  const activityName = String(byId("taskActivity")?.value || "").trim();
+  const description = String(byId("taskDescription")?.value || "").trim();
 
   if (!title || !pillarId || !assignedToId || !dueDate) {
     setMessage("taskCreateMessage", "Veuillez renseigner le titre, le pilier, le membre assigné et l’échéance.", "error");
@@ -976,6 +1111,7 @@ async function createNewTask() {
       .order("id", { ascending: false })
       .limit(1)
       .maybeSingle();
+
     if (!createdTaskRes.error && createdTaskRes.data?.id) {
       AppState.taskActivitiesById[String(createdTaskRes.data.id)] = activityName;
       persistTaskActivities();
@@ -987,42 +1123,37 @@ async function createNewTask() {
   closeCreateTaskModal();
 }
 
-/* === TASK UPDATE === */
+/* =========================
+   MISE À JOUR TÂCHE
+========================= */
 
 function initGlobalActions() {
-  const closeBtn = document.getElementById("closeTaskModalBtn");
-  const saveBtn = document.getElementById("saveTaskBtn");
-  const modal = document.getElementById("taskModal");
+  const closeTopBtn = byId("closeTaskModalBtn");
+  const closeBottomBtn = byId("closeTaskModalBtnFooter");
+  const saveBtn = byId("saveTaskBtn");
 
-  if (closeBtn) closeBtn.addEventListener("click", closeTaskModal);
+  if (closeTopBtn) closeTopBtn.addEventListener("click", closeTaskModal);
+  if (closeBottomBtn) closeBottomBtn.addEventListener("click", closeTaskModal);
   if (saveBtn) saveBtn.addEventListener("click", saveTaskUpdate);
-
-  window.addEventListener("click", e => {
-    if (e.target === modal) closeTaskModal();
-  });
 }
 
 function openTaskModal(taskId) {
-  const modal = document.getElementById("taskModal");
-  if (!modal) return;
-
   const task = AppState.tasks.find(t => String(t.id) === String(taskId));
   if (!task || !canViewTask(task)) return;
 
-  document.getElementById("editTaskId").value = task.id;
-  document.getElementById("editStatus").value = computeAutomaticStatus(task);
-  document.getElementById("editProgressScore").value = task.progress_score ?? 0;
-  document.getElementById("editStaffComment").value = "";
-  document.getElementById("editSupervisorScore").value = task.supervisor_score ?? 0;
-  document.getElementById("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
-  document.getElementById("editSupervisorComment").value = "";
+  byId("editTaskId").value = task.id;
+  byId("editStatus").value = computeAutomaticStatus(task);
+  byId("editProgressScore").value = task.progress_score ?? 0;
+  byId("editStaffComment").value = "";
+  byId("editSupervisorScore").value = task.supervisor_score ?? 0;
+  byId("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
+  byId("editSupervisorComment").value = "";
 
-  modal.style.display = "block";
+  openModal("taskModal");
 }
 
 function closeTaskModal() {
-  const modal = document.getElementById("taskModal");
-  if (modal) modal.style.display = "none";
+  closeModal("taskModal");
 }
 
 async function saveTaskUpdate() {
@@ -1030,27 +1161,30 @@ async function saveTaskUpdate() {
   const sb = getSb();
   if (!currentUser || !sb) return;
 
-  const taskId = Number(document.getElementById("editTaskId").value);
+  const taskId = Number(byId("editTaskId")?.value);
   const task = AppState.tasks.find(t => Number(t.id) === taskId);
   if (!task || !canViewTask(task)) return;
 
-  let progressScore = Number(document.getElementById("editProgressScore").value);
-  let supervisorScore = Number(document.getElementById("editSupervisorScore").value);
+  let progressScore = Number(byId("editProgressScore")?.value);
+  let supervisorScore = Number(byId("editSupervisorScore")?.value);
 
   progressScore = clamp(progressScore, 0, 10);
   supervisorScore = clamp(supervisorScore, 0, 10);
 
   const isAssignedUser = String(currentUser.id) === String(task.assigned_to_id);
-  const isSupervisorOnPillar = currentUser.user_type === "supervisor" && String(task.pillar_id) === String(currentUser.pillar_id);
+  const isSupervisorOnPillar =
+    currentUser.user_type === "supervisor" &&
+    String(task.pillar_id) === String(currentUser.pillar_id);
   const isAdminUser = currentUser.user_type === "admin";
 
   const status = computeAutomaticStatus({
     ...task,
-    progress: isAssignedUser || isAdminUser ? scoreToPercent(progressScore) : task.progress
+    progress: (isAssignedUser || isAdminUser) ? scoreToPercent(progressScore) : task.progress
   });
-  const supervisorStatus = document.getElementById("editSupervisorStatus").value;
-  const newStaffComment = document.getElementById("editStaffComment").value.trim();
-  const newSupervisorComment = document.getElementById("editSupervisorComment").value.trim();
+
+  const supervisorStatus = byId("editSupervisorStatus")?.value || "Non évalué";
+  const newStaffComment = String(byId("editStaffComment")?.value || "").trim();
+  const newSupervisorComment = String(byId("editSupervisorComment")?.value || "").trim();
 
   const payload = { status };
 
@@ -1059,7 +1193,8 @@ async function saveTaskUpdate() {
     payload.progress = scoreToPercent(progressScore);
     payload.staff_comment = appendComment(task.staff_comment, currentUser.name, newStaffComment);
   }
-    if (isSupervisorOnPillar || isAdminUser) {
+
+  if (isSupervisorOnPillar || isAdminUser) {
     payload.supervisor_score = supervisorScore;
     payload.supervisor_progress = scoreToPercent(supervisorScore);
     payload.supervisor_status = supervisorStatus;
@@ -1081,7 +1216,7 @@ async function saveTaskUpdate() {
   }
 
   if (updateError) {
-    alert(`Erreur mise à jour: ${updateError.message}`);
+    showGlobalError(`Erreur mise à jour : ${updateError.message}`);
     return;
   }
 
@@ -1089,22 +1224,24 @@ async function saveTaskUpdate() {
   await reloadAndRerender();
 }
 
-/* === EXPORT / PRINT === */
+/* =========================
+   EXPORT / IMPRESSION
+========================= */
 
 function initExportAndPrint() {
   const page = document.body.dataset.page;
   if (page !== "dashboard") return;
 
-  const exportBtn = document.getElementById("exportXlsxBtn");
-  const printBtn = document.getElementById("printPageBtn");
-  const searchBtn = document.getElementById("searchBtn");
-  const searchInput = document.getElementById("searchInput");
-  const pillarFilter = document.getElementById("pillarFilter");
-  const supervisorFilter = document.getElementById("supervisorFilter");
-  const assignedToFilter = document.getElementById("assignedToFilter");
-  const statusFilter = document.getElementById("statusFilter");
-  const startDateFilter = document.getElementById("startDateFilter");
-  const endDateFilter = document.getElementById("endDateFilter");
+  const exportBtn = byId("exportXlsxBtn");
+  const printBtn = byId("printPageBtn");
+  const searchBtn = byId("searchBtn");
+  const searchInput = byId("searchInput");
+  const pillarFilter = byId("pillarFilter");
+  const supervisorFilter = byId("supervisorFilter");
+  const assignedToFilter = byId("assignedToFilter");
+  const statusFilter = byId("statusFilter");
+  const startDateFilter = byId("startDateFilter");
+  const endDateFilter = byId("endDateFilter");
 
   if (exportBtn) {
     if (canExportDashboard()) {
@@ -1117,11 +1254,13 @@ function initExportAndPrint() {
 
   if (printBtn) printBtn.addEventListener("click", printCurrentPage);
   if (searchBtn) searchBtn.addEventListener("click", renderDashboardPage);
+
   if (searchInput) {
     searchInput.addEventListener("keydown", e => {
       if (e.key === "Enter") renderDashboardPage();
     });
   }
+
   if (pillarFilter) pillarFilter.addEventListener("change", renderDashboardPage);
   if (supervisorFilter) supervisorFilter.addEventListener("change", renderDashboardPage);
   if (assignedToFilter) assignedToFilter.addEventListener("change", renderDashboardPage);
@@ -1134,10 +1273,10 @@ function initMyTasksFilters() {
   const page = document.body.dataset.page;
   if (page !== "my-tasks") return;
 
-  const assignedToFilter = document.getElementById("myTasksAssignedToFilter");
-  const statusFilter = document.getElementById("myTasksStatusFilter");
-  const startDateFilter = document.getElementById("myTasksStartDateFilter");
-  const endDateFilter = document.getElementById("myTasksEndDateFilter");
+  const assignedToFilter = byId("myTasksAssignedToFilter");
+  const statusFilter = byId("myTasksStatusFilter");
+  const startDateFilter = byId("myTasksStartDateFilter");
+  const endDateFilter = byId("myTasksEndDateFilter");
 
   if (assignedToFilter) assignedToFilter.addEventListener("change", renderMyTasksPage);
   if (statusFilter) statusFilter.addEventListener("change", renderMyTasksPage);
@@ -1149,22 +1288,22 @@ function getFilteredDashboardTasks() {
   const visibleTasks = getVisibleTasks();
 
   return applyTaskFilters(visibleTasks, {
-    search: document.getElementById("searchInput")?.value || "",
-    pillar: document.getElementById("pillarFilter")?.value || "",
-    supervisorId: document.getElementById("supervisorFilter")?.value || "",
-    assignedToId: document.getElementById("assignedToFilter")?.value || "",
-    status: document.getElementById("statusFilter")?.value || "",
-    startDate: document.getElementById("startDateFilter")?.value || "",
-    endDate: document.getElementById("endDateFilter")?.value || ""
+    search: byId("searchInput")?.value || "",
+    pillar: byId("pillarFilter")?.value || "",
+    supervisorId: byId("supervisorFilter")?.value || "",
+    assignedToId: byId("assignedToFilter")?.value || "",
+    status: byId("statusFilter")?.value || "",
+    startDate: byId("startDateFilter")?.value || "",
+    endDate: byId("endDateFilter")?.value || ""
   });
 }
 
 function getFilteredMyTasks(tasks) {
   return applyTaskFilters(tasks, {
-    assignedToId: document.getElementById("myTasksAssignedToFilter")?.value || "",
-    status: document.getElementById("myTasksStatusFilter")?.value || "",
-    startDate: document.getElementById("myTasksStartDateFilter")?.value || "",
-    endDate: document.getElementById("myTasksEndDateFilter")?.value || ""
+    assignedToId: byId("myTasksAssignedToFilter")?.value || "",
+    status: byId("myTasksStatusFilter")?.value || "",
+    startDate: byId("myTasksStartDateFilter")?.value || "",
+    endDate: byId("myTasksEndDateFilter")?.value || ""
   });
 }
 
@@ -1205,39 +1344,46 @@ function printCurrentPage() {
   window.print();
 }
 
-/* === RENDERING === */
+/* =========================
+   RENDERING
+========================= */
 
 function renderTaskRows(tasks, options = {}) {
   const { showDescription = false } = options;
 
   return tasks.map(task => `
     <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
-      <td>${task.id}</td>
-      <td><strong>${task.title}</strong><br><span class="muted">${task.pillar || ""}</span><br><span class="muted">Activité : ${task.activity_name || "Non définie"}</span></td>
-      ${showDescription ? `<td class="description-cell">${task.description || "—"}</td>` : ""}
-      <td>${task.assigned_to_name}<br><span class="muted">${task.assigned_to_role || ""}</span></td>
-      <td>${task.supervisor_name}<br><span class="muted">${task.supervisor_role || ""}</span></td>
+      <td>${escapeHtml(task.id)}</td>
+      <td>
+        <strong>${escapeHtml(task.title)}</strong><br>
+        <span class="muted">${escapeHtml(task.pillar || "")}</span><br>
+        <span class="muted">Activité : ${escapeHtml(task.activity_name || "Non définie")}</span>
+      </td>
+      ${showDescription ? `<td class="description-cell">${escapeHtml(task.description || "—")}</td>` : ""}
+      <td>${escapeHtml(task.assigned_to_name)}<br><span class="muted">${escapeHtml(task.assigned_to_role || "")}</span></td>
+      <td>${escapeHtml(task.supervisor_name)}<br><span class="muted">${escapeHtml(task.supervisor_role || "")}</span></td>
       <td>${getPriorityBadge(task.priority)}</td>
       <td>${getStatusBadge(task.status)}</td>
       <td>
         <div class="progress-track">
-          <div class="progress-fill" style="width:${task.progress || 0}%"></div>
+          <div class="progress-fill" style="width:${clamp(task.progress || 0, 0, 100)}%"></div>
         </div>
-        ${task.progress || 0}%
+        ${clamp(task.progress || 0, 0, 100)}%
       </td>
-      <td style="white-space:pre-line;">${task.staff_comment || "—"}</td>
+      <td style="white-space:pre-line;">${escapeHtml(task.staff_comment || "—")}</td>
       <td>
         <div class="progress-track">
-          <div class="progress-fill supervisor" style="width:${task.supervisor_progress || 0}%"></div>
+          <div class="progress-fill supervisor" style="width:${clamp(task.supervisor_progress || 0, 0, 100)}%"></div>
         </div>
-        ${task.supervisor_progress || 0}%<br>${getSupervisorBadge(task.supervisor_status)}
+        ${clamp(task.supervisor_progress || 0, 0, 100)}%<br>
+        ${getSupervisorBadge(task.supervisor_status)}
       </td>
-      <td style="white-space:pre-line;">${task.supervisor_comment || "—"}</td>
-      <td class="${isLate(task) ? 'late' : isDueSoon(task) ? 'soon' : ''}">${task.due_date || ""}</td>
+      <td style="white-space:pre-line;">${escapeHtml(task.supervisor_comment || "—")}</td>
+      <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">${escapeHtml(task.due_date || "")}</td>
       <td class="no-print">
         <div class="table-actions">
-          <button class="action-btn" type="button" onclick="openTaskModal(${task.id})">Mettre à jour</button>
-          ${canDeleteTask(task) ? `<button class="action-btn secondary-danger" type="button" onclick="deleteTask(${task.id})">Supprimer</button>` : ``}
+          <button class="action-btn" type="button" onclick="openTaskModal(${Number(task.id)})">Mettre à jour</button>
+          ${canDeleteTask(task) ? `<button class="action-btn secondary-danger" type="button" onclick="deleteTask(${Number(task.id)})">Supprimer</button>` : ``}
         </div>
       </td>
     </tr>
@@ -1245,7 +1391,7 @@ function renderTaskRows(tasks, options = {}) {
 }
 
 function renderKPIs(targetId, tasks) {
-  const el = document.getElementById(targetId);
+  const el = byId(targetId);
   if (!el) return;
 
   const total = tasks.length;
@@ -1264,13 +1410,13 @@ function renderKPIs(targetId, tasks) {
 }
 
 function renderDashboardPage() {
-  const tbody = document.getElementById("tasksTbody");
+  const tbody = byId("tasksTbody");
   if (!tbody) return;
 
   const currentUser = getCurrentUser();
-  const pillarFilter = document.getElementById("pillarFilter");
-  const supervisorFilter = document.getElementById("supervisorFilter");
-  const assignedToFilter = document.getElementById("assignedToFilter");
+  const pillarFilter = byId("pillarFilter");
+  const supervisorFilter = byId("supervisorFilter");
+  const assignedToFilter = byId("assignedToFilter");
 
   let visiblePillars = AppState.pillars;
   let visibleSupervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
@@ -1286,7 +1432,7 @@ function renderDashboardPage() {
     const currentValue = pillarFilter.value || "";
     pillarFilter.innerHTML =
       `<option value="">Tous les piliers</option>` +
-      visiblePillars.map(p => `<option value="${p.name}">${p.name}</option>`).join("");
+      visiblePillars.map(p => `<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join("");
     pillarFilter.value = visiblePillars.some(p => p.name === currentValue) ? currentValue : "";
   }
 
@@ -1294,7 +1440,7 @@ function renderDashboardPage() {
     const currentValue = supervisorFilter.value || "";
     supervisorFilter.innerHTML =
       `<option value="">Tous les superviseurs</option>` +
-      visibleSupervisors.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+      visibleSupervisors.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)}</option>`).join("");
     supervisorFilter.value = visibleSupervisors.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
   }
 
@@ -1302,21 +1448,20 @@ function renderDashboardPage() {
     const currentValue = assignedToFilter.value || "";
     assignedToFilter.innerHTML =
       `<option value="">Tous les assignés</option>` +
-      visibleAssignees.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+      visibleAssignees.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)}</option>`).join("");
     assignedToFilter.value = visibleAssignees.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
   }
 
   const filteredTasks = getFilteredDashboardTasks();
-
   renderKPIs("dashboardKpis", filteredTasks);
   tbody.innerHTML = renderTaskRows(filteredTasks, { showDescription: true });
 }
 
 function renderMyTasksPage() {
   const currentUser = getCurrentUser();
-  const tbody = document.getElementById("myTasksTbody");
-  const title = document.getElementById("myTasksTitle");
-  const assignedToFilter = document.getElementById("myTasksAssignedToFilter");
+  const tbody = byId("myTasksTbody");
+  const title = byId("myTasksTitle");
+  const assignedToFilter = byId("myTasksAssignedToFilter");
 
   if (!currentUser || !tbody || !title) return;
 
@@ -1324,15 +1469,12 @@ function renderMyTasksPage() {
 
   if (assignedToFilter) {
     const currentValue = assignedToFilter.value || "";
-    const assignees = [];
-
-    if (myTasks.length) {
-      assignees.push({ id: currentUser.id, name: currentUser.name });
-    }
+    const assignees = myTasks.length ? [{ id: currentUser.id, name: currentUser.name }] : [];
 
     assignedToFilter.innerHTML =
       `<option value="">Tous les assignés</option>` +
-      assignees.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+      assignees.map(u => `<option value="${escapeHtml(u.id)}">${escapeHtml(u.name)}</option>`).join("");
+
     assignedToFilter.value = assignees.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
   }
 
@@ -1340,6 +1482,7 @@ function renderMyTasksPage() {
 
   title.textContent = `Mes tâches — ${currentUser.name}`;
   renderKPIs("myTasksKpis", filteredTasks);
+
   tbody.innerHTML = filteredTasks.length
     ? renderTaskRows(filteredTasks, { showDescription: true })
     : `<tr><td colspan="13"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
@@ -1347,9 +1490,9 @@ function renderMyTasksPage() {
 
 function renderMyTeamPage() {
   const currentUser = getCurrentUser();
-  const membersBox = document.getElementById("teamMembersList");
-  const tbody = document.getElementById("teamTasksTbody");
-  const title = document.getElementById("myTeamTitle");
+  const membersBox = byId("teamMembersList");
+  const tbody = byId("teamTasksTbody");
+  const title = byId("myTeamTitle");
 
   if (!currentUser || !membersBox || !tbody || !title) return;
 
@@ -1370,8 +1513,8 @@ function renderMyTeamPage() {
   membersBox.innerHTML = teamMembers.length
     ? teamMembers.map(member => `
       <div class="member-card">
-        <h4>${member.name}</h4>
-        <div class="muted">${member.user_type} | ${member.pillar || "Sans pilier"}</div>
+        <h4>${escapeHtml(member.name)}</h4>
+        <div class="muted">${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}</div>
       </div>
     `).join("")
     : `<div class="empty">Aucun membre rattaché.</div>`;
@@ -1380,6 +1523,10 @@ function renderMyTeamPage() {
     ? renderTaskRows(teamTasks)
     : `<tr><td colspan="12"><span class="muted">Aucune tâche d'équipe.</span></td></tr>`;
 }
+
+/* =========================
+   SUPPRESSION
+========================= */
 
 async function deleteTask(taskId) {
   const sb = getSb();
@@ -1402,6 +1549,10 @@ async function deleteTask(taskId) {
 
   await reloadAndRerender();
 }
+
+/* =========================
+   RECHARGEMENT
+========================= */
 
 async function reloadAndRerender() {
   await loadReferenceData();
