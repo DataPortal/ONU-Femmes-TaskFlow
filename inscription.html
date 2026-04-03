@@ -3,15 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ONU Femmes — Administration</title>
   <meta
     name="description"
     content="Portail d’administration des membres, piliers et activités du TaskFlow Management Portal - ONU Femmes RDC."
   />
+  <title>ONU Femmes — Administration</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="register">
-  <!-- Header -->
   <header class="site-header">
     <div class="header-inner container">
       <div class="brand-block">
@@ -32,22 +31,20 @@
     </div>
   </header>
 
-  <!-- Navigation -->
   <nav class="main-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="mes-taches.html">Mes tâches</a>
       <a href="mon-equipe.html">Mon équipe</a>
       <a href="inscription.html" class="active" aria-current="page">Inscription</a>
+      <a href="profile.html">Mon profil</a>
     </div>
   </nav>
 
-  <!-- Main -->
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
     <div id="registerAccessNotice" class="page-message" aria-live="polite"></div>
 
-    <!-- Intro -->
     <section class="page-heading">
       <div>
         <span class="section-kicker">Administration</span>
@@ -59,7 +56,6 @@
       </div>
     </section>
 
-    <!-- Assign existing member -->
     <section class="admin-card">
       <div class="card-header">
         <div>
@@ -123,7 +119,6 @@
       <div id="userMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <!-- Create pillar -->
     <section class="admin-card">
       <div class="card-header">
         <div>
@@ -155,12 +150,11 @@
       <div id="pillarMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <!-- Define pillar activities -->
-    <section class="admin-card">
+    <section class="admin-card" data-section="pillar-activities">
       <div class="card-header">
         <div>
-          <h3>Définir les activités principales d’un pilier</h3>
-          <p>Enregistrez les activités structurantes utilisées lors de la création des tâches.</p>
+          <h3>Activités principales du pilier</h3>
+          <p>Réservé aux superviseurs et administrateurs. Saisissez une activité par ligne.</p>
         </div>
       </div>
 
@@ -173,14 +167,15 @@
         </div>
 
         <div class="field">
-          <label for="pillarActivitiesInput">
-            Activités principales <span class="muted">(une activité par ligne)</span>
-          </label>
+          <label for="pillarActivitiesInput">Activités principales</label>
           <textarea
             id="pillarActivitiesInput"
             rows="8"
-            placeholder="Ex. Plaidoyer institutionnel&#10;Renforcement des capacités&#10;Coordination inter-agences"
+            placeholder="Ex. Plaidoyer institutionnel&#10;Renforcement des capacités&#10;Coordination inter-agences&#10;Reporting humanitaire"
           ></textarea>
+          <small class="muted">
+            Une activité par ligne. Ces activités seront proposées au staff lors de la création d’une tâche.
+          </small>
         </div>
       </div>
 
@@ -193,7 +188,6 @@
       <div id="pillarActivitiesMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <!-- Available pillars -->
     <section class="admin-card">
       <div class="card-header">
         <div>
@@ -201,11 +195,9 @@
           <p>Vue synthétique des piliers actuellement enregistrés dans le système.</p>
         </div>
       </div>
-
       <section id="pillarsList" class="grid-list grid-2" aria-label="Liste des piliers"></section>
     </section>
 
-    <!-- Members in scope -->
     <section class="admin-card">
       <div class="card-header">
         <div>
@@ -216,7 +208,6 @@
           </p>
         </div>
       </div>
-
       <section
         id="registeredMembersList"
         class="grid-list grid-2"
