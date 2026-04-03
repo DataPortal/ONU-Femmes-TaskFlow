@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body data-page="dashboard">
-  <!-- Header -->
   <header class="site-header">
     <div class="header-inner container">
       <div class="brand-block">
@@ -28,31 +27,25 @@
           <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
           <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
         </div>
-
         <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
-
-        <button id="logoutBtn" class="btn btn-secondary" type="button">
-          Déconnexion
-        </button>
+        <button id="logoutBtn" class="btn btn-secondary" type="button">Déconnexion</button>
       </div>
     </div>
   </header>
 
-  <!-- Navigation -->
   <nav class="main-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html" class="active">Dashboard</a>
       <a href="mes-taches.html">Mes tâches</a>
       <a href="mon-equipe.html">Mon équipe</a>
       <a href="inscription.html">Inscription</a>
+      <a href="profile.html">Mon profil</a>
     </div>
   </nav>
 
-  <!-- Main -->
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
 
-    <!-- Page Intro -->
     <section class="page-heading">
       <div>
         <span class="section-kicker">Vue d’ensemble</span>
@@ -63,14 +56,8 @@
       </div>
     </section>
 
-    <!-- KPI Section -->
-    <section
-      id="dashboardKpis"
-      class="dashboard-kpis"
-      aria-label="Indicateurs clés de performance"
-    ></section>
+    <section id="dashboardKpis" class="dashboard-kpis" aria-label="Indicateurs clés de performance"></section>
 
-    <!-- Filters -->
     <section class="filters-card no-print" aria-label="Filtres du tableau des tâches">
       <div class="filters-header">
         <h3>Filtres et actions</h3>
@@ -146,7 +133,6 @@
       </div>
     </section>
 
-    <!-- Tasks Table -->
     <section class="table-card">
       <div class="table-card-header">
         <h3>Liste des tâches</h3>
@@ -187,15 +173,12 @@
               <th class="no-print">Action</th>
             </tr>
           </thead>
-          <tbody id="tasksTbody">
-            <!-- Contenu injecté dynamiquement -->
-          </tbody>
+          <tbody id="tasksTbody"></tbody>
         </table>
       </div>
     </section>
   </main>
 
-  <!-- Modal: Update Task -->
   <div
     id="taskModal"
     class="modal no-print"
@@ -208,9 +191,7 @@
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
-        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
-          ×
-        </button>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
       </div>
 
       <div class="modal-body">
@@ -225,9 +206,7 @@
               <option>En retard</option>
               <option>Achevé</option>
             </select>
-            <small class="muted">
-              Calculé automatiquement selon l’échéance et la progression.
-            </small>
+            <small class="muted">Calculé automatiquement selon l’échéance et la progression.</small>
           </div>
 
           <div class="field">
@@ -290,17 +269,12 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
-          Fermer
-        </button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">
-          Enregistrer
-        </button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
       </div>
     </div>
   </div>
 
-  <!-- Modal: Create Task -->
   <div
     id="createTaskModal"
     class="modal no-print"
@@ -313,20 +287,14 @@
     <div class="modal-content modal-xl">
       <div class="modal-header">
         <h3 id="createTaskModalTitle">Créer une nouvelle tâche</h3>
-        <button id="closeCreateTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
-          ×
-        </button>
+        <button id="closeCreateTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
       </div>
 
       <div class="modal-body">
         <div class="modal-row">
           <div class="field">
             <label for="taskTitle">Titre de la tâche</label>
-            <input
-              id="taskTitle"
-              type="text"
-              placeholder="Ex. Préparer le rapport mensuel"
-            />
+            <input id="taskTitle" type="text" placeholder="Ex. Préparer le rapport mensuel" />
           </div>
 
           <div class="field">
@@ -358,11 +326,13 @@
 
         <div class="modal-row">
           <div class="field">
-            <label for="taskActivity">Activité principale</label>
+            <label for="taskActivity">Activité principale liée à la tâche</label>
             <select id="taskActivity">
               <option value="">Sélectionner une activité</option>
             </select>
-            <small class="muted">Définie par le superviseur du pilier.</small>
+            <small class="muted">
+              Le staff doit choisir l’activité principale qui correspond le mieux à la tâche à exécuter.
+            </small>
           </div>
           <div></div>
         </div>
@@ -372,7 +342,6 @@
             <label for="taskPlanningDate">Date de planification</label>
             <input id="taskPlanningDate" type="date" disabled />
           </div>
-
           <div class="field">
             <label for="taskDueDate">Échéance</label>
             <input id="taskDueDate" type="date" required />
@@ -401,17 +370,12 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeCreateTaskModalBtnFooter" class="btn btn-secondary" type="button">
-          Fermer
-        </button>
-        <button id="createTaskBtn" class="btn btn-primary" type="button">
-          Créer la tâche
-        </button>
+        <button id="closeCreateTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
+        <button id="createTaskBtn" class="btn btn-primary" type="button">Créer la tâche</button>
       </div>
     </div>
   </div>
 
-  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
