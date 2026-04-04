@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Page de suivi des membres supervisés et des tâches d’équipe du TaskFlow Management Portal - ONU Femmes RDC."
+  />
+  <title>ONU Femmes — Mon équipe</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body data-page="my-team">
+  <header class="site-header">
+    <div class="header-inner container">
+      <div class="brand-block">
+        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+        <div class="brand-text">
+          <span class="eyebrow">TaskFlow Management Portal</span>
+          <h1>ONU Femmes RDC — Mon équipe</h1>
+          <p>Suivi des membres supervisés et de leurs tâches</p>
+        </div>
+      </div>
+
+      <div class="top-tools no-print" aria-label="Outils utilisateur">
+        <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
+        <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
+        <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
+        <button id="logoutBtn" class="btn btn-secondary" type="button">Déconnexion</button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html" class="active" aria-current="page">Mon équipe</a>
+      <a href="inscription.html">Inscription</a>
+      <a href="profile.html">Mon profil</a>
+    </div>
+  </nav>
+
+  <main class="container main-content">
+    <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
+
+    <section class="page-heading">
+      <div>
+        <span class="section-kicker">Pilotage d’équipe</span>
+        <h2 id="myTeamTitle" class="section-title">Mon équipe</h2>
+        <p class="section-subtitle">
+          Consultez les membres rattachés à votre périmètre, suivez leurs tâches et mettez à jour les évaluations si nécessaire.
+        </p>
+      </div>
+    </section>
+
+    <section id="myTeamKpis" class="dashboard-kpis" aria-label="Indicateurs clés de l’équipe"></section>
+
+    <section class="split-layout">
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Membres rattachés</h3>
+            <p>Liste des membres visibles dans votre périmètre de supervision</p>
+          </div>
+        </div>
+
+        <div id="teamMembersList" class="grid-list grid-2"></div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Lecture rapide</h3>
+            <p>Résumé fonctionnel de l’espace équipe</p>
+          </div>
+        </div>
+
+        <div class="info-box">
+          Cette page affiche les membres et les tâches visibles dans votre périmètre de pilier. Elle permet un suivi rapide de l’exécution, des commentaires staff et des appréciations superviseur.
+        </div>
+      </article>
+    </section>
+
+    <section class="table-card">
+      <div class="table-card-header">
+        <h3>Tâches de l’équipe</h3>
+        <p>Vue consolidée des tâches suivies dans votre périmètre</p>
+      </div>
+
+      <div class="table-wrap">
+        <table id="teamTasksTable" class="tasks-table">
+          <colgroup>
+            <col class="col-id" />
+            <col class="col-task" />
+            <col class="col-activity" />
+            <col class="col-assigned" />
+            <col class="col-supervisor" />
+            <col class="col-priority" />
+            <col class="col-status" />
+            <col class="col-progress" />
+            <col class="col-staff-comment" />
+            <col class="col-supervisor-rating" />
+            <col class="col-supervisor-comment" />
+            <col class="col-deadline" />
+            <col class="col-action" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tâche</th>
+              <th>Activité principale</th>
+              <th>Assigné à</th>
+              <th>Superviseur</th>
+              <th>Priorité</th>
+              <th>Statut</th>
+              <th>Progression staff</th>
+              <th>Commentaire staff</th>
+              <th>Évaluation superviseur</th>
+              <th>Commentaire superviseur</th>
+              <th>Échéance</th>
+              <th class="no-print">Action</th>
+            </tr>
+          </thead>
+          <tbody id="teamTasksTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div
+    id="taskModal"
+    class="modal no-print"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="taskModalTitle"
+    aria-hidden="true"
+  >
+    <div class="modal-overlay"></div>
+
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="editTaskId" />
+
+        <div class="modal-row">
+          <div class="field">
+            <label for="editStatus">Statut</label>
+            <select id="editStatus" disabled>
+              <option>En bonne voie</option>
+              <option>Échéance imminente</option>
+              <option>En retard</option>
+              <option>Achevé</option>
+            </select>
+            <small class="muted">Calculé automatiquement selon l’échéance et la progression.</small>
+          </div>
+
+          <div class="field">
+            <label for="editProgressScore">Score staff (0 à 10)</label>
+            <select id="editProgressScore">
+              <option value="0">0 = 0%</option>
+              <option value="1">1 = 10%</option>
+              <option value="2">2 = 20%</option>
+              <option value="3">3 = 30%</option>
+              <option value="4">4 = 40%</option>
+              <option value="5">5 = 50%</option>
+              <option value="6">6 = 60%</option>
+              <option value="7">7 = 70%</option>
+              <option value="8">8 = 80%</option>
+              <option value="9">9 = 90%</option>
+              <option value="10">10 = 100%</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="editStaffComment">Commentaire du staff</label>
+          <textarea id="editStaffComment" rows="4"></textarea>
+        </div>
+
+        <div class="modal-row">
+          <div class="field">
+            <label for="editSupervisorScore">Score superviseur (0 à 10)</label>
+            <select id="editSupervisorScore">
+              <option value="0">0 = 0%</option>
+              <option value="1">1 = 10%</option>
+              <option value="2">2 = 20%</option>
+              <option value="3">3 = 30%</option>
+              <option value="4">4 = 40%</option>
+              <option value="5">5 = 50%</option>
+              <option value="6">6 = 60%</option>
+              <option value="7">7 = 70%</option>
+              <option value="8">8 = 80%</option>
+              <option value="9">9 = 90%</option>
+              <option value="10">10 = 100%</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="editSupervisorStatus">Appréciation superviseur</label>
+            <select id="editSupervisorStatus">
+              <option>Non évalué</option>
+              <option>Très satisfaisant</option>
+              <option>Acceptable</option>
+              <option>À améliorer</option>
+              <option>Critique</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="editSupervisorComment">Commentaire du superviseur</label>
+          <textarea id="editSupervisorComment" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth-utils.js"></script>
+  <script src="app-core.js"></script>
+  <script src="app-services.js"></script>
+  <script src="app-ui.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
