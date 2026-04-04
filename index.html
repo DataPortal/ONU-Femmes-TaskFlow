@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta
+    name="description"
+    content="Portail TaskFlow Management Portal - ONU Femmes RDC. Redirection vers la page de connexion."
+  />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <title>ONU Femmes RDC — TaskFlow Portal</title>
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    window.addEventListener("DOMContentLoaded", function () {
+      const redirectTarget = "login.html";
+      const statusText = document.getElementById("redirectStatus");
+      const countdownText = document.getElementById("redirectCountdown");
+
+      let seconds = 2;
+
+      if (statusText) {
+        statusText.textContent = "Redirection automatique vers l’espace sécurisé...";
+      }
+
+      const timer = setInterval(function () {
+        if (countdownText) {
+          countdownText.textContent = `Redirection dans ${seconds} seconde${seconds > 1 ? "s" : ""}...`;
+        }
+
+        seconds -= 1;
+
+        if (seconds < 0) {
+          clearInterval(timer);
+          window.location.replace(redirectTarget);
+        }
+      }, 1000);
+    });
+  </script>
+</head>
+<body class="auth-page redirect-page">
+  <header class="site-header auth-header">
+    <div class="header-inner container">
+      <div class="brand-block">
+        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+        <div class="brand-text">
+          <span class="eyebrow">TaskFlow Management Portal</span>
+          <h1>ONU Femmes RDC</h1>
+          <p>Plateforme de gestion des tâches, du suivi et de la coordination</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container login-page">
+    <section class="login-card auth-card redirect-card" aria-labelledby="redirectTitle">
+      <div class="redirect-icon" aria-hidden="true">↗</div>
+
+      <div class="login-card-header">
+        <span class="section-kicker">Bienvenue</span>
+        <h2 id="redirectTitle" class="section-title">Accès au portail TaskFlow</h2>
+        <p class="section-subtitle">
+          Vous allez être redirigé vers la page de connexion sécurisée de l’application.
+        </p>
+      </div>
+
+      <div class="info-box" id="redirectStatus">
+        Vérification de l’accès et préparation de la redirection...
+      </div>
+
+      <p id="redirectCountdown" class="muted" style="margin-top: 16px;">
+        Redirection en cours...
+      </p>
+
+      <div class="card-actions" style="justify-content:center; margin-top: 20px;">
+        <a href="login.html" class="btn btn-primary" style="text-decoration:none;">
+          Accéder à la connexion
+        </a>
+        <a href="register.html" class="btn btn-secondary" style="text-decoration:none;">
+          Créer un compte
+        </a>
+      </div>
+
+      <noscript>
+        <div class="error-box" style="margin-top: 20px;">
+          JavaScript est désactivé. Utilisez les boutons ci-dessus pour continuer.
+        </div>
+      </noscript>
+    </section>
+  </main>
+</body>
+</html>
