@@ -5,11 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta
     name="description"
-    content="Portail d’administration des membres, piliers et activités du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Portail d’administration des membres, piliers et activités principales du TaskFlow Management Portal - ONU Femmes RDC."
   />
   <title>ONU Femmes — Administration</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body data-page="register">
   <header class="site-header">
     <div class="header-inner container">
@@ -18,7 +19,7 @@
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Administration</h1>
-          <p>Administration des membres, des rôles et des piliers</p>
+          <p>Administration des membres, des rôles, des piliers et des activités principales</p>
         </div>
       </div>
 
@@ -48,10 +49,10 @@
     <section class="page-heading">
       <div>
         <span class="section-kicker">Administration</span>
-        <h2 class="section-title">Gestion des membres et des piliers</h2>
+        <h2 class="section-title">Gestion des membres, piliers et activités principales</h2>
         <p class="section-subtitle">
-          Affectez les utilisateurs existants, créez des piliers et définissez les activités principales
-          pour structurer le suivi opérationnel.
+          Affectez les utilisateurs existants, créez les piliers et définissez les activités principales
+          qui seront sélectionnées par le staff lors de la création ou du suivi des tâches.
         </p>
       </div>
     </section>
@@ -150,42 +151,64 @@
       <div id="pillarMessage" class="form-message" aria-live="polite"></div>
     </section>
 
-    <section class="admin-card" data-section="pillar-activities">
+    <section class="admin-card" data-section="main-activities">
       <div class="card-header">
         <div>
-          <h3>Activités principales du pilier</h3>
-          <p>Réservé aux superviseurs et administrateurs. Saisissez une activité par ligne.</p>
+          <h3>Activités principales</h3>
+          <p>
+            Réservé aux superviseurs et administrateurs. Les activités créées ici seront proposées
+            au staff lors de la création ou du suivi d’une tâche.
+          </p>
         </div>
       </div>
 
-      <div class="form-grid single-column">
+      <div class="form-grid two-columns">
         <div class="field">
-          <label for="pillarActivitiesPillar">Pilier</label>
-          <select id="pillarActivitiesPillar">
+          <label for="activityPillar">Pilier</label>
+          <select id="activityPillar">
             <option value="">Sélectionner un pilier</option>
           </select>
         </div>
 
         <div class="field">
-          <label for="pillarActivitiesInput">Activités principales</label>
-          <textarea
-            id="pillarActivitiesInput"
-            rows="8"
-            placeholder="Ex. Plaidoyer institutionnel&#10;Renforcement des capacités&#10;Coordination inter-agences&#10;Reporting humanitaire"
-          ></textarea>
-          <small class="muted">
-            Une activité par ligne. Ces activités seront proposées au staff lors de la création d’une tâche.
-          </small>
+          <label for="activityName">Nom de l’activité principale</label>
+          <input
+            id="activityName"
+            type="text"
+            placeholder="Ex. Coordination inter-agences"
+          />
         </div>
       </div>
 
+      <div class="field" style="margin-top:14px;">
+        <label for="activityDescription">Description optionnelle</label>
+        <textarea
+          id="activityDescription"
+          rows="4"
+          placeholder="Décrire brièvement l’activité principale, son objectif ou son périmètre"
+        ></textarea>
+      </div>
+
       <div class="card-actions">
-        <button id="savePillarActivitiesBtn" class="btn btn-primary" type="button">
-          Enregistrer les activités
+        <button id="createActivityBtn" class="btn btn-primary" type="button">
+          Ajouter l’activité
         </button>
       </div>
 
-      <div id="pillarActivitiesMessage" class="form-message" aria-live="polite"></div>
+      <div id="activityMessage" class="form-message" aria-live="polite"></div>
+
+      <div class="card-header" style="margin-top:22px;">
+        <div>
+          <h3>Activités enregistrées</h3>
+          <p>Liste des activités disponibles dans votre périmètre.</p>
+        </div>
+      </div>
+
+      <section
+        id="mainActivitiesList"
+        class="grid-list grid-2"
+        aria-label="Liste des activités principales"
+      ></section>
     </section>
 
     <section class="admin-card">
