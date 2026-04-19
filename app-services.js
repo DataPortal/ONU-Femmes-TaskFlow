@@ -6,7 +6,7 @@
     getPillarNameByIdFromArray,
     getSb,
     hydrateTaskStatus,
-    isStatusConstraintError
+    normalizeStatusToDatabase
   } = Core;
 
   async function waitForSupabaseClient(maxWaitMs = 5000) {
@@ -144,7 +144,7 @@
           supervisor_role: task.supervisor_role || "",
 
           priority: task.priority,
-          status: task.status,
+          status: normalizeStatusToDatabase(task.status),
 
           progress_score: task.progress_score,
           progress: task.progress,
@@ -208,7 +208,7 @@
           supervisor_role: supervisor ? supervisor.user_type : "",
 
           priority: task.priority,
-          status: task.status,
+          status: normalizeStatusToDatabase(task.status),
 
           progress_score: task.progress_score,
           progress: task.progress,
@@ -235,63 +235,34 @@
 
   async function createTaskWithFallbackStatus(payload) {
     const sb = getSb();
-    const statusCandidates = window.AppCore.getStatusCandidates(payload.status);
 
-    let insertError = null;
+    const safePayload = {
+      ...payload,
+      status: normalizeStatusToDatabase(payload.status)
+    };
 
-    for (const candidate of statusCandidates) {
-      const attemptPayload = {
-        ...payload,
-        status: candidate
-      };
+    const { error } = await sb.from("tasks").insert([safePayload]);
 
-      const { error } = await sb.from("tasks").insert([attemptPayload]);
-
-      if (!error) {
-        insertError = null;
-        break;
-      }
-
-      insertError = error;
-
-      if (!isStatusConstraintError(error)) {
-        break;
-      }
-    }
-
-    if (insertError) {
-      throw insertError;
+    if (error) {
+      throw error;
     }
   }
 
   async function updateTaskWithFallbackStatus(taskId, payload) {
     const sb = getSb();
-    const statusCandidates = window.AppCore.getStatusCandidates(payload.status);
 
-    let updateError = null;
+    const safePayload = {
+      ...payload,
+      status: normalizeStatusToDatabase(payload.status)
+    };
 
-    for (const candidate of statusCandidates) {
-      const attemptPayload = {
-        ...payload,
-        status: candidate
-      };
+    const { error } = await sb
+      .from("tasks")
+      .update(safePayload)
+      .eq("id", taskId);
 
-      const { error } = await sb.from("tasks").update(attemptPayload).eq("id", taskId);
-
-      if (!error) {
-        updateError = null;
-        break;
-      }
-
-      updateError = error;
-
-      if (!isStatusConstraintError(error)) {
-        break;
-      }
-    }
-
-    if (updateError) {
-      throw updateError;
+    if (error) {
+      throw error;
     }
   }
 
