@@ -34,22 +34,45 @@
     return clamp(score, 0, 10) * 10;
   }
 
-  function normalizeStatus(status) {
-    return String(status || "")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "");
+  function normalizeStatusToDatabase(status) {
+    const raw = String(status || "").trim();
+
+    const map = {
+      "En bonne voie": "En bonne voie",
+
+      "Échéance imminente": "Échéance imminente",
+      "Echeance imminente": "Échéance imminente",
+
+      "En retard": "En retard",
+
+      "Achevé": "Achevé",
+      "Acheve": "Achevé",
+
+      "Non commencée": "En bonne voie",
+      "Non commencee": "En bonne voie",
+      "En cours": "En bonne voie",
+      "Bloquée": "En retard",
+      "Bloquee": "En retard",
+      "Terminée": "Achevé",
+      "Terminee": "Achevé"
+    };
+
+    return map[raw] || STATUS.ON_TRACK;
   }
 
   function getStatusCandidates(status) {
-    const normalized = normalizeStatus(status);
-    if (!status || normalized === status) return [status];
-    return [status, normalized];
+    return [normalizeStatusToDatabase(status)];
   }
 
   function isStatusConstraintError(error) {
     if (!error) return false;
+
     const raw = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
-    return raw.includes("tasks_status_check") || raw.includes("violates check constraint");
+
+    return (
+      raw.includes("tasks_status_check") ||
+      raw.includes("violates check constraint")
+    );
   }
 
   function toLocalDateOnly(dateValue) {
@@ -58,7 +81,9 @@
   }
 
   function getProgressPercent(task) {
-    if (typeof task.progress === "number") return clamp(task.progress, 0, 100);
+    if (typeof task.progress === "number") {
+      return clamp(task.progress, 0, 100);
+    }
 
     if (task.progress !== undefined && task.progress !== null && task.progress !== "") {
       return clamp(Number(task.progress), 0, 100);
@@ -73,23 +98,35 @@
 
   function computeAutomaticStatus(task) {
     const progressPercent = getProgressPercent(task);
-    if (progressPercent >= 100) return STATUS.DONE;
-    if (!task.due_date) return STATUS.ON_TRACK;
+
+    if (progressPercent >= 100) {
+      return STATUS.DONE;
+    }
+
+    if (!task.due_date) {
+      return STATUS.ON_TRACK;
+    }
 
     const today = toLocalDateOnly(new Date());
     const dueDate = toLocalDateOnly(task.due_date);
     const diffMs = dueDate.getTime() - today.getTime();
     const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
-    if (daysRemaining < 0) return STATUS.LATE;
-    if (daysRemaining <= IMMINENT_DAYS_THRESHOLD) return STATUS.DUE_SOON;
+    if (daysRemaining < 0) {
+      return STATUS.LATE;
+    }
+
+    if (daysRemaining <= IMMINENT_DAYS_THRESHOLD) {
+      return STATUS.DUE_SOON;
+    }
+
     return STATUS.ON_TRACK;
   }
 
   function hydrateTaskStatus(task) {
     return {
       ...task,
-      status: computeAutomaticStatus(task)
+      status: normalizeStatusToDatabase(computeAutomaticStatus(task))
     };
   }
 
@@ -236,6 +273,7 @@
   function canExportDashboard() {
     const currentUser = getCurrentUser();
     if (!currentUser) return false;
+
     return ["admin", "supervisor"].includes(currentUser.user_type);
   }
 
@@ -282,7 +320,7 @@
       const matchAssignedTo = !assignedToId || String(task.assigned_to_id) === String(assignedToId);
       const matchActivityId = !activityId || String(task.activity_id) === String(activityId);
       const matchActivityName = !activityName || String(task.activity_name || "") === String(activityName);
-      const matchStatus = !status || task.status === status;
+      const matchStatus = !status || normalizeStatusToDatabase(task.status) === normalizeStatusToDatabase(status);
       const matchDateRange = isTaskWithinDateRange(task, startDate, endDate);
 
       return (
@@ -333,6 +371,7 @@
     isSupervisorOrAdmin,
     isTaskWithinDateRange,
     normalizeActivitiesList,
+    normalizeStatusToDatabase,
     scoreToPercent
   };
 })();
