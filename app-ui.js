@@ -13,6 +13,7 @@
     canCreateTask,
     canDeleteTask,
     canExportDashboard,
+    canManageActivities,
     canManageMembers,
     canViewTask,
     clamp,
@@ -28,10 +29,12 @@
 
   function showGlobalError(message) {
     const debugBox = byId("pageDebugMessage");
+
     if (debugBox) {
       AuthUI.showMessage(debugBox, message, "error");
       return;
     }
+
     alert(message);
   }
 
@@ -48,21 +51,21 @@
     if (status === STATUS.DUE_SOON) return `<span class="badge badge-orange">${AuthUI.escapeHtml(status)}</span>`;
     if (status === STATUS.LATE) return `<span class="badge badge-red">${AuthUI.escapeHtml(status)}</span>`;
     if (status === STATUS.ON_TRACK) return `<span class="badge badge-blue">${AuthUI.escapeHtml(status)}</span>`;
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(status)}</span>`;
+    return `<span class="badge badge-grey">${AuthUI.escapeHtml(status || "Non défini")}</span>`;
   }
 
   function getPriorityBadge(priority) {
     if (priority === "Critique") return `<span class="badge badge-red">${AuthUI.escapeHtml(priority)}</span>`;
     if (priority === "Haute") return `<span class="badge badge-yellow">${AuthUI.escapeHtml(priority)}</span>`;
     if (priority === "Moyenne") return `<span class="badge badge-blue">${AuthUI.escapeHtml(priority)}</span>`;
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(priority)}</span>`;
+    return `<span class="badge badge-grey">${AuthUI.escapeHtml(priority || "Basse")}</span>`;
   }
 
   function getSupervisorBadge(status) {
     if (status === "Très satisfaisant") return `<span class="badge badge-green">${AuthUI.escapeHtml(status)}</span>`;
     if (status === "Acceptable") return `<span class="badge badge-yellow">${AuthUI.escapeHtml(status)}</span>`;
     if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${AuthUI.escapeHtml(status)}</span>`;
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(status)}</span>`;
+    return `<span class="badge badge-grey">${AuthUI.escapeHtml(status || "Non évalué")}</span>`;
   }
 
   function initUserHeader() {
@@ -76,7 +79,10 @@
     }
 
     if (label && currentUser) {
-      const supervisor = AppState.users.find(u => String(u.id) === String(currentUser.supervisor_id));
+      const supervisor = AppState.users.find(user =>
+        String(user.id) === String(currentUser.supervisor_id)
+      );
+
       label.innerHTML = `
         <strong>${AuthUI.escapeHtml(currentUser.name)}</strong><br>
         <span class="muted">${AuthUI.escapeHtml(currentUser.user_type)} | ${AuthUI.escapeHtml(currentUser.pillar || "Sans pilier")}</span><br>
@@ -88,6 +94,7 @@
   function initLogout() {
     const sb = getSb();
     const logoutBtn = byId("logoutBtn");
+
     if (!sb || !logoutBtn) return;
 
     logoutBtn.addEventListener("click", async () => {
@@ -99,6 +106,7 @@
   function openModal(modalId) {
     const modal = byId(modalId);
     if (!modal) return;
+
     modal.style.display = "block";
     modal.setAttribute("aria-hidden", "false");
   }
@@ -106,6 +114,7 @@
   function closeModal(modalId) {
     const modal = byId(modalId);
     if (!modal) return;
+
     modal.style.display = "none";
     modal.setAttribute("aria-hidden", "true");
   }
@@ -127,8 +136,11 @@
 
     document.addEventListener("keydown", event => {
       if (event.key !== "Escape") return;
+
       document.querySelectorAll(".modal").forEach(modal => {
-        if (modal.style.display === "block") closeModal(modal.id);
+        if (modal.style.display === "block") {
+          closeModal(modal.id);
+        }
       });
     });
   }
@@ -137,100 +149,52 @@
     const pillarSupervisor = byId("pillarSupervisor");
     const userPillar = byId("userPillar");
     const userSupervisor = byId("userSupervisor");
-    const pillarActivitiesPillar = byId("pillarActivitiesPillar");
     const currentUser = getCurrentUser();
 
-    let supervisors = AppState.users.filter(
-      u => u.user_type === "supervisor" || u.user_type === "admin"
+    let supervisors = AppState.users.filter(user =>
+      user.user_type === "supervisor" || user.user_type === "admin"
     );
 
     let visiblePillars = AppState.pillars;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      supervisors = supervisors.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
-      visiblePillars = AppState.pillars.filter(p => String(p.id) === String(currentUser.pillar_id));
+      supervisors = supervisors.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
+
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
     }
 
     if (pillarSupervisor) {
       pillarSupervisor.innerHTML =
         `<option value="">Sélectionner un superviseur</option>` +
-        supervisors.map(u => `<option value="${AuthUI.escapeHtml(u.id)}">${AuthUI.escapeHtml(u.name)}</option>`).join("");
+        supervisors
+          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .join("");
     }
 
     if (userPillar) {
       userPillar.innerHTML =
         `<option value="">Sélectionner un pilier</option>` +
-        visiblePillars.map(p => `<option value="${AuthUI.escapeHtml(p.id)}">${AuthUI.escapeHtml(p.name)}</option>`).join("");
+        visiblePillars
+          .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.id)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+          .join("");
     }
 
     if (userSupervisor) {
       userSupervisor.innerHTML =
         `<option value="">Sélectionner un superviseur</option>` +
-        supervisors.map(u => `<option value="${AuthUI.escapeHtml(u.id)}">${AuthUI.escapeHtml(u.name)}</option>`).join("");
+        supervisors
+          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .join("");
     }
-
-    if (pillarActivitiesPillar) {
-      const currentValue = pillarActivitiesPillar.value || "";
-      pillarActivitiesPillar.innerHTML =
-        `<option value="">Sélectionner un pilier</option>` +
-        visiblePillars.map(p => `<option value="${AuthUI.escapeHtml(p.id)}">${AuthUI.escapeHtml(p.name)}</option>`).join("");
-
-      pillarActivitiesPillar.value = visiblePillars.some(p => String(p.id) === String(currentValue))
-        ? currentValue
-        : "";
-
-      if (!pillarActivitiesPillar.value && visiblePillars.length === 1) {
-        pillarActivitiesPillar.value = String(visiblePillars[0].id);
-      }
-
-      loadActivitiesForSelectedPillar();
-    }
-  }
-
-  function loadActivitiesForSelectedPillar() {
-    const pillarId = byId("pillarActivitiesPillar")?.value || "";
-    const input = byId("pillarActivitiesInput");
-    if (!input) return;
-    input.value = pillarId ? getActivitiesForPillar(pillarId).join("\n") : "";
-  }
-
-  async function savePillarActivities() {
-    const sb = getSb();
-    const currentUser = getCurrentUser();
-    if (!sb || !currentUser) return;
-
-    if (!canCreatePillar()) {
-      setMessage("pillarActivitiesMessage", "Seuls les superviseurs et admins peuvent enregistrer les activités d’un pilier.", "error");
-      return;
-    }
-
-    const pillarId = byId("pillarActivitiesPillar")?.value || "";
-    const rawActivities = byId("pillarActivitiesInput")?.value || "";
-    const activities = Core.normalizeActivitiesList(rawActivities);
-
-    if (!pillarId) {
-      setMessage("pillarActivitiesMessage", "Veuillez sélectionner un pilier.", "error");
-      return;
-    }
-
-    if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
-      setMessage("pillarActivitiesMessage", "Vous ne pouvez définir les activités que de votre pilier.", "error");
-      return;
-    }
-
-    const { error } = await sb.from("pillars").update({ main_activities: activities }).eq("id", pillarId);
-
-    if (error) {
-      setMessage("pillarActivitiesMessage", `Impossible d’enregistrer les activités : ${error.message}`, "error");
-      return;
-    }
-
-    setMessage("pillarActivitiesMessage", "Activités enregistrées avec succès.", "success");
-    await Services.reloadAndRerender();
   }
 
   async function createNewPillar() {
     const sb = getSb();
+
     if (!sb) return;
 
     if (!canCreatePillar()) {
@@ -250,8 +214,7 @@
       {
         name,
         full_name: name,
-        supervisor_profile_id: supervisorId,
-        main_activities: []
+        supervisor_profile_id: supervisorId
       }
     ]);
 
@@ -261,12 +224,16 @@
     }
 
     setMessage("pillarMessage", "Pilier créé avec succès.", "success");
+
+    if (byId("pillarName")) byId("pillarName").value = "";
+
     await Services.reloadAndRerender();
   }
 
   async function createOrAssignUserFromRegisterPage() {
     const sb = getSb();
     const currentUser = getCurrentUser();
+
     if (!sb || !currentUser) return;
 
     if (!canManageMembers()) {
@@ -277,6 +244,7 @@
     const fullName = String(byId("userName")?.value || "").trim();
     const email = String(byId("userEmail")?.value || "").trim().toLowerCase();
     const role = byId("userRole")?.value || "staff";
+    const office = String(byId("userOffice")?.value || "").trim();
     const pillarId = byId("userPillar")?.value || "";
     const supervisorId = byId("userSupervisor")?.value || "";
 
@@ -290,7 +258,9 @@
       return;
     }
 
-    const existingUser = AppState.users.find(u => (u.email || "").toLowerCase() === email);
+    const existingUser = AppState.users.find(user =>
+      (user.email || "").toLowerCase() === email
+    );
 
     if (!existingUser) {
       setMessage("userMessage", "Créez d’abord le compte utilisateur dans Authentication ou utilisez la page d’auto-inscription.", "error");
@@ -302,6 +272,7 @@
       .update({
         full_name: fullName,
         role,
+        office,
         pillar_id: pillarId,
         supervisor_id: supervisorId,
         is_active: true
@@ -314,7 +285,185 @@
     }
 
     setMessage("userMessage", "Membre affecté / mis à jour avec succès.", "success");
+
     await Services.reloadAndRerender();
+  }
+
+  function populateActivityManagementDropdown() {
+    const activityPillar = byId("activityPillar");
+    const currentUser = getCurrentUser();
+
+    if (!activityPillar || !currentUser) return;
+
+    let visiblePillars = AppState.pillars;
+
+    if (currentUser.user_type !== "admin") {
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
+    }
+
+    activityPillar.innerHTML =
+      `<option value="">Sélectionner un pilier</option>` +
+      visiblePillars
+        .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.id)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+        .join("");
+
+    if (visiblePillars.length === 1) {
+      activityPillar.value = String(visiblePillars[0].id);
+    }
+  }
+
+  function renderMainActivitiesList() {
+    const list = byId("mainActivitiesList");
+    const currentUser = getCurrentUser();
+
+    if (!list || !currentUser) return;
+
+    let visibleActivities = AppState.mainActivities;
+
+    if (currentUser.user_type !== "admin") {
+      visibleActivities = AppState.mainActivities.filter(activity =>
+        String(activity.pillar_id) === String(currentUser.pillar_id)
+      );
+    }
+
+    if (!visibleActivities.length) {
+      list.innerHTML = `<div class="empty">Aucune activité principale enregistrée.</div>`;
+      return;
+    }
+
+    list.innerHTML = visibleActivities
+      .map(activity => `
+        <div class="member-card">
+          <h4>${AuthUI.escapeHtml(activity.name)}</h4>
+          <div class="muted">Pilier : ${AuthUI.escapeHtml(activity.pillar_name || "Non défini")}</div>
+          <div class="muted">${AuthUI.escapeHtml(activity.description || "Aucune description")}</div>
+          <div class="card-actions" style="margin-top:12px;">
+            <button
+              class="action-btn secondary-danger js-disable-activity"
+              type="button"
+              data-activity-id="${Number(activity.id)}"
+            >
+              Désactiver
+            </button>
+          </div>
+        </div>
+      `)
+      .join("");
+  }
+
+  async function createMainActivity() {
+    const sb = getSb();
+    const currentUser = getCurrentUser();
+
+    if (!sb || !currentUser) return;
+
+    if (!canManageActivities()) {
+      setMessage("activityMessage", "Seuls les admins et superviseurs peuvent ajouter des activités.", "error");
+      return;
+    }
+
+    const pillarId = byId("activityPillar")?.value || "";
+    const name = String(byId("activityName")?.value || "").trim();
+    const description = String(byId("activityDescription")?.value || "").trim();
+
+    if (!pillarId) {
+      setMessage("activityMessage", "Veuillez sélectionner un pilier.", "error");
+      return;
+    }
+
+    if (!name) {
+      setMessage("activityMessage", "Veuillez renseigner le nom de l’activité.", "error");
+      return;
+    }
+
+    if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
+      setMessage("activityMessage", "Vous ne pouvez ajouter des activités que pour votre pilier.", "error");
+      return;
+    }
+
+    const { error } = await sb.from("main_activities").insert([
+      {
+        pillar_id: pillarId,
+        name,
+        description,
+        is_active: true,
+        created_by: currentUser.id
+      }
+    ]);
+
+    if (error) {
+      setMessage("activityMessage", `Création impossible : ${error.message}`, "error");
+      return;
+    }
+
+    if (byId("activityName")) byId("activityName").value = "";
+    if (byId("activityDescription")) byId("activityDescription").value = "";
+
+    setMessage("activityMessage", "Activité principale ajoutée avec succès.", "success");
+
+    await Services.reloadAndRerender();
+  }
+
+  async function disableMainActivity(activityId) {
+    const sb = getSb();
+    const currentUser = getCurrentUser();
+
+    if (!sb || !currentUser) return;
+
+    const activity = AppState.mainActivities.find(item =>
+      String(item.id) === String(activityId)
+    );
+
+    if (!activity) {
+      alert("Activité introuvable.");
+      return;
+    }
+
+    if (currentUser.user_type !== "admin" && String(activity.pillar_id) !== String(currentUser.pillar_id)) {
+      alert("Vous ne pouvez désactiver que les activités de votre pilier.");
+      return;
+    }
+
+    const confirmed = confirm(`Désactiver l’activité "${activity.name}" ?`);
+    if (!confirmed) return;
+
+    const { error } = await sb
+      .from("main_activities")
+      .update({ is_active: false })
+      .eq("id", activityId);
+
+    if (error) {
+      alert(`Désactivation impossible : ${error.message}`);
+      return;
+    }
+
+    await Services.reloadAndRerender();
+  }
+
+  function initMainActivitiesManagement() {
+    const page = document.body.dataset.page;
+
+    if (page !== "register") return;
+
+    populateActivityManagementDropdown();
+    renderMainActivitiesList();
+
+    const createActivityBtn = byId("createActivityBtn");
+
+    if (createActivityBtn) {
+      createActivityBtn.addEventListener("click", createMainActivity);
+    }
+
+    document.addEventListener("click", event => {
+      const disableBtn = event.target.closest(".js-disable-activity");
+
+      if (!disableBtn) return;
+
+      const activityId = disableBtn.dataset.activityId;
+      disableMainActivity(activityId);
+    });
   }
 
   function populateTaskCreationDropdowns() {
@@ -326,20 +475,29 @@
     let eligibleUsers = AppState.users;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(p => String(p.id) === String(currentUser.pillar_id));
-      eligibleUsers = AppState.users.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
+
+      eligibleUsers = AppState.users.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
     }
 
     if (taskPillar) {
       taskPillar.innerHTML =
         `<option value="">Sélectionner un pilier</option>` +
-        visiblePillars.map(p => `<option value="${AuthUI.escapeHtml(p.id)}">${AuthUI.escapeHtml(p.name)}</option>`).join("");
+        visiblePillars
+          .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.id)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+          .join("");
     }
 
     if (taskAssignedTo) {
       taskAssignedTo.innerHTML =
         `<option value="">Sélectionner un membre</option>` +
-        eligibleUsers.map(u => `<option value="${AuthUI.escapeHtml(u.id)}">${AuthUI.escapeHtml(u.name)} — ${AuthUI.escapeHtml(u.pillar || "Sans pilier")}</option>`).join("");
+        eligibleUsers
+          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)} — ${AuthUI.escapeHtml(user.pillar || "Sans pilier")}</option>`)
+          .join("");
     }
 
     populateTaskActivityOptions();
@@ -348,6 +506,7 @@
   function populateTaskActivityOptions() {
     const activitySelect = byId("taskActivity");
     const taskPillar = byId("taskPillar");
+
     if (!activitySelect || !taskPillar) return;
 
     const pillarId = taskPillar.value || "";
@@ -356,14 +515,25 @@
 
     activitySelect.innerHTML =
       `<option value="">${activities.length ? "Sélectionner une activité" : "Aucune activité définie pour ce pilier"}</option>` +
-      activities.map(activity => `<option value="${AuthUI.escapeHtml(activity)}">${AuthUI.escapeHtml(activity)}</option>`).join("");
+      activities
+        .map(activity => `
+          <option value="${AuthUI.escapeHtml(activity.id)}">
+            ${AuthUI.escapeHtml(activity.name)}
+          </option>
+        `)
+        .join("");
 
-    activitySelect.value = activities.includes(previousValue) ? previousValue : "";
+    activitySelect.value = activities.some(activity =>
+      String(activity.id) === String(previousValue)
+    )
+      ? previousValue
+      : "";
   }
 
   function updateCreateTaskAutoStatus() {
     const dueDateInput = byId("taskDueDate");
     const autoStatusInput = byId("taskAutoStatus");
+
     if (!autoStatusInput) return;
 
     autoStatusInput.value = computeAutomaticStatus({
@@ -405,6 +575,7 @@
 
   async function createNewTask() {
     const currentUser = getCurrentUser();
+
     if (!currentUser) return;
 
     if (!canCreateTask()) {
@@ -417,7 +588,10 @@
     const assignedToId = byId("taskAssignedTo")?.value || "";
     const priority = byId("taskPriority")?.value || "Moyenne";
     const dueDate = byId("taskDueDate")?.value || null;
-    const activityName = String(byId("taskActivity")?.value || "").trim();
+    const activityId = byId("taskActivity")?.value || null;
+    const selectedActivity = AppState.mainActivities.find(activity =>
+      String(activity.id) === String(activityId)
+    );
     const description = String(byId("taskDescription")?.value || "").trim();
 
     if (!title || !pillarId || !assignedToId || !dueDate) {
@@ -444,7 +618,8 @@
       supervisor_status: "Non évalué",
       supervisor_comment: "",
       due_date: dueDate,
-      activity_name: activityName || null,
+      activity_id: activityId,
+      activity_name: selectedActivity ? selectedActivity.name : null,
       description,
       created_by: currentUser.id
     };
@@ -460,7 +635,10 @@
   }
 
   function openTaskModal(taskId) {
-    const task = AppState.tasks.find(t => String(t.id) === String(taskId));
+    const task = AppState.tasks.find(item =>
+      String(item.id) === String(taskId)
+    );
+
     if (!task || !canViewTask(task)) return;
 
     byId("editTaskId").value = task.id;
@@ -480,10 +658,12 @@
 
   async function saveTaskUpdate() {
     const currentUser = getCurrentUser();
+
     if (!currentUser) return;
 
     const taskId = Number(byId("editTaskId")?.value);
-    const task = AppState.tasks.find(t => Number(t.id) === taskId);
+    const task = AppState.tasks.find(item => Number(item.id) === taskId);
+
     if (!task || !canViewTask(task)) return;
 
     let progressScore = Number(byId("editProgressScore")?.value);
@@ -531,6 +711,31 @@
     }
   }
 
+  function getFilteredDashboardTasks() {
+    const visibleTasks = getVisibleTasks();
+
+    return applyTaskFilters(visibleTasks, {
+      search: byId("searchInput")?.value || "",
+      pillar: byId("pillarFilter")?.value || "",
+      supervisorId: byId("supervisorFilter")?.value || "",
+      assignedToId: byId("assignedToFilter")?.value || "",
+      activityId: byId("activityFilter")?.value || "",
+      status: byId("statusFilter")?.value || "",
+      startDate: byId("startDateFilter")?.value || "",
+      endDate: byId("endDateFilter")?.value || ""
+    });
+  }
+
+  function getFilteredMyTasks(tasks) {
+    return applyTaskFilters(tasks, {
+      assignedToId: byId("myTasksAssignedToFilter")?.value || "",
+      activityId: byId("myTasksActivityFilter")?.value || "",
+      status: byId("myTasksStatusFilter")?.value || "",
+      startDate: byId("myTasksStartDateFilter")?.value || "",
+      endDate: byId("myTasksEndDateFilter")?.value || ""
+    });
+  }
+
   function exportCurrentViewToXlsx() {
     if (typeof XLSX === "undefined") {
       alert("Librairie XLSX indisponible.");
@@ -557,6 +762,7 @@
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
+
     XLSX.utils.book_append_sheet(workbook, worksheet, "Taches");
     XLSX.writeFile(workbook, "UNW_TaskManager.xlsx");
   }
@@ -565,84 +771,87 @@
     window.print();
   }
 
-  function getFilteredDashboardTasks() {
-    const visibleTasks = getVisibleTasks();
-
-    return applyTaskFilters(visibleTasks, {
-      search: byId("searchInput")?.value || "",
-      pillar: byId("pillarFilter")?.value || "",
-      supervisorId: byId("supervisorFilter")?.value || "",
-      assignedToId: byId("assignedToFilter")?.value || "",
-      activityName: byId("activityFilter")?.value || "",
-      status: byId("statusFilter")?.value || "",
-      startDate: byId("startDateFilter")?.value || "",
-      endDate: byId("endDateFilter")?.value || ""
-    });
-  }
-
-  function getFilteredMyTasks(tasks) {
-    return applyTaskFilters(tasks, {
-      assignedToId: byId("myTasksAssignedToFilter")?.value || "",
-      activityName: byId("myTasksActivityFilter")?.value || "",
-      status: byId("myTasksStatusFilter")?.value || "",
-      startDate: byId("myTasksStartDateFilter")?.value || "",
-      endDate: byId("myTasksEndDateFilter")?.value || ""
-    });
-  }
-
   function renderTaskRows(tasks, options = {}) {
     const { showDescription = false } = options;
 
     return tasks
       .map(task => `
-      <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
-        <td>${AuthUI.escapeHtml(task.id)}</td>
-        <td>
-          <strong>${AuthUI.escapeHtml(task.title)}</strong><br>
-          <span class="muted">${AuthUI.escapeHtml(task.pillar || "")}</span>
-        </td>
-        <td>${AuthUI.escapeHtml(task.activity_name || "—")}</td>
-        ${showDescription ? `<td class="description-cell">${AuthUI.escapeHtml(task.description || "—")}</td>` : ""}
-        <td>${AuthUI.escapeHtml(task.assigned_to_name)}<br><span class="muted">${AuthUI.escapeHtml(task.assigned_to_role || "")}</span></td>
-        <td>${AuthUI.escapeHtml(task.supervisor_name)}<br><span class="muted">${AuthUI.escapeHtml(task.supervisor_role || "")}</span></td>
-        <td>${getPriorityBadge(task.priority)}</td>
-        <td>${getStatusBadge(task.status)}</td>
-        <td>
-          <div class="progress-track">
-            <div class="progress-fill" style="width:${clamp(task.progress || 0, 0, 100)}%"></div>
-          </div>
-          ${clamp(task.progress || 0, 0, 100)}%
-        </td>
-        <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.staff_comment || "—")}</td>
-        <td>
-          <div class="progress-track">
-            <div class="progress-fill supervisor" style="width:${clamp(task.supervisor_progress || 0, 0, 100)}%"></div>
-          </div>
-          ${clamp(task.supervisor_progress || 0, 0, 100)}%<br>
-          ${getSupervisorBadge(task.supervisor_status)}
-        </td>
-        <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.supervisor_comment || "—")}</td>
-        <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">${AuthUI.escapeHtml(task.due_date || "")}</td>
-        <td class="no-print">
-          <div class="table-actions">
-            <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">Mettre à jour</button>
-            ${canDeleteTask(task) ? `<button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">Supprimer</button>` : ``}
-          </div>
-        </td>
-      </tr>
-    `)
+        <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
+          <td>${AuthUI.escapeHtml(task.id)}</td>
+
+          <td>
+            <strong>${AuthUI.escapeHtml(task.title)}</strong><br>
+            <span class="muted">${AuthUI.escapeHtml(task.pillar || "")}</span>
+          </td>
+
+          <td>${AuthUI.escapeHtml(task.activity_name || "—")}</td>
+
+          ${showDescription ? `<td class="description-cell">${AuthUI.escapeHtml(task.description || "—")}</td>` : ""}
+
+          <td>
+            ${AuthUI.escapeHtml(task.assigned_to_name || "Non défini")}<br>
+            <span class="muted">${AuthUI.escapeHtml(task.assigned_to_role || "")}</span>
+          </td>
+
+          <td>
+            ${AuthUI.escapeHtml(task.supervisor_name || "Non défini")}<br>
+            <span class="muted">${AuthUI.escapeHtml(task.supervisor_role || "")}</span>
+          </td>
+
+          <td>${getPriorityBadge(task.priority)}</td>
+          <td>${getStatusBadge(task.status)}</td>
+
+          <td>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:${clamp(task.progress || 0, 0, 100)}%"></div>
+            </div>
+            ${clamp(task.progress || 0, 0, 100)}%
+          </td>
+
+          <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.staff_comment || "—")}</td>
+
+          <td>
+            <div class="progress-track">
+              <div class="progress-fill supervisor" style="width:${clamp(task.supervisor_progress || 0, 0, 100)}%"></div>
+            </div>
+            ${clamp(task.supervisor_progress || 0, 0, 100)}%<br>
+            ${getSupervisorBadge(task.supervisor_status)}
+          </td>
+
+          <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.supervisor_comment || "—")}</td>
+
+          <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
+            ${AuthUI.escapeHtml(task.due_date || "")}
+          </td>
+
+          <td class="no-print">
+            <div class="table-actions">
+              <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
+                Mettre à jour
+              </button>
+
+              ${canDeleteTask(task) ? `
+                <button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">
+                  Supprimer
+                </button>
+              ` : ``}
+            </div>
+          </td>
+        </tr>
+      `)
       .join("");
   }
 
   function renderKPIs(targetId, tasks) {
     const el = byId(targetId);
+
     if (!el) return;
 
     const total = tasks.length;
-    const onTrack = tasks.filter(t => computeAutomaticStatus(t) === STATUS.ON_TRACK).length;
-    const dueSoon = tasks.filter(t => computeAutomaticStatus(t) === STATUS.DUE_SOON).length;
-    const completed = tasks.filter(t => computeAutomaticStatus(t) === STATUS.DONE).length;
-    const late = tasks.filter(t => computeAutomaticStatus(t) === STATUS.LATE).length;
+    const onTrack = tasks.filter(task => computeAutomaticStatus(task) === STATUS.ON_TRACK).length;
+    const dueSoon = tasks.filter(task => computeAutomaticStatus(task) === STATUS.DUE_SOON).length;
+    const completed = tasks.filter(task => computeAutomaticStatus(task) === STATUS.DONE).length;
+    const late = tasks.filter(task => computeAutomaticStatus(task) === STATUS.LATE).length;
 
     el.innerHTML = `
       <div class="card"><h3>Total des tâches</h3><div class="value">${total}</div></div>
@@ -655,6 +864,7 @@
 
   function renderDashboardPage() {
     const tbody = byId("tasksTbody");
+
     if (!tbody) return;
 
     const currentUser = getCurrentUser();
@@ -664,53 +874,93 @@
     const activityFilter = byId("activityFilter");
 
     let visiblePillars = AppState.pillars;
-    let visibleSupervisors = AppState.users.filter(u => u.user_type === "supervisor" || u.user_type === "admin");
+    let visibleSupervisors = AppState.users.filter(user =>
+      user.user_type === "supervisor" || user.user_type === "admin"
+    );
     let visibleAssignees = AppState.users;
-    let visibleActivities = [];
+    let visibleActivities = AppState.mainActivities;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(p => String(p.id) === String(currentUser.pillar_id));
-      visibleSupervisors = visibleSupervisors.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
-      visibleAssignees = AppState.users.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
-    }
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
 
-    visibleActivities = [...new Set(getVisibleTasks().map(t => t.activity_name).filter(Boolean))].sort();
+      visibleSupervisors = visibleSupervisors.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
+
+      visibleAssignees = AppState.users.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
+
+      visibleActivities = AppState.mainActivities.filter(activity =>
+        String(activity.pillar_id) === String(currentUser.pillar_id)
+      );
+    }
 
     if (pillarFilter) {
       const currentValue = pillarFilter.value || "";
+
       pillarFilter.innerHTML =
         `<option value="">Tous les piliers</option>` +
-        visiblePillars.map(p => `<option value="${AuthUI.escapeHtml(p.name)}">${AuthUI.escapeHtml(p.name)}</option>`).join("");
-      pillarFilter.value = visiblePillars.some(p => p.name === currentValue) ? currentValue : "";
+        visiblePillars
+          .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.name)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+          .join("");
+
+      pillarFilter.value = visiblePillars.some(pillar => pillar.name === currentValue)
+        ? currentValue
+        : "";
     }
 
     if (supervisorFilter) {
       const currentValue = supervisorFilter.value || "";
+
       supervisorFilter.innerHTML =
         `<option value="">Tous les superviseurs</option>` +
-        visibleSupervisors.map(u => `<option value="${AuthUI.escapeHtml(u.id)}">${AuthUI.escapeHtml(u.name)}</option>`).join("");
-      supervisorFilter.value = visibleSupervisors.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
+        visibleSupervisors
+          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .join("");
+
+      supervisorFilter.value = visibleSupervisors.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (assignedToFilter) {
       const currentValue = assignedToFilter.value || "";
+
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
-        visibleAssignees.map(u => `<option value="${AuthUI.escapeHtml(u.id)}">${AuthUI.escapeHtml(u.name)}</option>`).join("");
-      assignedToFilter.value = visibleAssignees.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
+        visibleAssignees
+          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .join("");
+
+      assignedToFilter.value = visibleAssignees.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (activityFilter) {
       const currentValue = activityFilter.value || "";
+
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
-        visibleActivities.map(a => `<option value="${AuthUI.escapeHtml(a)}">${AuthUI.escapeHtml(a)}</option>`).join("");
-      activityFilter.value = visibleActivities.includes(currentValue) ? currentValue : "";
+        visibleActivities
+          .map(activity => `<option value="${AuthUI.escapeHtml(activity.id)}">${AuthUI.escapeHtml(activity.name)}</option>`)
+          .join("");
+
+      activityFilter.value = visibleActivities.some(activity => String(activity.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     const filteredTasks = getFilteredDashboardTasks();
+
     renderKPIs("dashboardKpis", filteredTasks);
-    tbody.innerHTML = renderTaskRows(filteredTasks, { showDescription: true });
+
+    tbody.innerHTML = filteredTasks.length
+      ? renderTaskRows(filteredTasks, { showDescription: true })
+      : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
   }
 
   function renderMyTasksPage() {
@@ -722,7 +972,9 @@
 
     if (!currentUser || !tbody || !title) return;
 
-    const myTasks = getVisibleTasks().filter(t => String(t.assigned_to_id) === String(currentUser.id));
+    const myTasks = getVisibleTasks().filter(task =>
+      String(task.assigned_to_id) === String(currentUser.id)
+    );
 
     if (assignedToFilter) {
       const currentValue = assignedToFilter.value || "";
@@ -730,20 +982,33 @@
 
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
-        assignees.map(u => `<option value="${AuthUI.escapeHtml(u.id)}">${AuthUI.escapeHtml(u.name)}</option>`).join("");
+        assignees
+          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .join("");
 
-      assignedToFilter.value = assignees.some(u => String(u.id) === String(currentValue)) ? currentValue : "";
+      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (activityFilter) {
       const currentValue = activityFilter.value || "";
-      const activities = [...new Set(myTasks.map(t => t.activity_name).filter(Boolean))].sort();
+
+      const activityIds = [...new Set(myTasks.map(task => task.activity_id).filter(Boolean))];
+
+      const activities = AppState.mainActivities.filter(activity =>
+        activityIds.some(id => String(id) === String(activity.id))
+      );
 
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
-        activities.map(a => `<option value="${AuthUI.escapeHtml(a)}">${AuthUI.escapeHtml(a)}</option>`).join("");
+        activities
+          .map(activity => `<option value="${AuthUI.escapeHtml(activity.id)}">${AuthUI.escapeHtml(activity.name)}</option>`)
+          .join("");
 
-      activityFilter.value = activities.includes(currentValue) ? currentValue : "";
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     const filteredTasks = getFilteredMyTasks(myTasks);
@@ -771,7 +1036,10 @@
       teamMembers = AppState.users;
       teamTasks = AppState.tasks;
     } else {
-      teamMembers = AppState.users.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
+      teamMembers = AppState.users.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
+
       teamTasks = getVisibleTasks();
     }
 
@@ -779,12 +1047,14 @@
     renderKPIs("myTeamKpis", teamTasks);
 
     membersBox.innerHTML = teamMembers.length
-      ? teamMembers.map(member => `
-        <div class="member-card">
-          <h4>${AuthUI.escapeHtml(member.name)}</h4>
-          <div class="muted">${AuthUI.escapeHtml(member.user_type)} | ${AuthUI.escapeHtml(member.pillar || "Sans pilier")}</div>
-        </div>
-      `).join("")
+      ? teamMembers
+          .map(member => `
+            <div class="member-card">
+              <h4>${AuthUI.escapeHtml(member.name)}</h4>
+              <div class="muted">${AuthUI.escapeHtml(member.user_type)} | ${AuthUI.escapeHtml(member.pillar || "Sans pilier")}</div>
+            </div>
+          `)
+          .join("")
       : `<div class="empty">Aucun membre rattaché.</div>`;
 
     tbody.innerHTML = teamTasks.length
@@ -794,6 +1064,8 @@
 
   function renderRegisterPage() {
     populateRegisterDropdowns();
+    populateActivityManagementDropdown();
+    renderMainActivitiesList();
 
     const pillarsList = byId("pillarsList");
     const membersList = byId("registeredMembersList");
@@ -805,40 +1077,58 @@
     let visibleMembers = AppState.users;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(p => String(p.id) === String(currentUser.pillar_id));
-      visibleMembers = AppState.users.filter(u => String(u.pillar_id) === String(currentUser.pillar_id));
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
+
+      visibleMembers = AppState.users.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
     }
 
     if (!visiblePillars.length) {
       pillarsList.innerHTML = `<div class="empty">Aucun pilier disponible.</div>`;
     } else {
-      pillarsList.innerHTML = visiblePillars.map(p => {
-        const supervisor = AppState.users.find(u => String(u.id) === String(p.supervisor_profile_id));
-        const activities = getActivitiesForPillar(p.id);
-        return `
-          <div class="member-card">
-            <h4>${AuthUI.escapeHtml(p.name)}</h4>
-            <div class="muted">Superviseur : ${AuthUI.escapeHtml(supervisor ? supervisor.name : "Non défini")}</div>
-            <div class="muted">Activités : ${AuthUI.escapeHtml(activities.length ? activities.join(", ") : "Non définies")}</div>
-          </div>
-        `;
-      }).join("");
+      pillarsList.innerHTML = visiblePillars
+        .map(pillar => {
+          const supervisor = AppState.users.find(user =>
+            String(user.id) === String(pillar.supervisor_profile_id)
+          );
+
+          const activities = AppState.mainActivities.filter(activity =>
+            String(activity.pillar_id) === String(pillar.id)
+          );
+
+          return `
+            <div class="member-card">
+              <h4>${AuthUI.escapeHtml(pillar.name)}</h4>
+              <div class="muted">Superviseur : ${AuthUI.escapeHtml(supervisor ? supervisor.name : "Non défini")}</div>
+              <div class="muted">Activités principales : ${AuthUI.escapeHtml(activities.length ? activities.map(a => a.name).join(", ") : "Non définies")}</div>
+            </div>
+          `;
+        })
+        .join("");
     }
 
     membersList.innerHTML = visibleMembers.length
-      ? visibleMembers.map(member => `
-        <div class="member-card">
-          <h4>${AuthUI.escapeHtml(member.name)}</h4>
-          <div class="muted">${AuthUI.escapeHtml(member.user_type)} | ${AuthUI.escapeHtml(member.pillar || "Sans pilier")}</div>
-          <div class="muted">${AuthUI.escapeHtml(member.email || "")}</div>
-        </div>
-      `).join("")
+      ? visibleMembers
+          .map(member => `
+            <div class="member-card">
+              <h4>${AuthUI.escapeHtml(member.name)}</h4>
+              <div class="muted">${AuthUI.escapeHtml(member.user_type)} | ${AuthUI.escapeHtml(member.pillar || "Sans pilier")}</div>
+              <div class="muted">${AuthUI.escapeHtml(member.email || "")}</div>
+            </div>
+          `)
+          .join("")
       : `<div class="empty">Aucun membre trouvé.</div>`;
   }
 
   async function deleteTask(taskId) {
     const sb = getSb();
-    const task = AppState.tasks.find(t => String(t.id) === String(taskId));
+    const task = AppState.tasks.find(item =>
+      String(item.id) === String(taskId)
+    );
+
     if (!sb || !task) return;
 
     if (!canDeleteTask(task)) {
@@ -850,6 +1140,7 @@
     if (!confirmed) return;
 
     const { error } = await sb.from("tasks").delete().eq("id", taskId);
+
     if (error) {
       alert(`Erreur suppression: ${error.message}`);
       return;
@@ -869,6 +1160,7 @@
 
     document.addEventListener("click", event => {
       const openBtn = event.target.closest(".js-open-task-modal");
+
       if (openBtn) {
         const taskId = openBtn.dataset.taskId;
         openTaskModal(taskId);
@@ -876,6 +1168,7 @@
       }
 
       const deleteBtn = event.target.closest(".js-delete-task");
+
       if (deleteBtn) {
         const taskId = deleteBtn.dataset.taskId;
         deleteTask(taskId);
@@ -885,6 +1178,7 @@
 
   function initTaskCreation() {
     const page = document.body.dataset.page;
+
     if (page !== "dashboard") return;
 
     populateTaskCreationDropdowns();
@@ -914,27 +1208,25 @@
 
   function initPillarCreation() {
     const page = document.body.dataset.page;
+
     if (page !== "register") return;
 
     const createPillarBtn = byId("createPillarBtn");
+
     if (createPillarBtn) {
       createPillarBtn.addEventListener("click", createNewPillar);
     }
-
-    const saveActivitiesBtn = byId("savePillarActivitiesBtn");
-    const pillarActivitiesPillar = byId("pillarActivitiesPillar");
-
-    if (saveActivitiesBtn) saveActivitiesBtn.addEventListener("click", savePillarActivities);
-    if (pillarActivitiesPillar) pillarActivitiesPillar.addEventListener("change", loadActivitiesForSelectedPillar);
   }
 
   function initRegisterPage() {
     const page = document.body.dataset.page;
+
     if (page !== "register") return;
 
     populateRegisterDropdowns();
 
     const createUserBtn = byId("createUserBtn");
+
     if (createUserBtn) {
       createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
     }
@@ -942,6 +1234,7 @@
 
   function initExportAndPrint() {
     const page = document.body.dataset.page;
+
     if (page !== "dashboard") return;
 
     const exportBtn = byId("exportXlsxBtn");
@@ -969,8 +1262,8 @@
     if (searchBtn) searchBtn.addEventListener("click", renderDashboardPage);
 
     if (searchInput) {
-      searchInput.addEventListener("keydown", e => {
-        if (e.key === "Enter") renderDashboardPage();
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") renderDashboardPage();
       });
     }
 
@@ -985,6 +1278,7 @@
 
   function initMyTasksFilters() {
     const page = document.body.dataset.page;
+
     if (page !== "my-tasks") return;
 
     const assignedToFilter = byId("myTasksAssignedToFilter");
@@ -1002,6 +1296,7 @@
 
   function renderCurrentPage() {
     const page = document.body.dataset.page;
+
     if (page === "dashboard") renderDashboardPage();
     if (page === "my-tasks") renderMyTasksPage();
     if (page === "my-team") renderMyTeamPage();
@@ -1012,6 +1307,7 @@
     initExportAndPrint,
     initGlobalActions,
     initLogout,
+    initMainActivitiesManagement,
     initModalSystem,
     initMyTasksFilters,
     initPillarCreation,
@@ -1019,6 +1315,7 @@
     initTaskCreation,
     initUserHeader,
     renderCurrentPage,
+    renderMainActivitiesList,
     showGlobalError
   };
 })();
