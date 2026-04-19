@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>ONU Femmes — Dashboard des tâches</title>
+
   <meta
     name="description"
     content="Portail de gestion intelligente des tâches par pilier, staff et superviseur pour ONU Femmes RDC."
   />
+
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body data-page="dashboard">
   <header class="site-header">
     <div class="header-inner container">
@@ -27,8 +31,12 @@
           <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
           <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
         </div>
+
         <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
-        <button id="logoutBtn" class="btn btn-secondary" type="button">Déconnexion</button>
+
+        <button id="logoutBtn" class="btn btn-secondary" type="button">
+          Déconnexion
+        </button>
       </div>
     </div>
   </header>
@@ -56,7 +64,11 @@
       </div>
     </section>
 
-    <section id="dashboardKpis" class="dashboard-kpis" aria-label="Indicateurs clés de performance"></section>
+    <section
+      id="dashboardKpis"
+      class="dashboard-kpis"
+      aria-label="Indicateurs clés de performance"
+    ></section>
 
     <section class="filters-card no-print" aria-label="Filtres du tableau des tâches">
       <div class="filters-header">
@@ -131,9 +143,11 @@
         <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
           + Nouvelle tâche
         </button>
+
         <button id="exportXlsxBtn" class="btn btn-outline" type="button">
           Exporter XLSX
         </button>
+
         <button id="printPageBtn" class="btn btn-secondary" type="button">
           Imprimer
         </button>
@@ -164,6 +178,7 @@
             <col class="col-deadline" />
             <col class="col-action" />
           </colgroup>
+
           <thead>
             <tr>
               <th>ID</th>
@@ -182,6 +197,7 @@
               <th class="no-print">Action</th>
             </tr>
           </thead>
+
           <tbody id="tasksTbody"></tbody>
         </table>
       </div>
@@ -197,10 +213,13 @@
     aria-hidden="true"
   >
     <div class="modal-overlay"></div>
+
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
-        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
+          ×
+        </button>
       </div>
 
       <div class="modal-body">
@@ -278,8 +297,12 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
+          Fermer
+        </button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">
+          Enregistrer
+        </button>
       </div>
     </div>
   </div>
@@ -293,10 +316,13 @@
     aria-hidden="true"
   >
     <div class="modal-overlay"></div>
+
     <div class="modal-content modal-xl">
       <div class="modal-header">
         <h3 id="createTaskModalTitle">Créer une nouvelle tâche</h3>
-        <button id="closeCreateTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
+        <button id="closeCreateTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
+          ×
+        </button>
       </div>
 
       <div class="modal-body">
@@ -340,9 +366,10 @@
               <option value="">Sélectionner une activité</option>
             </select>
             <small class="muted">
-              Le staff doit choisir l’activité principale qui correspond le mieux à la tâche à exécuter.
+              Sélectionnez l’activité principale qui correspond le mieux à la tâche.
             </small>
           </div>
+
           <div></div>
         </div>
 
@@ -351,6 +378,7 @@
             <label for="taskPlanningDate">Date de planification</label>
             <input id="taskPlanningDate" type="date" disabled />
           </div>
+
           <div class="field">
             <label for="taskDueDate">Échéance</label>
             <input id="taskDueDate" type="date" required />
@@ -363,6 +391,7 @@
             <input id="taskAutoStatus" type="text" value="En bonne voie" disabled />
             <small class="muted">Le statut sera mis à jour automatiquement.</small>
           </div>
+
           <div></div>
         </div>
 
@@ -379,8 +408,12 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeCreateTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
-        <button id="createTaskBtn" class="btn btn-primary" type="button">Créer la tâche</button>
+        <button id="closeCreateTaskModalBtnFooter" class="btn btn-secondary" type="button">
+          Fermer
+        </button>
+        <button id="createTaskBtn" class="btn btn-primary" type="button">
+          Créer la tâche
+        </button>
       </div>
     </div>
   </div>
