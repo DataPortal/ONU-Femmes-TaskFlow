@@ -69,93 +69,144 @@
       class="dashboard-kpis"
       aria-label="Indicateurs clés de performance"
     ></section>
+<div class="dashboard-workspace">
+  <aside class="filters-sidebar no-print" aria-label="Filtres et actions du tableau des tâches">
+    <div class="filters-sidebar-header">
+      <span class="section-kicker">Pilotage</span>
+      <h3>Filtres et actions</h3>
+      <p>Affinez l’affichage et gérez les tâches.</p>
+    </div>
 
-    <section class="filters-card no-print" aria-label="Filtres du tableau des tâches">
-      <div class="filters-header">
-        <h3>Filtres et actions</h3>
-        <p>Affinez l’affichage et gérez les tâches depuis ce panneau.</p>
-      </div>
-
-      <div class="filters-grid">
-        <div class="field field-search">
-          <label for="searchInput">Recherche</label>
-          <div class="input-group">
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="Rechercher une tâche, une activité, un staff ou un superviseur"
-            />
-            <button id="searchBtn" class="btn" type="button">Rechercher</button>
-          </div>
-        </div>
-
-        <div class="field">
-          <label for="pillarFilter">Pilier</label>
-          <select id="pillarFilter">
-            <option value="">Tous les piliers</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="supervisorFilter">Superviseur</label>
-          <select id="supervisorFilter">
-            <option value="">Tous les superviseurs</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="assignedToFilter">Assigné à</label>
-          <select id="assignedToFilter">
-            <option value="">Tous les assignés</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="activityFilter">Activité principale</label>
-          <select id="activityFilter">
-            <option value="">Toutes les activités</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="statusFilter">Statut</label>
-          <select id="statusFilter">
-            <option value="">Tous les statuts</option>
-            <option value="En bonne voie">En bonne voie</option>
-            <option value="Échéance imminente">Échéance imminente</option>
-            <option value="En retard">En retard</option>
-            <option value="Achevé">Achevé</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="startDateFilter">Date de début</label>
-          <input type="date" id="startDateFilter" />
-        </div>
-
-        <div class="field">
-          <label for="endDateFilter">Date de fin</label>
-          <input type="date" id="endDateFilter" />
-        </div>
-      </div>
-
-      <div class="action-bar">
-        <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
-          + Nouvelle tâche
-        </button>
-
-        <button id="exportXlsxBtn" class="btn btn-outline" type="button">
-          Exporter XLSX
-        </button>
-
-        <button id="printPageBtn" class="btn btn-secondary" type="button">
-          Imprimer
+    <div class="sidebar-fields">
+      <div class="field">
+        <label for="searchInput">Recherche</label>
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="Rechercher une tâche, activité, staff..."
+        />
+        <button id="searchBtn" class="btn btn-primary sidebar-btn" type="button">
+          Rechercher
         </button>
       </div>
-    </section>
 
+      <div class="field">
+        <label for="pillarFilter">Pilier</label>
+        <select id="pillarFilter">
+          <option value="">Tous les piliers</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="supervisorFilter">Superviseur</label>
+        <select id="supervisorFilter">
+          <option value="">Tous les superviseurs</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="assignedToFilter">Assigné à</label>
+        <select id="assignedToFilter">
+          <option value="">Tous les assignés</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="activityFilter">Activité principale</label>
+        <select id="activityFilter">
+          <option value="">Toutes les activités</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="statusFilter">Statut</label>
+        <select id="statusFilter">
+          <option value="">Tous les statuts</option>
+          <option value="En bonne voie">En bonne voie</option>
+          <option value="Échéance imminente">Échéance imminente</option>
+          <option value="En retard">En retard</option>
+          <option value="Achevé">Achevé</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="startDateFilter">Date de début</label>
+        <input type="date" id="startDateFilter" />
+      </div>
+
+      <div class="field">
+        <label for="endDateFilter">Date de fin</label>
+        <input type="date" id="endDateFilter" />
+      </div>
+    </div>
+
+    <div class="sidebar-actions">
+      <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
+        + Nouvelle tâche
+      </button>
+
+      <button id="exportXlsxBtn" class="btn btn-outline" type="button">
+        Exporter XLSX
+      </button>
+
+      <button id="printPageBtn" class="btn btn-secondary" type="button">
+        Imprimer
+      </button>
+    </div>
+  </aside>
+
+  <section class="dashboard-main-panel">
     <section class="table-card">
       <div class="table-card-header">
+        <h3>Liste des tâches</h3>
+        <p>Tableau consolidé du suivi opérationnel</p>
+      </div>
+
+      <div class="table-wrap">
+        <table id="tasksTable" class="tasks-table">
+          <colgroup>
+            <col class="col-id" />
+            <col class="col-task" />
+            <col class="col-activity" />
+            <col class="col-description" />
+            <col class="col-assigned" />
+            <col class="col-supervisor" />
+            <col class="col-priority" />
+            <col class="col-status" />
+            <col class="col-progress" />
+            <col class="col-staff-comment" />
+            <col class="col-supervisor-rating" />
+            <col class="col-supervisor-comment" />
+            <col class="col-deadline" />
+            <col class="col-action" />
+          </colgroup>
+
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Tâche</th>
+              <th>Activité principale</th>
+              <th>Description</th>
+              <th>Assigné à</th>
+              <th>Superviseur</th>
+              <th>Priorité</th>
+              <th>Statut</th>
+              <th>Progression staff</th>
+              <th>Commentaire staff</th>
+              <th>Évaluation superviseur</th>
+              <th>Commentaire superviseur</th>
+              <th>Échéance</th>
+              <th class="no-print">Action</th>
+            </tr>
+          </thead>
+
+          <tbody id="tasksTbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</div>
+          <div class="table-card-header">
         <h3>Liste des tâches</h3>
         <p>Tableau consolidé du suivi opérationnel</p>
       </div>
