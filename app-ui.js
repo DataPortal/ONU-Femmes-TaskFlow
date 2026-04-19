@@ -24,6 +24,7 @@
     getVisibleTasks,
     isDueSoon,
     isLate,
+    normalizeStatusToDatabase,
     scoreToPercent
   } = Core;
 
@@ -47,11 +48,25 @@
   }
 
   function getStatusBadge(status) {
-    if (status === STATUS.DONE) return `<span class="badge badge-green">${AuthUI.escapeHtml(status)}</span>`;
-    if (status === STATUS.DUE_SOON) return `<span class="badge badge-orange">${AuthUI.escapeHtml(status)}</span>`;
-    if (status === STATUS.LATE) return `<span class="badge badge-red">${AuthUI.escapeHtml(status)}</span>`;
-    if (status === STATUS.ON_TRACK) return `<span class="badge badge-blue">${AuthUI.escapeHtml(status)}</span>`;
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(status || "Non défini")}</span>`;
+    const safeStatus = normalizeStatusToDatabase(status);
+
+    if (safeStatus === STATUS.DONE || safeStatus === "Achevé") {
+      return `<span class="badge badge-green">${AuthUI.escapeHtml(safeStatus)}</span>`;
+    }
+
+    if (safeStatus === STATUS.ON_TRACK || safeStatus === "En bonne voie") {
+      return `<span class="badge badge-blue">${AuthUI.escapeHtml(safeStatus)}</span>`;
+    }
+
+    if (safeStatus === STATUS.DUE_SOON || safeStatus === "Échéance imminente") {
+      return `<span class="badge badge-orange">${AuthUI.escapeHtml(safeStatus)}</span>`;
+    }
+
+    if (safeStatus === STATUS.LATE || safeStatus === "En retard") {
+      return `<span class="badge badge-red">${AuthUI.escapeHtml(safeStatus)}</span>`;
+    }
+
+    return `<span class="badge badge-grey">${AuthUI.escapeHtml(safeStatus || "Non défini")}</span>`;
   }
 
   function getPriorityBadge(priority) {
@@ -138,9 +153,7 @@
       if (event.key !== "Escape") return;
 
       document.querySelectorAll(".modal").forEach(modal => {
-        if (modal.style.display === "block") {
-          closeModal(modal.id);
-        }
+        if (modal.style.display === "block") closeModal(modal.id);
       });
     });
   }
@@ -536,10 +549,10 @@
 
     if (!autoStatusInput) return;
 
-    autoStatusInput.value = computeAutomaticStatus({
+    autoStatusInput.value = normalizeStatusToDatabase(computeAutomaticStatus({
       due_date: dueDateInput?.value || null,
       progress: 0
-    });
+    }));
   }
 
   function openCreateTaskModal() {
@@ -609,7 +622,7 @@
       pillar_id: pillarId,
       assigned_to_id: assignedToId,
       priority,
-      status: computeAutomaticStatus({ due_date: dueDate, progress: 0 }),
+      status: normalizeStatusToDatabase(computeAutomaticStatus({ due_date: dueDate, progress: 0 })),
       progress_score: 0,
       progress: 0,
       staff_comment: "",
@@ -642,7 +655,7 @@
     if (!task || !canViewTask(task)) return;
 
     byId("editTaskId").value = task.id;
-    byId("editStatus").value = computeAutomaticStatus(task);
+    byId("editStatus").value = normalizeStatusToDatabase(computeAutomaticStatus(task));
     byId("editProgressScore").value = task.progress_score ?? 0;
     byId("editStaffComment").value = "";
     byId("editSupervisorScore").value = task.supervisor_score ?? 0;
@@ -678,10 +691,10 @@
       String(task.pillar_id) === String(currentUser.pillar_id);
     const isAdminUser = currentUser.user_type === "admin";
 
-    const status = computeAutomaticStatus({
+    const status = normalizeStatusToDatabase(computeAutomaticStatus({
       ...task,
       progress: (isAssignedUser || isAdminUser) ? scoreToPercent(progressScore) : task.progress
-    });
+    }));
 
     const supervisorStatus = byId("editSupervisorStatus")?.value || "Non évalué";
     const newStaffComment = String(byId("editStaffComment")?.value || "").trim();
@@ -752,7 +765,7 @@
       Assigne_a: task.assigned_to_name || "",
       Superviseur: task.supervisor_name || "",
       Priorite: task.priority || "",
-      Statut: task.status || "",
+      Statut: normalizeStatusToDatabase(task.status) || "",
       Score_staff: task.progress_score ?? 0,
       Progression_staff_pourcent: task.progress ?? 0,
       Score_superviseur: task.supervisor_score ?? 0,
@@ -775,70 +788,74 @@
     const { showDescription = false } = options;
 
     return tasks
-      .map(task => `
-        <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
-          <td>${AuthUI.escapeHtml(task.id)}</td>
+      .map(task => {
+        const status = normalizeStatusToDatabase(task.status);
 
-          <td>
-            <strong>${AuthUI.escapeHtml(task.title)}</strong><br>
-            <span class="muted">${AuthUI.escapeHtml(task.pillar || "")}</span>
-          </td>
+        return `
+          <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
+            <td>${AuthUI.escapeHtml(task.id)}</td>
 
-          <td>${AuthUI.escapeHtml(task.activity_name || "—")}</td>
+            <td>
+              <strong>${AuthUI.escapeHtml(task.title)}</strong><br>
+              <span class="muted">${AuthUI.escapeHtml(task.pillar || "")}</span>
+            </td>
 
-          ${showDescription ? `<td class="description-cell">${AuthUI.escapeHtml(task.description || "—")}</td>` : ""}
+            <td>${AuthUI.escapeHtml(task.activity_name || "—")}</td>
 
-          <td>
-            ${AuthUI.escapeHtml(task.assigned_to_name || "Non défini")}<br>
-            <span class="muted">${AuthUI.escapeHtml(task.assigned_to_role || "")}</span>
-          </td>
+            ${showDescription ? `<td class="description-cell">${AuthUI.escapeHtml(task.description || "—")}</td>` : ""}
 
-          <td>
-            ${AuthUI.escapeHtml(task.supervisor_name || "Non défini")}<br>
-            <span class="muted">${AuthUI.escapeHtml(task.supervisor_role || "")}</span>
-          </td>
+            <td>
+              ${AuthUI.escapeHtml(task.assigned_to_name || "Non défini")}<br>
+              <span class="muted">${AuthUI.escapeHtml(task.assigned_to_role || "")}</span>
+            </td>
 
-          <td>${getPriorityBadge(task.priority)}</td>
-          <td>${getStatusBadge(task.status)}</td>
+            <td>
+              ${AuthUI.escapeHtml(task.supervisor_name || "Non défini")}<br>
+              <span class="muted">${AuthUI.escapeHtml(task.supervisor_role || "")}</span>
+            </td>
 
-          <td>
-            <div class="progress-track">
-              <div class="progress-fill" style="width:${clamp(task.progress || 0, 0, 100)}%"></div>
-            </div>
-            ${clamp(task.progress || 0, 0, 100)}%
-          </td>
+            <td>${getPriorityBadge(task.priority)}</td>
+            <td>${getStatusBadge(status)}</td>
 
-          <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.staff_comment || "—")}</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill" style="width:${clamp(task.progress || 0, 0, 100)}%"></div>
+              </div>
+              ${clamp(task.progress || 0, 0, 100)}%
+            </td>
 
-          <td>
-            <div class="progress-track">
-              <div class="progress-fill supervisor" style="width:${clamp(task.supervisor_progress || 0, 0, 100)}%"></div>
-            </div>
-            ${clamp(task.supervisor_progress || 0, 0, 100)}%<br>
-            ${getSupervisorBadge(task.supervisor_status)}
-          </td>
+            <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.staff_comment || "—")}</td>
 
-          <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.supervisor_comment || "—")}</td>
+            <td>
+              <div class="progress-track">
+                <div class="progress-fill supervisor" style="width:${clamp(task.supervisor_progress || 0, 0, 100)}%"></div>
+              </div>
+              ${clamp(task.supervisor_progress || 0, 0, 100)}%<br>
+              ${getSupervisorBadge(task.supervisor_status)}
+            </td>
 
-          <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
-            ${AuthUI.escapeHtml(task.due_date || "")}
-          </td>
+            <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.supervisor_comment || "—")}</td>
 
-          <td class="no-print">
-            <div class="table-actions">
-              <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
-                Mettre à jour
-              </button>
+            <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
+              ${AuthUI.escapeHtml(task.due_date || "")}
+            </td>
 
-              ${canDeleteTask(task) ? `
-                <button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">
-                  Supprimer
+            <td class="no-print">
+              <div class="table-actions">
+                <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
+                  Mettre à jour
                 </button>
-              ` : ``}
-            </div>
-          </td>
-        </tr>
-      `)
+
+                ${canDeleteTask(task) ? `
+                  <button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">
+                    Supprimer
+                  </button>
+                ` : ``}
+              </div>
+            </td>
+          </tr>
+        `;
+      })
       .join("");
   }
 
@@ -848,10 +865,10 @@
     if (!el) return;
 
     const total = tasks.length;
-    const onTrack = tasks.filter(task => computeAutomaticStatus(task) === STATUS.ON_TRACK).length;
-    const dueSoon = tasks.filter(task => computeAutomaticStatus(task) === STATUS.DUE_SOON).length;
-    const completed = tasks.filter(task => computeAutomaticStatus(task) === STATUS.DONE).length;
-    const late = tasks.filter(task => computeAutomaticStatus(task) === STATUS.LATE).length;
+    const onTrack = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.ON_TRACK).length;
+    const dueSoon = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON).length;
+    const completed = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE).length;
+    const late = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE).length;
 
     el.innerHTML = `
       <div class="card"><h3>Total des tâches</h3><div class="value">${total}</div></div>
