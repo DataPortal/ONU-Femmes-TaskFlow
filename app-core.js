@@ -3,8 +3,8 @@
     pillars: [],
     users: [],
     tasks: [],
-    currentUser: null,
-    pillarActivitiesById: {}
+    mainActivities: [],
+    currentUser: null
   };
 
   const STATUS = {
@@ -127,26 +127,19 @@
     if (Array.isArray(value)) {
       return value.map(v => String(v || "").trim()).filter(Boolean);
     }
+
     if (typeof value === "string") {
       return value
         .split(/\r?\n|,/)
         .map(v => v.trim())
         .filter(Boolean);
     }
+
     return [];
   }
 
-  function extractPillarActivitiesFromDb(pillars) {
-    const mapped = {};
-    (pillars || []).forEach(pillar => {
-      const list = normalizeActivitiesList(pillar?.main_activities || pillar?.activities || []);
-      mapped[String(pillar.id)] = list;
-    });
-    return mapped;
-  }
-
   function getPillarNameByIdFromArray(pillarId, pillarsArray) {
-    const pillar = pillarsArray.find(p => String(p.id) === String(pillarId));
+    const pillar = (pillarsArray || []).find(p => String(p.id) === String(pillarId));
     return pillar ? pillar.name : "";
   }
 
@@ -155,7 +148,15 @@
   }
 
   function getActivitiesForPillar(pillarId) {
-    return AppState.pillarActivitiesById[String(pillarId)] || [];
+    return AppState.mainActivities.filter(activity =>
+      String(activity.pillar_id) === String(pillarId) &&
+      activity.is_active !== false
+    );
+  }
+
+  function getActivityNameById(activityId) {
+    const activity = AppState.mainActivities.find(a => String(a.id) === String(activityId));
+    return activity ? activity.name : "";
   }
 
   function appendComment(existingText, authorName, newText) {
@@ -201,7 +202,10 @@
     if (!currentUser) return [];
 
     if (currentUser.user_type === "admin") return AppState.tasks;
-    return AppState.tasks.filter(t => String(t.pillar_id) === String(currentUser.pillar_id));
+
+    return AppState.tasks.filter(t =>
+      String(t.pillar_id) === String(currentUser.pillar_id)
+    );
   }
 
   function canViewTask(task) {
@@ -209,6 +213,7 @@
     if (!currentUser || !task) return false;
 
     if (currentUser.user_type === "admin") return true;
+
     return String(task.pillar_id) === String(currentUser.pillar_id);
   }
 
@@ -224,6 +229,10 @@
     return isSupervisorOrAdmin();
   }
 
+  function canManageActivities() {
+    return isSupervisorOrAdmin();
+  }
+
   function canExportDashboard() {
     const currentUser = getCurrentUser();
     if (!currentUser) return false;
@@ -235,9 +244,11 @@
     if (!currentUser || !task) return false;
 
     if (currentUser.user_type === "admin") return true;
+
     if (currentUser.user_type === "supervisor") {
       return String(task.pillar_id) === String(currentUser.pillar_id);
     }
+
     return false;
   }
 
@@ -247,6 +258,7 @@
       pillar = "",
       supervisorId = "",
       assignedToId = "",
+      activityId = "",
       activityName = "",
       status = "",
       startDate = "",
@@ -268,7 +280,8 @@
       const matchPillar = !pillar || task.pillar === pillar;
       const matchSupervisor = !supervisorId || String(task.supervisor_id) === String(supervisorId);
       const matchAssignedTo = !assignedToId || String(task.assigned_to_id) === String(assignedToId);
-      const matchActivity = !activityName || String(task.activity_name || "") === String(activityName);
+      const matchActivityId = !activityId || String(task.activity_id) === String(activityId);
+      const matchActivityName = !activityName || String(task.activity_name || "") === String(activityName);
       const matchStatus = !status || task.status === status;
       const matchDateRange = isTaskWithinDateRange(task, startDate, endDate);
 
@@ -277,7 +290,8 @@
         matchPillar &&
         matchSupervisor &&
         matchAssignedTo &&
-        matchActivity &&
+        matchActivityId &&
+        matchActivityName &&
         matchStatus &&
         matchDateRange
       );
@@ -288,6 +302,7 @@
     AppState,
     STATUS,
     IMMINENT_DAYS_THRESHOLD,
+
     appendComment,
     applyTaskFilters,
     byId,
@@ -295,12 +310,13 @@
     canCreateTask,
     canDeleteTask,
     canExportDashboard,
+    canManageActivities,
     canManageMembers,
     canViewTask,
     clamp,
     computeAutomaticStatus,
-    extractPillarActivitiesFromDb,
     getActivitiesForPillar,
+    getActivityNameById,
     getCurrentUser,
     getPillarNameById,
     getPillarNameByIdFromArray,
