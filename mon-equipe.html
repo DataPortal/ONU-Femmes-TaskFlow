@@ -3,13 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <meta
     name="description"
     content="Page de suivi des membres supervisés et des tâches d’équipe du TaskFlow Management Portal - ONU Femmes RDC."
   />
+
   <title>ONU Femmes — Mon équipe</title>
+
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body data-page="my-team">
   <header class="site-header">
     <div class="header-inner container">
@@ -26,7 +30,10 @@
         <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
         <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
         <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
-        <button id="logoutBtn" class="btn btn-secondary" type="button">Déconnexion</button>
+
+        <button id="logoutBtn" class="btn btn-secondary" type="button">
+          Déconnexion
+        </button>
       </div>
     </div>
   </header>
@@ -77,7 +84,8 @@
         </div>
 
         <div class="info-box">
-          Cette page affiche les membres et les tâches visibles dans votre périmètre de pilier. Elle permet un suivi rapide de l’exécution, des commentaires staff et des appréciations superviseur.
+          Cette page affiche les membres et les tâches visibles dans votre périmètre de pilier.
+          Elle permet un suivi rapide de l’exécution, des commentaires staff et des appréciations superviseur.
         </div>
       </article>
     </section>
@@ -105,6 +113,7 @@
             <col class="col-deadline" />
             <col class="col-action" />
           </colgroup>
+
           <thead>
             <tr>
               <th>ID</th>
@@ -122,6 +131,7 @@
               <th class="no-print">Action</th>
             </tr>
           </thead>
+
           <tbody id="teamTasksTbody"></tbody>
         </table>
       </div>
@@ -141,7 +151,9 @@
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
-        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
+          ×
+        </button>
       </div>
 
       <div class="modal-body">
@@ -219,8 +231,12 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
+          Fermer
+        </button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">
+          Enregistrer
+        </button>
       </div>
     </div>
   </div>
