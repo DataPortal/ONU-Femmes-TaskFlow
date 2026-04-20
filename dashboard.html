@@ -54,38 +54,18 @@
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
 
-    <section class="dashboard-top-row">
-      <article class="page-heading dashboard-overview-card">
-        <div>
-          <span class="section-kicker">Vue d’ensemble</span>
-          <h2 class="section-title">Vue globale des tâches</h2>
-          <p class="section-subtitle">
-            Suivi consolidé des activités, échéances, niveaux de progression et appréciations.
-          </p>
-        </div>
-      </article>
+    <section class="dashboard-actions-bar no-print" aria-label="Actions rapides du dashboard">
+      <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
+        + Nouvelle tâche
+      </button>
 
-      <aside class="dashboard-actions-card no-print" aria-label="Actions rapides du dashboard">
-        <div class="dashboard-actions-header">
-          <span class="section-kicker">Actions rapides</span>
-          <h3>Gérer le suivi</h3>
-          <p>Créez, exportez ou imprimez la vue courante.</p>
-        </div>
+      <button id="exportXlsxBtn" class="btn btn-outline" type="button">
+        Exporter XLSX
+      </button>
 
-        <div class="dashboard-actions-buttons">
-          <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
-            + Nouvelle tâche
-          </button>
-
-          <button id="exportXlsxBtn" class="btn btn-outline" type="button">
-            Exporter XLSX
-          </button>
-
-          <button id="printPageBtn" class="btn btn-secondary" type="button">
-            Imprimer
-          </button>
-        </div>
-      </aside>
+      <button id="printPageBtn" class="btn btn-secondary" type="button">
+        Imprimer
+      </button>
     </section>
 
     <section
