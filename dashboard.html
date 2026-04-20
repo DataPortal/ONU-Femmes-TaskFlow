@@ -54,13 +54,27 @@
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
 
-    <section class="page-heading">
-      <div>
+    <section class="page-heading dashboard-heading">
+      <div class="dashboard-heading-text">
         <span class="section-kicker">Vue d’ensemble</span>
         <h2 class="section-title">Vue globale des tâches</h2>
         <p class="section-subtitle">
           Suivi consolidé des activités, échéances, niveaux de progression et appréciations.
         </p>
+      </div>
+
+      <div class="dashboard-heading-actions no-print" aria-label="Actions principales du dashboard">
+        <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
+          + Nouvelle tâche
+        </button>
+
+        <button id="exportXlsxBtn" class="btn btn-outline" type="button">
+          Exporter XLSX
+        </button>
+
+        <button id="printPageBtn" class="btn btn-secondary" type="button">
+          Imprimer
+        </button>
       </div>
     </section>
 
@@ -71,11 +85,11 @@
     ></section>
 
     <div class="dashboard-workspace">
-      <aside class="filters-sidebar no-print" aria-label="Filtres et actions du tableau des tâches">
+      <aside class="filters-sidebar no-print" aria-label="Filtres du tableau des tâches">
         <div class="filters-sidebar-header">
           <span class="section-kicker">Pilotage</span>
-          <h3>Filtres et actions</h3>
-          <p>Affinez l’affichage et gérez les tâches.</p>
+          <h3>Filtres</h3>
+          <p>Affinez l’affichage des tâches selon le pilier, l’activité, le statut ou l’échéance.</p>
         </div>
 
         <div class="sidebar-fields">
@@ -139,20 +153,6 @@
             <label for="endDateFilter">Date de fin</label>
             <input type="date" id="endDateFilter" />
           </div>
-        </div>
-
-        <div class="sidebar-actions">
-          <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
-            + Nouvelle tâche
-          </button>
-
-          <button id="exportXlsxBtn" class="btn btn-outline" type="button">
-            Exporter XLSX
-          </button>
-
-          <button id="printPageBtn" class="btn btn-secondary" type="button">
-            Imprimer
-          </button>
         </div>
       </aside>
 
