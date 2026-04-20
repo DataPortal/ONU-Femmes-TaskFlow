@@ -1070,3 +1070,157 @@ tbody tr:hover td{background:#f9fbfd}
     border-radius:18px;
   }
 }
+/* =====================================================
+   DASHBOARD : VUE GLOBALE + ACTIONS RAPIDES CÔTE À CÔTE
+   À COLLER À LA FIN DU FICHIER style.css
+   ===================================================== */
+
+.dashboard-top-row{
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) 280px;
+  gap:18px;
+  align-items:stretch;
+  margin-bottom:24px;
+}
+
+/* Cadre gauche : Vue globale des tâches */
+.dashboard-overview-card{
+  margin:0;
+  padding:22px 24px;
+  min-height:100%;
+  display:flex;
+  align-items:center;
+}
+
+.dashboard-overview-card .section-title{
+  font-size:24px;
+}
+
+.dashboard-overview-card .section-subtitle{
+  max-width:680px;
+}
+
+/* Cadre droit : boutons */
+.dashboard-actions-card{
+  background:linear-gradient(180deg, #ffffff, #fbfcff);
+  border:1px solid rgba(229,231,235,.95);
+  border-radius:22px;
+  box-shadow:0 10px 28px rgba(15,23,42,.06);
+  padding:18px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:14px;
+  min-width:260px;
+}
+
+.dashboard-actions-header h3{
+  margin:0;
+  font-size:18px;
+  font-weight:800;
+  color:var(--text);
+}
+
+.dashboard-actions-header p{
+  margin:6px 0 0;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.45;
+}
+
+.dashboard-actions-buttons{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+}
+
+.dashboard-actions-buttons .btn{
+  width:100%;
+  min-height:44px;
+  justify-content:center;
+  text-align:center;
+  padding:10px 14px;
+}
+
+/* Sécurité : désactive les anciens styles si vous les aviez ajoutés avant */
+.dashboard-heading{
+  display:block;
+}
+
+.dashboard-heading-actions{
+  display:none;
+}
+
+/* Les boutons ne doivent plus apparaître dans la bande gauche */
+.filters-sidebar .sidebar-actions{
+  display:none !important;
+}
+
+/* Ajustement de la bande verticale gauche */
+.dashboard-workspace{
+  display:grid;
+  grid-template-columns:300px minmax(0, 1fr);
+  gap:22px;
+  align-items:start;
+  margin-top:20px;
+}
+
+.filters-sidebar{
+  position:sticky;
+  top:86px;
+  max-height:calc(100vh - 110px);
+  overflow:auto;
+}
+
+/* Table à droite */
+.dashboard-main-panel{
+  min-width:0;
+}
+
+.dashboard-main-panel .table-card{
+  margin:0;
+}
+
+/* Responsive : on garde côte à côte tant que l’écran est assez large */
+@media (min-width: 860px){
+  .dashboard-top-row{
+    grid-template-columns:minmax(0, calc(100% - 300px)) 280px;
+  }
+}
+
+/* En dessous de 860px, passage vertical */
+@media (max-width: 859px){
+  .dashboard-top-row{
+    grid-template-columns:1fr;
+  }
+
+  .dashboard-overview-card{
+    align-items:flex-start;
+  }
+
+  .dashboard-actions-card{
+    min-width:0;
+  }
+
+  .dashboard-actions-buttons{
+    display:grid;
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Mobile */
+@media (max-width: 680px){
+  .dashboard-actions-buttons{
+    grid-template-columns:1fr;
+  }
+
+  .dashboard-workspace{
+    grid-template-columns:1fr;
+  }
+
+  .filters-sidebar{
+    position:relative;
+    top:auto;
+    max-height:none;
+  }
+}
