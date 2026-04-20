@@ -15,7 +15,7 @@
 </head>
 
 <body data-page="my-team">
-  <header class="site-header">
+  <header class="site-header fixed-header">
     <div class="header-inner container">
       <div class="brand-block">
         <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
@@ -38,7 +38,7 @@
     </div>
   </header>
 
-  <nav class="main-nav no-print" aria-label="Navigation principale">
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="mes-taches.html">Mes tâches</a>
@@ -58,6 +58,89 @@
         <p class="section-subtitle">
           Consultez les membres rattachés à votre périmètre, suivez leurs tâches et mettez à jour les évaluations si nécessaire.
         </p>
+      </div>
+    </section>
+
+    <section class="dashboard-control-panel no-print" aria-label="Filtres de l’équipe">
+      <div class="dashboard-command-bar">
+        <div class="dashboard-command-title">
+          <span class="section-kicker">Filtres</span>
+          <h3>Suivi de l’équipe</h3>
+          <p>Filtrez les tâches par membre, activité, statut, superviseur ou échéance.</p>
+        </div>
+      </div>
+
+      <div class="dashboard-filter-chips" aria-label="Filtres des tâches de l’équipe">
+        <div class="dashboard-search-chip">
+          <label for="teamSearchInput" class="sr-only">Recherche</label>
+          <input
+            type="text"
+            id="teamSearchInput"
+            placeholder="Rechercher une tâche, activité, staff ou commentaire..."
+          />
+          <button id="teamSearchBtn" class="btn btn-primary" type="button">
+            Rechercher
+          </button>
+        </div>
+
+        <details class="filter-menu">
+          <summary>Assigné à</summary>
+          <div class="filter-popover">
+            <label for="teamAssignedToFilter">Assigné à</label>
+            <select id="teamAssignedToFilter">
+              <option value="">Tous les membres</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu">
+          <summary>Activité</summary>
+          <div class="filter-popover">
+            <label for="teamActivityFilter">Activité principale</label>
+            <select id="teamActivityFilter">
+              <option value="">Toutes les activités</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu">
+          <summary>Statut</summary>
+          <div class="filter-popover">
+            <label for="teamStatusFilter">Statut</label>
+            <select id="teamStatusFilter">
+              <option value="">Tous les statuts</option>
+              <option value="En bonne voie">En bonne voie</option>
+              <option value="Échéance imminente">Échéance imminente</option>
+              <option value="En retard">En retard</option>
+              <option value="Achevé">Achevé</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu">
+          <summary>Superviseur</summary>
+          <div class="filter-popover">
+            <label for="teamSupervisorFilter">Superviseur</label>
+            <select id="teamSupervisorFilter">
+              <option value="">Tous les superviseurs</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu filter-menu-wide">
+          <summary>Dates</summary>
+          <div class="filter-popover date-popover">
+            <div class="field">
+              <label for="teamStartDateFilter">Date de début</label>
+              <input type="date" id="teamStartDateFilter" />
+            </div>
+
+            <div class="field">
+              <label for="teamEndDateFilter">Date de fin</label>
+              <input type="date" id="teamEndDateFilter" />
+            </div>
+          </div>
+        </details>
       </div>
     </section>
 
@@ -138,22 +221,13 @@
     </section>
   </main>
 
-  <div
-    id="taskModal"
-    class="modal no-print"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="taskModalTitle"
-    aria-hidden="true"
-  >
+  <div id="taskModal" class="modal no-print" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
     <div class="modal-overlay"></div>
 
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
-        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
-          ×
-        </button>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
       </div>
 
       <div class="modal-body">
@@ -231,12 +305,8 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
-          Fermer
-        </button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">
-          Enregistrer
-        </button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
       </div>
     </div>
   </div>
