@@ -91,8 +91,8 @@ window.addEventListener("DOMContentLoaded", async () => {
     fillProfileForm(profile, pillar ? pillar.name : "", supervisor ? supervisor.full_name : "");
 
     els.saveProfileBtn?.addEventListener("click", async () => {
-      const vFullName = authUI.safeTrim(els.fullName?.value);
-      const vOffice = authUI.safeTrim(els.office?.value);
+      const vFullName = String(els.fullName?.value || "").trim();
+      const vOffice = String(els.office?.value || "").trim();
 
       if (!vFullName) {
         showMessage("Le nom complet est obligatoire.", "error");
