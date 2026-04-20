@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.AppUI.initUserHeader();
     window.AppUI.initLogout();
     window.AppUI.initModalSystem();
+    window.AppUI.initFilterMenus();
     window.AppUI.initGlobalActions();
     window.AppUI.initTaskCreation();
     window.AppUI.initPillarCreation();
@@ -19,6 +20,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.AppUI.initMainActivitiesManagement();
     window.AppUI.initExportAndPrint();
     window.AppUI.initMyTasksFilters();
+    window.AppUI.initTeamFilters();
 
     window.AppUI.renderCurrentPage();
   } catch (error) {
