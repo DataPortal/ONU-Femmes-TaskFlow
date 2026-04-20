@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta
+    name="description"
+    content="Page de profil utilisateur du TaskFlow Management Portal - ONU Femmes RDC."
+  />
+
+  <title>ONU Femmes — Mon profil</title>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="profile">
+  <header class="site-header fixed-header">
+    <div class="header-inner container">
+      <div class="brand-block">
+        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+
+        <div class="brand-text">
+          <span class="eyebrow">TaskFlow Management Portal</span>
+          <h1>ONU Femmes RDC — Mon profil</h1>
+          <p>Gestion du profil utilisateur et sécurité du compte</p>
+        </div>
+      </div>
+
+      <div class="top-tools no-print" aria-label="Outils utilisateur">
+        <button id="logoutBtn" class="btn btn-secondary" type="button">
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html">Mon équipe</a>
+      <a href="inscription.html">Inscription</a>
+      <a href="profile.html" class="active" aria-current="page">Mon profil</a>
+    </div>
+  </nav>
+
+  <main class="container main-content">
+    <div id="profileMessage" class="page-message" aria-live="polite"></div>
+
+    <section class="page-heading">
+      <div>
+        <span class="section-kicker">Profil utilisateur</span>
+        <h2 class="section-title">Mon profil</h2>
+        <p class="section-subtitle">
+          Consultez vos informations de rattachement et mettez à jour vos informations personnelles.
+          Le pilier et le superviseur sont figés après inscription.
+        </p>
+      </div>
+    </section>
+
+    <section class="split-layout">
+      <article class="profile-card">
+        <div class="card-header">
+          <h3>Informations personnelles</h3>
+          <p>Ces informations permettent d’identifier votre profil dans le portail.</p>
+        </div>
+
+        <div class="form-grid two-columns">
+          <div class="field">
+            <label for="profileFullName">Nom complet</label>
+            <input
+              id="profileFullName"
+              type="text"
+              autocomplete="name"
+              placeholder="Nom et prénom"
+            />
+          </div>
+
+          <div class="field">
+            <label for="profileEmail">Email</label>
+            <input
+              id="profileEmail"
+              type="email"
+              autocomplete="email"
+              placeholder="prenom.nom@unwomen.org"
+              disabled
+            />
+          </div>
+
+          <div class="field">
+            <label for="profileOffice">Bureau / Office</label>
+            <input
+              id="profileOffice"
+              type="text"
+              autocomplete="organization"
+              placeholder="Ex. Kinshasa"
+            />
+          </div>
+
+          <div class="field">
+            <label for="profilePillarDisplay">Pilier</label>
+            <input
+              id="profilePillarDisplay"
+              type="text"
+              disabled
+              placeholder="Pilier non défini"
+            />
+          </div>
+
+          <div class="field field-full">
+            <label for="profileSupervisorDisplay">Superviseur</label>
+            <input
+              id="profileSupervisorDisplay"
+              type="text"
+              disabled
+              placeholder="Superviseur non défini"
+            />
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button id="saveProfileBtn" class="btn btn-primary" type="button">
+            Enregistrer les modifications
+          </button>
+        </div>
+      </article>
+
+      <article class="profile-card">
+        <div class="card-header">
+          <h3>Sécurité du compte</h3>
+          <p>Modifiez votre mot de passe si nécessaire.</p>
+        </div>
+
+        <div class="form-grid single-column">
+          <div class="field">
+            <label for="newPassword">Nouveau mot de passe</label>
+            <input
+              id="newPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Au moins 8 caractères"
+            />
+          </div>
+
+          <div class="field">
+            <label for="confirmNewPassword">Confirmer le nouveau mot de passe</label>
+            <input
+              id="confirmNewPassword"
+              type="password"
+              autocomplete="new-password"
+              placeholder="Confirmez le nouveau mot de passe"
+            />
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <button id="changePasswordBtn" class="btn btn-outline" type="button">
+            Modifier le mot de passe
+          </button>
+        </div>
+
+        <div class="info-box" style="margin-top:18px;">
+          Pour des raisons de cohérence administrative, le pilier et le superviseur ne peuvent pas être modifiés depuis cette page.
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth-utils.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>
