@@ -1,7 +1,16 @@
 (function () {
-  const AuthUI = window.AuthUI;
+  const AuthUI = window.AuthUI || {};
   const Core = window.AppCore;
   const Services = window.AppServices;
+
+  const escapeHtml = AuthUI.escapeHtml || function (value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
 
   const {
     AppState,
@@ -30,57 +39,62 @@
 
   function showGlobalError(message) {
     const debugBox = byId("pageDebugMessage");
-
-    if (debugBox) {
+    if (debugBox && AuthUI.showMessage) {
       AuthUI.showMessage(debugBox, message, "error");
       return;
     }
-
     alert(message);
   }
 
   function setMessage(targetId, text, type = "info") {
-    AuthUI.showMessage(targetId, text, type);
+    if (AuthUI.showMessage) {
+      AuthUI.showMessage(targetId, text, type);
+      return;
+    }
+
+    const el = byId(targetId);
+    if (el) el.textContent = text;
   }
 
   function clearMessage(targetId) {
-    AuthUI.clearMessage(targetId);
+    const el = byId(targetId);
+    if (el) el.innerHTML = "";
   }
 
   function getStatusBadge(status) {
     const safeStatus = normalizeStatusToDatabase(status);
 
     if (safeStatus === STATUS.DONE || safeStatus === "Achevé") {
-      return `<span class="badge badge-green">${AuthUI.escapeHtml(safeStatus)}</span>`;
+      return `<span class="badge badge-green">${escapeHtml(safeStatus)}</span>`;
     }
 
     if (safeStatus === STATUS.ON_TRACK || safeStatus === "En bonne voie") {
-      return `<span class="badge badge-blue">${AuthUI.escapeHtml(safeStatus)}</span>`;
+      return `<span class="badge badge-blue">${escapeHtml(safeStatus)}</span>`;
     }
 
     if (safeStatus === STATUS.DUE_SOON || safeStatus === "Échéance imminente") {
-      return `<span class="badge badge-orange">${AuthUI.escapeHtml(safeStatus)}</span>`;
+      return `<span class="badge badge-orange">${escapeHtml(safeStatus)}</span>`;
     }
 
     if (safeStatus === STATUS.LATE || safeStatus === "En retard") {
-      return `<span class="badge badge-red">${AuthUI.escapeHtml(safeStatus)}</span>`;
+      return `<span class="badge badge-red">${escapeHtml(safeStatus)}</span>`;
     }
 
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(safeStatus || "Non défini")}</span>`;
+    return `<span class="badge badge-grey">${escapeHtml(safeStatus || "Non défini")}</span>`;
   }
 
   function getPriorityBadge(priority) {
-    if (priority === "Critique") return `<span class="badge badge-red">${AuthUI.escapeHtml(priority)}</span>`;
-    if (priority === "Haute") return `<span class="badge badge-yellow">${AuthUI.escapeHtml(priority)}</span>`;
-    if (priority === "Moyenne") return `<span class="badge badge-blue">${AuthUI.escapeHtml(priority)}</span>`;
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(priority || "Basse")}</span>`;
+    if (priority === "Critique") return `<span class="badge badge-red">${escapeHtml(priority)}</span>`;
+    if (priority === "Haute") return `<span class="badge badge-yellow">${escapeHtml(priority)}</span>`;
+    if (priority === "Moyenne") return `<span class="badge badge-blue">${escapeHtml(priority)}</span>`;
+    return `<span class="badge badge-grey">${escapeHtml(priority || "Basse")}</span>`;
   }
 
   function getSupervisorBadge(status) {
-    if (status === "Très satisfaisant") return `<span class="badge badge-green">${AuthUI.escapeHtml(status)}</span>`;
-    if (status === "Acceptable") return `<span class="badge badge-yellow">${AuthUI.escapeHtml(status)}</span>`;
-    if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${AuthUI.escapeHtml(status)}</span>`;
-    return `<span class="badge badge-grey">${AuthUI.escapeHtml(status || "Non évalué")}</span>`;
+    if (status === "Très satisfaisant") return `<span class="badge badge-green">${escapeHtml(status)}</span>`;
+    if (status === "Acceptable") return `<span class="badge badge-yellow">${escapeHtml(status)}</span>`;
+    if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${escapeHtml(status)}</span>`;
+    return `<span class="badge badge-grey">${escapeHtml(status || "Non évalué")}</span>`;
   }
 
   function initUserHeader() {
@@ -89,7 +103,7 @@
     const currentUser = getCurrentUser();
 
     if (selector && currentUser) {
-      selector.innerHTML = `<option value="${AuthUI.escapeHtml(currentUser.id)}">${AuthUI.escapeHtml(currentUser.name)} — ${AuthUI.escapeHtml(currentUser.user_type)}</option>`;
+      selector.innerHTML = `<option value="${escapeHtml(currentUser.id)}">${escapeHtml(currentUser.name)} — ${escapeHtml(currentUser.user_type)}</option>`;
       selector.disabled = true;
     }
 
@@ -99,9 +113,9 @@
       );
 
       label.innerHTML = `
-        <strong>${AuthUI.escapeHtml(currentUser.name)}</strong><br>
-        <span class="muted">${AuthUI.escapeHtml(currentUser.user_type)} | ${AuthUI.escapeHtml(currentUser.pillar || "Sans pilier")}</span><br>
-        <span class="muted">Superviseur : ${AuthUI.escapeHtml(supervisor ? supervisor.name : "Aucun")}</span>
+        <strong>${escapeHtml(currentUser.name)}</strong><br>
+        <span class="muted">${escapeHtml(currentUser.user_type)} | ${escapeHtml(currentUser.pillar || "Sans pilier")}</span><br>
+        <span class="muted">Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Aucun")}</span>
       `;
     }
   }
@@ -121,7 +135,6 @@
   function openModal(modalId) {
     const modal = byId(modalId);
     if (!modal) return;
-
     modal.style.display = "block";
     modal.setAttribute("aria-hidden", "false");
   }
@@ -129,7 +142,6 @@
   function closeModal(modalId) {
     const modal = byId(modalId);
     if (!modal) return;
-
     modal.style.display = "none";
     modal.setAttribute("aria-hidden", "true");
   }
@@ -154,6 +166,16 @@
 
       document.querySelectorAll(".modal").forEach(modal => {
         if (modal.style.display === "block") closeModal(modal.id);
+      });
+    });
+  }
+
+  function initFilterMenus() {
+    document.addEventListener("click", event => {
+      document.querySelectorAll(".filter-menu[open]").forEach(menu => {
+        if (!menu.contains(event.target)) {
+          menu.removeAttribute("open");
+        }
       });
     });
   }
@@ -184,7 +206,7 @@
       pillarSupervisor.innerHTML =
         `<option value="">Sélectionner un superviseur</option>` +
         supervisors
-          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
           .join("");
     }
 
@@ -192,7 +214,7 @@
       userPillar.innerHTML =
         `<option value="">Sélectionner un pilier</option>` +
         visiblePillars
-          .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.id)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+          .map(pillar => `<option value="${escapeHtml(pillar.id)}">${escapeHtml(pillar.name)}</option>`)
           .join("");
     }
 
@@ -200,7 +222,7 @@
       userSupervisor.innerHTML =
         `<option value="">Sélectionner un superviseur</option>` +
         supervisors
-          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
+          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
           .join("");
     }
   }
@@ -319,7 +341,7 @@
     activityPillar.innerHTML =
       `<option value="">Sélectionner un pilier</option>` +
       visiblePillars
-        .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.id)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+        .map(pillar => `<option value="${escapeHtml(pillar.id)}">${escapeHtml(pillar.name)}</option>`)
         .join("");
 
     if (visiblePillars.length === 1) {
@@ -349,9 +371,9 @@
     list.innerHTML = visibleActivities
       .map(activity => `
         <div class="member-card">
-          <h4>${AuthUI.escapeHtml(activity.name)}</h4>
-          <div class="muted">Pilier : ${AuthUI.escapeHtml(activity.pillar_name || "Non défini")}</div>
-          <div class="muted">${AuthUI.escapeHtml(activity.description || "Aucune description")}</div>
+          <h4>${escapeHtml(activity.name)}</h4>
+          <div class="muted">Pilier : ${escapeHtml(activity.pillar_name || "Non défini")}</div>
+          <div class="muted">${escapeHtml(activity.description || "Aucune description")}</div>
           <div class="card-actions" style="margin-top:12px;">
             <button
               class="action-btn secondary-danger js-disable-activity"
@@ -471,11 +493,8 @@
 
     document.addEventListener("click", event => {
       const disableBtn = event.target.closest(".js-disable-activity");
-
       if (!disableBtn) return;
-
-      const activityId = disableBtn.dataset.activityId;
-      disableMainActivity(activityId);
+      disableMainActivity(disableBtn.dataset.activityId);
     });
   }
 
@@ -501,7 +520,7 @@
       taskPillar.innerHTML =
         `<option value="">Sélectionner un pilier</option>` +
         visiblePillars
-          .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.id)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
+          .map(pillar => `<option value="${escapeHtml(pillar.id)}">${escapeHtml(pillar.name)}</option>`)
           .join("");
     }
 
@@ -509,7 +528,7 @@
       taskAssignedTo.innerHTML =
         `<option value="">Sélectionner un membre</option>` +
         eligibleUsers
-          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)} — ${AuthUI.escapeHtml(user.pillar || "Sans pilier")}</option>`)
+          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} — ${escapeHtml(user.pillar || "Sans pilier")}</option>`)
           .join("");
     }
 
@@ -529,11 +548,7 @@
     activitySelect.innerHTML =
       `<option value="">${activities.length ? "Sélectionner une activité" : "Aucune activité définie pour ce pilier"}</option>` +
       activities
-        .map(activity => `
-          <option value="${AuthUI.escapeHtml(activity.id)}">
-            ${AuthUI.escapeHtml(activity.name)}
-          </option>
-        `)
+        .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
         .join("");
 
     activitySelect.value = activities.some(activity =>
@@ -648,9 +663,7 @@
   }
 
   function openTaskModal(taskId) {
-    const task = AppState.tasks.find(item =>
-      String(item.id) === String(taskId)
-    );
+    const task = AppState.tasks.find(item => String(item.id) === String(taskId));
 
     if (!task || !canViewTask(task)) return;
 
@@ -679,11 +692,8 @@
 
     if (!task || !canViewTask(task)) return;
 
-    let progressScore = Number(byId("editProgressScore")?.value);
-    let supervisorScore = Number(byId("editSupervisorScore")?.value);
-
-    progressScore = clamp(progressScore, 0, 10);
-    supervisorScore = clamp(supervisorScore, 0, 10);
+    let progressScore = clamp(Number(byId("editProgressScore")?.value), 0, 10);
+    let supervisorScore = clamp(Number(byId("editSupervisorScore")?.value), 0, 10);
 
     const isAssignedUser = String(currentUser.id) === String(task.assigned_to_id);
     const isSupervisorOnPillar =
@@ -725,9 +735,7 @@
   }
 
   function getFilteredDashboardTasks() {
-    const visibleTasks = getVisibleTasks();
-
-    return applyTaskFilters(visibleTasks, {
+    return applyTaskFilters(getVisibleTasks(), {
       search: byId("searchInput")?.value || "",
       pillar: byId("pillarFilter")?.value || "",
       supervisorId: byId("supervisorFilter")?.value || "",
@@ -741,11 +749,24 @@
 
   function getFilteredMyTasks(tasks) {
     return applyTaskFilters(tasks, {
+      search: byId("myTasksSearchInput")?.value || "",
       assignedToId: byId("myTasksAssignedToFilter")?.value || "",
       activityId: byId("myTasksActivityFilter")?.value || "",
       status: byId("myTasksStatusFilter")?.value || "",
       startDate: byId("myTasksStartDateFilter")?.value || "",
       endDate: byId("myTasksEndDateFilter")?.value || ""
+    });
+  }
+
+  function getFilteredTeamTasks(tasks) {
+    return applyTaskFilters(tasks, {
+      search: byId("teamSearchInput")?.value || "",
+      supervisorId: byId("teamSupervisorFilter")?.value || "",
+      assignedToId: byId("teamAssignedToFilter")?.value || "",
+      activityId: byId("teamActivityFilter")?.value || "",
+      status: byId("teamStatusFilter")?.value || "",
+      startDate: byId("teamStartDateFilter")?.value || "",
+      endDate: byId("teamEndDateFilter")?.value || ""
     });
   }
 
@@ -790,54 +811,94 @@
     return tasks
       .map(task => {
         const status = normalizeStatusToDatabase(task.status);
+        const progress = clamp(task.progress || 0, 0, 100);
+        const supervisorProgress = clamp(task.supervisor_progress || 0, 0, 100);
+
+        const description = task.description
+          ? escapeHtml(task.description)
+          : "Aucune description";
+
+        const staffComment = task.staff_comment
+          ? escapeHtml(task.staff_comment)
+          : "Aucun commentaire";
+
+        const supervisorComment = task.supervisor_comment
+          ? escapeHtml(task.supervisor_comment)
+          : "Aucun commentaire";
 
         return `
           <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
-            <td>${AuthUI.escapeHtml(task.id)}</td>
+            <td>${escapeHtml(task.id)}</td>
 
             <td>
-              <strong>${AuthUI.escapeHtml(task.title)}</strong><br>
-              <span class="muted">${AuthUI.escapeHtml(task.pillar || "")}</span>
-            </td>
-
-            <td>${AuthUI.escapeHtml(task.activity_name || "—")}</td>
-
-            ${showDescription ? `<td class="description-cell">${AuthUI.escapeHtml(task.description || "—")}</td>` : ""}
-
-            <td>
-              ${AuthUI.escapeHtml(task.assigned_to_name || "Non défini")}<br>
-              <span class="muted">${AuthUI.escapeHtml(task.assigned_to_role || "")}</span>
+              <div class="task-cell">
+                <div class="task-title">${escapeHtml(task.title)}</div>
+                <div class="task-meta">
+                  <span class="task-pill">${escapeHtml(task.pillar || "Sans pilier")}</span>
+                  <span class="task-pill activity">${escapeHtml(task.activity_name || "Sans activité")}</span>
+                </div>
+              </div>
             </td>
 
             <td>
-              ${AuthUI.escapeHtml(task.supervisor_name || "Non défini")}<br>
-              <span class="muted">${AuthUI.escapeHtml(task.supervisor_role || "")}</span>
+              <span class="task-pill activity">${escapeHtml(task.activity_name || "—")}</span>
+            </td>
+
+            ${showDescription ? `
+              <td>
+                <div class="task-description ${task.description ? "" : "is-empty"}">${description}</div>
+              </td>
+            ` : ""}
+
+            <td>
+              <div class="person-cell">
+                <span class="person-name">${escapeHtml(task.assigned_to_name || "Non défini")}</span>
+                <span class="person-role">${escapeHtml(task.assigned_to_role || "")}</span>
+              </div>
+            </td>
+
+            <td>
+              <div class="person-cell">
+                <span class="person-name">${escapeHtml(task.supervisor_name || "Non défini")}</span>
+                <span class="person-role">${escapeHtml(task.supervisor_role || "")}</span>
+              </div>
             </td>
 
             <td>${getPriorityBadge(task.priority)}</td>
             <td>${getStatusBadge(status)}</td>
 
             <td>
-              <div class="progress-track">
-                <div class="progress-fill" style="width:${clamp(task.progress || 0, 0, 100)}%"></div>
+              <div class="progress-cell">
+                <div class="progress-track">
+                  <div class="progress-fill" style="width:${progress}%"></div>
+                </div>
+                <span class="progress-value">${progress}%</span>
               </div>
-              ${clamp(task.progress || 0, 0, 100)}%
             </td>
-
-            <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.staff_comment || "—")}</td>
 
             <td>
-              <div class="progress-track">
-                <div class="progress-fill supervisor" style="width:${clamp(task.supervisor_progress || 0, 0, 100)}%"></div>
-              </div>
-              ${clamp(task.supervisor_progress || 0, 0, 100)}%<br>
-              ${getSupervisorBadge(task.supervisor_status)}
+              <div class="comment-box ${task.staff_comment ? "" : "empty-comment"}">${staffComment}</div>
             </td>
 
-            <td style="white-space:pre-line;">${AuthUI.escapeHtml(task.supervisor_comment || "—")}</td>
+            <td>
+              <div class="supervisor-eval">
+                <div class="progress-track">
+                  <div class="progress-fill supervisor" style="width:${supervisorProgress}%"></div>
+                </div>
+                <span class="progress-value">${supervisorProgress}%</span>
+                ${getSupervisorBadge(task.supervisor_status)}
+              </div>
+            </td>
+
+            <td>
+              <div class="comment-box ${task.supervisor_comment ? "" : "empty-comment"}">${supervisorComment}</div>
+            </td>
 
             <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
-              ${AuthUI.escapeHtml(task.due_date || "")}
+              <div class="due-date-cell">
+                <span class="due-date-main">${escapeHtml(task.due_date || "—")}</span>
+                <span class="due-date-label">Échéance</span>
+              </div>
             </td>
 
             <td class="no-print">
@@ -861,7 +922,6 @@
 
   function renderKPIs(targetId, tasks) {
     const el = byId(targetId);
-
     if (!el) return;
 
     const total = tasks.length;
@@ -881,7 +941,6 @@
 
   function renderDashboardPage() {
     const tbody = byId("tasksTbody");
-
     if (!tbody) return;
 
     const currentUser = getCurrentUser();
@@ -891,84 +950,47 @@
     const activityFilter = byId("activityFilter");
 
     let visiblePillars = AppState.pillars;
-    let visibleSupervisors = AppState.users.filter(user =>
-      user.user_type === "supervisor" || user.user_type === "admin"
-    );
+    let visibleSupervisors = AppState.users.filter(user => user.user_type === "supervisor" || user.user_type === "admin");
     let visibleAssignees = AppState.users;
     let visibleActivities = AppState.mainActivities;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(pillar =>
-        String(pillar.id) === String(currentUser.pillar_id)
-      );
-
-      visibleSupervisors = visibleSupervisors.filter(user =>
-        String(user.pillar_id) === String(currentUser.pillar_id)
-      );
-
-      visibleAssignees = AppState.users.filter(user =>
-        String(user.pillar_id) === String(currentUser.pillar_id)
-      );
-
-      visibleActivities = AppState.mainActivities.filter(activity =>
-        String(activity.pillar_id) === String(currentUser.pillar_id)
-      );
+      visiblePillars = AppState.pillars.filter(pillar => String(pillar.id) === String(currentUser.pillar_id));
+      visibleSupervisors = visibleSupervisors.filter(user => String(user.pillar_id) === String(currentUser.pillar_id));
+      visibleAssignees = AppState.users.filter(user => String(user.pillar_id) === String(currentUser.pillar_id));
+      visibleActivities = AppState.mainActivities.filter(activity => String(activity.pillar_id) === String(currentUser.pillar_id));
     }
 
     if (pillarFilter) {
       const currentValue = pillarFilter.value || "";
-
       pillarFilter.innerHTML =
         `<option value="">Tous les piliers</option>` +
-        visiblePillars
-          .map(pillar => `<option value="${AuthUI.escapeHtml(pillar.name)}">${AuthUI.escapeHtml(pillar.name)}</option>`)
-          .join("");
-
-      pillarFilter.value = visiblePillars.some(pillar => pillar.name === currentValue)
-        ? currentValue
-        : "";
+        visiblePillars.map(pillar => `<option value="${escapeHtml(pillar.name)}">${escapeHtml(pillar.name)}</option>`).join("");
+      pillarFilter.value = visiblePillars.some(pillar => pillar.name === currentValue) ? currentValue : "";
     }
 
     if (supervisorFilter) {
       const currentValue = supervisorFilter.value || "";
-
       supervisorFilter.innerHTML =
         `<option value="">Tous les superviseurs</option>` +
-        visibleSupervisors
-          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
-          .join("");
-
-      supervisorFilter.value = visibleSupervisors.some(user => String(user.id) === String(currentValue))
-        ? currentValue
-        : "";
+        visibleSupervisors.map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join("");
+      supervisorFilter.value = visibleSupervisors.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
     }
 
     if (assignedToFilter) {
       const currentValue = assignedToFilter.value || "";
-
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
-        visibleAssignees
-          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
-          .join("");
-
-      assignedToFilter.value = visibleAssignees.some(user => String(user.id) === String(currentValue))
-        ? currentValue
-        : "";
+        visibleAssignees.map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join("");
+      assignedToFilter.value = visibleAssignees.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
     }
 
     if (activityFilter) {
       const currentValue = activityFilter.value || "";
-
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
-        visibleActivities
-          .map(activity => `<option value="${AuthUI.escapeHtml(activity.id)}">${AuthUI.escapeHtml(activity.name)}</option>`)
-          .join("");
-
-      activityFilter.value = visibleActivities.some(activity => String(activity.id) === String(currentValue))
-        ? currentValue
-        : "";
+        visibleActivities.map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`).join("");
+      activityFilter.value = visibleActivities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
     }
 
     const filteredTasks = getFilteredDashboardTasks();
@@ -999,18 +1021,13 @@
 
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
-        assignees
-          .map(user => `<option value="${AuthUI.escapeHtml(user.id)}">${AuthUI.escapeHtml(user.name)}</option>`)
-          .join("");
+        assignees.map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join("");
 
-      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue))
-        ? currentValue
-        : "";
+      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
     }
 
     if (activityFilter) {
       const currentValue = activityFilter.value || "";
-
       const activityIds = [...new Set(myTasks.map(task => task.activity_id).filter(Boolean))];
 
       const activities = AppState.mainActivities.filter(activity =>
@@ -1019,13 +1036,9 @@
 
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
-        activities
-          .map(activity => `<option value="${AuthUI.escapeHtml(activity.id)}">${AuthUI.escapeHtml(activity.name)}</option>`)
-          .join("");
+        activities.map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`).join("");
 
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
-        ? currentValue
-        : "";
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
     }
 
     const filteredTasks = getFilteredMyTasks(myTasks);
@@ -1036,6 +1049,54 @@
     tbody.innerHTML = filteredTasks.length
       ? renderTaskRows(filteredTasks, { showDescription: true })
       : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
+  }
+
+  function populateTeamFilters(teamTasks, teamMembers) {
+    const assignedToFilter = byId("teamAssignedToFilter");
+    const supervisorFilter = byId("teamSupervisorFilter");
+    const activityFilter = byId("teamActivityFilter");
+
+    if (assignedToFilter) {
+      const currentValue = assignedToFilter.value || "";
+
+      assignedToFilter.innerHTML =
+        `<option value="">Tous les membres</option>` +
+        teamMembers
+          .map(member => `<option value="${escapeHtml(member.id)}">${escapeHtml(member.name)}</option>`)
+          .join("");
+
+      assignedToFilter.value = teamMembers.some(member => String(member.id) === String(currentValue)) ? currentValue : "";
+    }
+
+    if (supervisorFilter) {
+      const currentValue = supervisorFilter.value || "";
+      const supervisors = AppState.users.filter(user => user.user_type === "supervisor" || user.user_type === "admin");
+
+      supervisorFilter.innerHTML =
+        `<option value="">Tous les superviseurs</option>` +
+        supervisors
+          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
+          .join("");
+
+      supervisorFilter.value = supervisors.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+    }
+
+    if (activityFilter) {
+      const currentValue = activityFilter.value || "";
+      const activityIds = [...new Set(teamTasks.map(task => task.activity_id).filter(Boolean))];
+
+      const activities = AppState.mainActivities.filter(activity =>
+        activityIds.some(id => String(id) === String(activity.id))
+      );
+
+      activityFilter.innerHTML =
+        `<option value="">Toutes les activités</option>` +
+        activities
+          .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
+          .join("");
+
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
+    }
   }
 
   function renderMyTeamPage() {
@@ -1060,23 +1121,30 @@
       teamTasks = getVisibleTasks();
     }
 
+    populateTeamFilters(teamTasks, teamMembers);
+
+    const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
+
     title.textContent = `Mon équipe — ${currentUser.name}`;
-    renderKPIs("myTeamKpis", teamTasks);
+    renderKPIs("myTeamKpis", filteredTeamTasks);
 
     membersBox.innerHTML = teamMembers.length
       ? teamMembers
           .map(member => `
             <div class="member-card">
-              <h4>${AuthUI.escapeHtml(member.name)}</h4>
-              <div class="muted">${AuthUI.escapeHtml(member.user_type)} | ${AuthUI.escapeHtml(member.pillar || "Sans pilier")}</div>
+              <h4>${escapeHtml(member.name)}</h4>
+              <div class="muted">${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}</div>
+              <div class="kpi-inline">
+                <span>${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length} tâche(s)</span>
+              </div>
             </div>
           `)
           .join("")
       : `<div class="empty">Aucun membre rattaché.</div>`;
 
-    tbody.innerHTML = teamTasks.length
-      ? renderTaskRows(teamTasks)
-      : `<tr><td colspan="13"><span class="muted">Aucune tâche d'équipe.</span></td></tr>`;
+    tbody.innerHTML = filteredTeamTasks.length
+      ? renderTaskRows(filteredTeamTasks)
+      : `<tr><td colspan="13"><span class="muted">Aucune tâche d'équipe correspondant aux filtres.</span></td></tr>`;
   }
 
   function renderRegisterPage() {
@@ -1094,46 +1162,32 @@
     let visibleMembers = AppState.users;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(pillar =>
-        String(pillar.id) === String(currentUser.pillar_id)
-      );
-
-      visibleMembers = AppState.users.filter(user =>
-        String(user.pillar_id) === String(currentUser.pillar_id)
-      );
+      visiblePillars = AppState.pillars.filter(pillar => String(pillar.id) === String(currentUser.pillar_id));
+      visibleMembers = AppState.users.filter(user => String(user.pillar_id) === String(currentUser.pillar_id));
     }
 
-    if (!visiblePillars.length) {
-      pillarsList.innerHTML = `<div class="empty">Aucun pilier disponible.</div>`;
-    } else {
-      pillarsList.innerHTML = visiblePillars
-        .map(pillar => {
-          const supervisor = AppState.users.find(user =>
-            String(user.id) === String(pillar.supervisor_profile_id)
-          );
-
-          const activities = AppState.mainActivities.filter(activity =>
-            String(activity.pillar_id) === String(pillar.id)
-          );
+    pillarsList.innerHTML = visiblePillars.length
+      ? visiblePillars.map(pillar => {
+          const supervisor = AppState.users.find(user => String(user.id) === String(pillar.supervisor_profile_id));
+          const activities = AppState.mainActivities.filter(activity => String(activity.pillar_id) === String(pillar.id));
 
           return `
             <div class="member-card">
-              <h4>${AuthUI.escapeHtml(pillar.name)}</h4>
-              <div class="muted">Superviseur : ${AuthUI.escapeHtml(supervisor ? supervisor.name : "Non défini")}</div>
-              <div class="muted">Activités principales : ${AuthUI.escapeHtml(activities.length ? activities.map(a => a.name).join(", ") : "Non définies")}</div>
+              <h4>${escapeHtml(pillar.name)}</h4>
+              <div class="muted">Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Non défini")}</div>
+              <div class="muted">Activités principales : ${escapeHtml(activities.length ? activities.map(a => a.name).join(", ") : "Non définies")}</div>
             </div>
           `;
-        })
-        .join("");
-    }
+        }).join("")
+      : `<div class="empty">Aucun pilier disponible.</div>`;
 
     membersList.innerHTML = visibleMembers.length
       ? visibleMembers
           .map(member => `
             <div class="member-card">
-              <h4>${AuthUI.escapeHtml(member.name)}</h4>
-              <div class="muted">${AuthUI.escapeHtml(member.user_type)} | ${AuthUI.escapeHtml(member.pillar || "Sans pilier")}</div>
-              <div class="muted">${AuthUI.escapeHtml(member.email || "")}</div>
+              <h4>${escapeHtml(member.name)}</h4>
+              <div class="muted">${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}</div>
+              <div class="muted">${escapeHtml(member.email || "")}</div>
             </div>
           `)
           .join("")
@@ -1142,9 +1196,7 @@
 
   async function deleteTask(taskId) {
     const sb = getSb();
-    const task = AppState.tasks.find(item =>
-      String(item.id) === String(taskId)
-    );
+    const task = AppState.tasks.find(item => String(item.id) === String(taskId));
 
     if (!sb || !task) return;
 
@@ -1179,16 +1231,14 @@
       const openBtn = event.target.closest(".js-open-task-modal");
 
       if (openBtn) {
-        const taskId = openBtn.dataset.taskId;
-        openTaskModal(taskId);
+        openTaskModal(openBtn.dataset.taskId);
         return;
       }
 
       const deleteBtn = event.target.closest(".js-delete-task");
 
       if (deleteBtn) {
-        const taskId = deleteBtn.dataset.taskId;
-        deleteTask(taskId);
+        deleteTask(deleteBtn.dataset.taskId);
       }
     });
   }
@@ -1225,46 +1275,40 @@
 
   function initPillarCreation() {
     const page = document.body.dataset.page;
-
     if (page !== "register") return;
 
     const createPillarBtn = byId("createPillarBtn");
-
-    if (createPillarBtn) {
-      createPillarBtn.addEventListener("click", createNewPillar);
-    }
+    if (createPillarBtn) createPillarBtn.addEventListener("click", createNewPillar);
   }
 
   function initRegisterPage() {
     const page = document.body.dataset.page;
-
     if (page !== "register") return;
 
     populateRegisterDropdowns();
 
     const createUserBtn = byId("createUserBtn");
-
-    if (createUserBtn) {
-      createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
-    }
+    if (createUserBtn) createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
   }
 
   function initExportAndPrint() {
     const page = document.body.dataset.page;
-
     if (page !== "dashboard") return;
 
     const exportBtn = byId("exportXlsxBtn");
     const printBtn = byId("printPageBtn");
     const searchBtn = byId("searchBtn");
     const searchInput = byId("searchInput");
-    const pillarFilter = byId("pillarFilter");
-    const supervisorFilter = byId("supervisorFilter");
-    const assignedToFilter = byId("assignedToFilter");
-    const activityFilter = byId("activityFilter");
-    const statusFilter = byId("statusFilter");
-    const startDateFilter = byId("startDateFilter");
-    const endDateFilter = byId("endDateFilter");
+
+    const filters = [
+      "pillarFilter",
+      "supervisorFilter",
+      "assignedToFilter",
+      "activityFilter",
+      "statusFilter",
+      "startDateFilter",
+      "endDateFilter"
+    ];
 
     if (exportBtn) {
       if (canExportDashboard()) {
@@ -1284,31 +1328,69 @@
       });
     }
 
-    if (pillarFilter) pillarFilter.addEventListener("change", renderDashboardPage);
-    if (supervisorFilter) supervisorFilter.addEventListener("change", renderDashboardPage);
-    if (assignedToFilter) assignedToFilter.addEventListener("change", renderDashboardPage);
-    if (activityFilter) activityFilter.addEventListener("change", renderDashboardPage);
-    if (statusFilter) statusFilter.addEventListener("change", renderDashboardPage);
-    if (startDateFilter) startDateFilter.addEventListener("change", renderDashboardPage);
-    if (endDateFilter) endDateFilter.addEventListener("change", renderDashboardPage);
+    filters.forEach(id => {
+      const el = byId(id);
+      if (el) el.addEventListener("change", renderDashboardPage);
+    });
   }
 
   function initMyTasksFilters() {
     const page = document.body.dataset.page;
-
     if (page !== "my-tasks") return;
 
-    const assignedToFilter = byId("myTasksAssignedToFilter");
-    const activityFilter = byId("myTasksActivityFilter");
-    const statusFilter = byId("myTasksStatusFilter");
-    const startDateFilter = byId("myTasksStartDateFilter");
-    const endDateFilter = byId("myTasksEndDateFilter");
+    const searchBtn = byId("myTasksSearchBtn");
+    const searchInput = byId("myTasksSearchInput");
 
-    if (assignedToFilter) assignedToFilter.addEventListener("change", renderMyTasksPage);
-    if (activityFilter) activityFilter.addEventListener("change", renderMyTasksPage);
-    if (statusFilter) statusFilter.addEventListener("change", renderMyTasksPage);
-    if (startDateFilter) startDateFilter.addEventListener("change", renderMyTasksPage);
-    if (endDateFilter) endDateFilter.addEventListener("change", renderMyTasksPage);
+    const filters = [
+      "myTasksAssignedToFilter",
+      "myTasksActivityFilter",
+      "myTasksStatusFilter",
+      "myTasksStartDateFilter",
+      "myTasksEndDateFilter"
+    ];
+
+    if (searchBtn) searchBtn.addEventListener("click", renderMyTasksPage);
+
+    if (searchInput) {
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") renderMyTasksPage();
+      });
+    }
+
+    filters.forEach(id => {
+      const el = byId(id);
+      if (el) el.addEventListener("change", renderMyTasksPage);
+    });
+  }
+
+  function initTeamFilters() {
+    const page = document.body.dataset.page;
+    if (page !== "my-team") return;
+
+    const searchBtn = byId("teamSearchBtn");
+    const searchInput = byId("teamSearchInput");
+
+    const filters = [
+      "teamAssignedToFilter",
+      "teamActivityFilter",
+      "teamStatusFilter",
+      "teamSupervisorFilter",
+      "teamStartDateFilter",
+      "teamEndDateFilter"
+    ];
+
+    if (searchBtn) searchBtn.addEventListener("click", renderMyTeamPage);
+
+    if (searchInput) {
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") renderMyTeamPage();
+      });
+    }
+
+    filters.forEach(id => {
+      const el = byId(id);
+      if (el) el.addEventListener("change", renderMyTeamPage);
+    });
   }
 
   function renderCurrentPage() {
@@ -1322,6 +1404,7 @@
 
   window.AppUI = {
     initExportAndPrint,
+    initFilterMenus,
     initGlobalActions,
     initLogout,
     initMainActivitiesManagement,
@@ -1330,6 +1413,7 @@
     initPillarCreation,
     initRegisterPage,
     initTaskCreation,
+    initTeamFilters,
     initUserHeader,
     renderCurrentPage,
     renderMainActivitiesList,
