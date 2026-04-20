@@ -15,7 +15,7 @@
 </head>
 
 <body data-page="dashboard">
-  <header class="site-header">
+  <header class="site-header fixed-header">
     <div class="header-inner container">
       <div class="brand-block">
         <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
@@ -41,7 +41,7 @@
     </div>
   </header>
 
-  <nav class="main-nav no-print" aria-label="Navigation principale">
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html" class="active" aria-current="page">Dashboard</a>
       <a href="mes-taches.html">Mes tâches</a>
@@ -59,7 +59,7 @@
         <div class="dashboard-command-title">
           <span class="section-kicker">Pilotage</span>
           <h3>Suivi des tâches</h3>
-          <p>Créez une tâche, exportez les données ou filtrez la vue courante.</p>
+          <p>Créez une tâche, recherchez, filtrez, exportez ou imprimez la vue courante.</p>
         </div>
 
         <div class="dashboard-command-actions" aria-label="Actions rapides">
@@ -77,76 +77,88 @@
         </div>
       </div>
 
-      <div class="dashboard-filter-toolbar" aria-label="Filtres principaux">
-        <div class="field field-search">
-          <label for="searchInput">Recherche</label>
-          <div class="input-group">
-            <input
-              type="text"
-              id="searchInput"
-              placeholder="Rechercher une tâche, activité, staff..."
-            />
-            <button id="searchBtn" class="btn btn-primary" type="button">
-              Rechercher
-            </button>
+      <div class="dashboard-filter-chips" aria-label="Filtres du dashboard">
+        <div class="dashboard-search-chip">
+          <label for="searchInput" class="sr-only">Recherche</label>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Rechercher une tâche, une activité, un staff ou un superviseur..."
+          />
+          <button id="searchBtn" class="btn btn-primary" type="button">
+            Rechercher
+          </button>
+        </div>
+
+        <details class="filter-menu">
+          <summary>Pilier</summary>
+          <div class="filter-popover">
+            <label for="pillarFilter">Pilier</label>
+            <select id="pillarFilter">
+              <option value="">Tous les piliers</option>
+            </select>
           </div>
-        </div>
+        </details>
 
-        <div class="field">
-          <label for="pillarFilter">Pilier</label>
-          <select id="pillarFilter">
-            <option value="">Tous les piliers</option>
-          </select>
-        </div>
+        <details class="filter-menu">
+          <summary>Activité</summary>
+          <div class="filter-popover">
+            <label for="activityFilter">Activité principale</label>
+            <select id="activityFilter">
+              <option value="">Toutes les activités</option>
+            </select>
+          </div>
+        </details>
 
-        <div class="field">
-          <label for="activityFilter">Activité principale</label>
-          <select id="activityFilter">
-            <option value="">Toutes les activités</option>
-          </select>
-        </div>
+        <details class="filter-menu">
+          <summary>Statut</summary>
+          <div class="filter-popover">
+            <label for="statusFilter">Statut</label>
+            <select id="statusFilter">
+              <option value="">Tous les statuts</option>
+              <option value="En bonne voie">En bonne voie</option>
+              <option value="Échéance imminente">Échéance imminente</option>
+              <option value="En retard">En retard</option>
+              <option value="Achevé">Achevé</option>
+            </select>
+          </div>
+        </details>
 
-        <div class="field">
-          <label for="statusFilter">Statut</label>
-          <select id="statusFilter">
-            <option value="">Tous les statuts</option>
-            <option value="En bonne voie">En bonne voie</option>
-            <option value="Échéance imminente">Échéance imminente</option>
-            <option value="En retard">En retard</option>
-            <option value="Achevé">Achevé</option>
-          </select>
-        </div>
-      </div>
-
-      <details class="advanced-filters">
-        <summary>Filtres avancés</summary>
-
-        <div class="advanced-filters-grid">
-          <div class="field">
+        <details class="filter-menu">
+          <summary>Superviseur</summary>
+          <div class="filter-popover">
             <label for="supervisorFilter">Superviseur</label>
             <select id="supervisorFilter">
               <option value="">Tous les superviseurs</option>
             </select>
           </div>
+        </details>
 
-          <div class="field">
+        <details class="filter-menu">
+          <summary>Assigné à</summary>
+          <div class="filter-popover">
             <label for="assignedToFilter">Assigné à</label>
             <select id="assignedToFilter">
               <option value="">Tous les assignés</option>
             </select>
           </div>
+        </details>
 
-          <div class="field">
-            <label for="startDateFilter">Date de début</label>
-            <input type="date" id="startDateFilter" />
-          </div>
+        <details class="filter-menu filter-menu-wide">
+          <summary>Dates</summary>
+          <div class="filter-popover date-popover">
+            <div class="field">
+              <label for="startDateFilter">Date de début</label>
+              <input type="date" id="startDateFilter" />
+            </div>
 
-          <div class="field">
-            <label for="endDateFilter">Date de fin</label>
-            <input type="date" id="endDateFilter" />
+            <div class="field">
+              <label for="endDateFilter">Date de fin</label>
+              <input type="date" id="endDateFilter" />
+            </div>
           </div>
-        </div>
-      </details>
+        </details>
+      </div>
     </section>
 
     <section
@@ -418,6 +430,16 @@
       </div>
     </div>
   </div>
+
+  <script>
+    document.addEventListener("click", function (event) {
+      document.querySelectorAll(".filter-menu[open]").forEach(function (menu) {
+        if (!menu.contains(event.target)) {
+          menu.removeAttribute("open");
+        }
+      });
+    });
+  </script>
 
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
