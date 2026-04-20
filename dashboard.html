@@ -54,23 +54,37 @@
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
 
-    <section class="dashboard-filter-action-card no-print" aria-label="Filtres et actions du tableau des tâches">
-      <div class="filters-header dashboard-filter-header">
-        <div>
+    <section class="dashboard-control-panel no-print" aria-label="Commandes et filtres du dashboard">
+      <div class="dashboard-command-bar">
+        <div class="dashboard-command-title">
           <span class="section-kicker">Pilotage</span>
-          <h3>Filtres et actions</h3>
-          <p>Affinez l’affichage, créez une tâche, exportez ou imprimez la vue courante.</p>
+          <h3>Suivi des tâches</h3>
+          <p>Créez une tâche, exportez les données ou filtrez la vue courante.</p>
+        </div>
+
+        <div class="dashboard-command-actions" aria-label="Actions rapides">
+          <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
+            + Nouvelle tâche
+          </button>
+
+          <button id="exportXlsxBtn" class="btn btn-outline" type="button">
+            Exporter XLSX
+          </button>
+
+          <button id="printPageBtn" class="btn btn-secondary" type="button">
+            Imprimer
+          </button>
         </div>
       </div>
 
-      <div class="dashboard-filter-action-grid">
+      <div class="dashboard-filter-toolbar" aria-label="Filtres principaux">
         <div class="field field-search">
           <label for="searchInput">Recherche</label>
           <div class="input-group">
             <input
               type="text"
               id="searchInput"
-              placeholder="Rechercher une tâche, une activité, un staff ou un superviseur"
+              placeholder="Rechercher une tâche, activité, staff..."
             />
             <button id="searchBtn" class="btn btn-primary" type="button">
               Rechercher
@@ -82,20 +96,6 @@
           <label for="pillarFilter">Pilier</label>
           <select id="pillarFilter">
             <option value="">Tous les piliers</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="supervisorFilter">Superviseur</label>
-          <select id="supervisorFilter">
-            <option value="">Tous les superviseurs</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="assignedToFilter">Assigné à</label>
-          <select id="assignedToFilter">
-            <option value="">Tous les assignés</option>
           </select>
         </div>
 
@@ -116,31 +116,37 @@
             <option value="Achevé">Achevé</option>
           </select>
         </div>
-
-        <div class="field">
-          <label for="startDateFilter">Date de début</label>
-          <input type="date" id="startDateFilter" />
-        </div>
-
-        <div class="field">
-          <label for="endDateFilter">Date de fin</label>
-          <input type="date" id="endDateFilter" />
-        </div>
       </div>
 
-      <div class="dashboard-inline-actions">
-        <button id="openCreateTaskModalBtn" class="btn btn-primary" type="button">
-          + Nouvelle tâche
-        </button>
+      <details class="advanced-filters">
+        <summary>Filtres avancés</summary>
 
-        <button id="exportXlsxBtn" class="btn btn-outline" type="button">
-          Exporter XLSX
-        </button>
+        <div class="advanced-filters-grid">
+          <div class="field">
+            <label for="supervisorFilter">Superviseur</label>
+            <select id="supervisorFilter">
+              <option value="">Tous les superviseurs</option>
+            </select>
+          </div>
 
-        <button id="printPageBtn" class="btn btn-secondary" type="button">
-          Imprimer
-        </button>
-      </div>
+          <div class="field">
+            <label for="assignedToFilter">Assigné à</label>
+            <select id="assignedToFilter">
+              <option value="">Tous les assignés</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="startDateFilter">Date de début</label>
+            <input type="date" id="startDateFilter" />
+          </div>
+
+          <div class="field">
+            <label for="endDateFilter">Date de fin</label>
+            <input type="date" id="endDateFilter" />
+          </div>
+        </div>
+      </details>
     </section>
 
     <section
