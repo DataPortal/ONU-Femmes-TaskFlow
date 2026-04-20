@@ -1236,3 +1236,161 @@ tbody tr:hover td{background:#f9fbfd}
     flex-basis:100%;
   }
 }
+/* =====================================================
+   AFFICHAGE AMÉLIORÉ DES TÂCHES
+   ===================================================== */
+
+.task-cell{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  min-width:220px;
+}
+
+.task-title{
+  font-weight:800;
+  color:var(--text);
+  line-height:1.35;
+}
+
+.task-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  align-items:center;
+}
+
+.task-pill{
+  display:inline-flex;
+  align-items:center;
+  width:max-content;
+  max-width:100%;
+  padding:4px 8px;
+  border-radius:999px;
+  background:var(--uw-blue-soft);
+  color:var(--uw-blue-dark);
+  font-size:12px;
+  font-weight:800;
+  line-height:1.25;
+}
+
+.task-pill.activity{
+  background:var(--uw-orange-soft);
+  color:var(--uw-orange-dark);
+}
+
+.task-description{
+  max-width:360px;
+  color:#374151;
+  line-height:1.55;
+  white-space:pre-line;
+}
+
+.task-description.is-empty{
+  color:var(--muted);
+  font-style:italic;
+}
+
+.person-cell{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.person-name{
+  font-weight:700;
+  color:var(--text);
+}
+
+.person-role{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.comment-box{
+  max-width:260px;
+  max-height:92px;
+  overflow:auto;
+  padding:9px 10px;
+  border-radius:12px;
+  background:#f9fafb;
+  border:1px solid #eef0f3;
+  color:#374151;
+  white-space:pre-line;
+  line-height:1.45;
+}
+
+.comment-box.empty-comment{
+  color:var(--muted);
+  font-style:italic;
+}
+
+.comment-box::-webkit-scrollbar{
+  width:6px;
+}
+
+.comment-box::-webkit-scrollbar-thumb{
+  background:#cbd5e1;
+  border-radius:999px;
+}
+
+.progress-cell{
+  min-width:150px;
+}
+
+.progress-value{
+  font-size:12px;
+  font-weight:800;
+  color:#374151;
+}
+
+.supervisor-eval{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.due-date-cell{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:120px;
+}
+
+.due-date-main{
+  font-weight:800;
+}
+
+.due-date-label{
+  font-size:12px;
+  color:var(--muted);
+}
+
+.row-late .due-date-main{
+  color:var(--danger);
+}
+
+.row-due-soon .due-date-main{
+  color:#c2410c;
+}
+
+.tasks-table tbody td{
+  vertical-align:top;
+}
+
+.tasks-table tbody tr{
+  transition:background .18s ease, transform .18s ease;
+}
+
+.tasks-table tbody tr:hover td{
+  background:#f8fbff;
+}
+
+.dashboard-control-panel{
+  position:relative;
+  z-index:20;
+}
+
+.filter-popover{
+  z-index:300;
+}
