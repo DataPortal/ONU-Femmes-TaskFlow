@@ -39,10 +39,12 @@
 
   function showGlobalError(message) {
     const debugBox = byId("pageDebugMessage");
+
     if (debugBox && AuthUI.showMessage) {
       AuthUI.showMessage(debugBox, message, "error");
       return;
     }
+
     alert(message);
   }
 
@@ -84,16 +86,34 @@
   }
 
   function getPriorityBadge(priority) {
-    if (priority === "Critique") return `<span class="badge badge-red">${escapeHtml(priority)}</span>`;
-    if (priority === "Haute") return `<span class="badge badge-yellow">${escapeHtml(priority)}</span>`;
-    if (priority === "Moyenne") return `<span class="badge badge-blue">${escapeHtml(priority)}</span>`;
+    if (priority === "Critique") {
+      return `<span class="badge badge-red">${escapeHtml(priority)}</span>`;
+    }
+
+    if (priority === "Haute") {
+      return `<span class="badge badge-yellow">${escapeHtml(priority)}</span>`;
+    }
+
+    if (priority === "Moyenne") {
+      return `<span class="badge badge-blue">${escapeHtml(priority)}</span>`;
+    }
+
     return `<span class="badge badge-grey">${escapeHtml(priority || "Basse")}</span>`;
   }
 
   function getSupervisorBadge(status) {
-    if (status === "Très satisfaisant") return `<span class="badge badge-green">${escapeHtml(status)}</span>`;
-    if (status === "Acceptable") return `<span class="badge badge-yellow">${escapeHtml(status)}</span>`;
-    if (status === "À améliorer" || status === "Critique") return `<span class="badge badge-red">${escapeHtml(status)}</span>`;
+    if (status === "Très satisfaisant") {
+      return `<span class="badge badge-green">${escapeHtml(status)}</span>`;
+    }
+
+    if (status === "Acceptable") {
+      return `<span class="badge badge-yellow">${escapeHtml(status)}</span>`;
+    }
+
+    if (status === "À améliorer" || status === "Critique") {
+      return `<span class="badge badge-red">${escapeHtml(status)}</span>`;
+    }
+
     return `<span class="badge badge-grey">${escapeHtml(status || "Non évalué")}</span>`;
   }
 
@@ -103,7 +123,11 @@
     const currentUser = getCurrentUser();
 
     if (selector && currentUser) {
-      selector.innerHTML = `<option value="${escapeHtml(currentUser.id)}">${escapeHtml(currentUser.name)} — ${escapeHtml(currentUser.user_type)}</option>`;
+      selector.innerHTML = `
+        <option value="${escapeHtml(currentUser.id)}">
+          ${escapeHtml(currentUser.name)} — ${escapeHtml(currentUser.user_type)}
+        </option>
+      `;
       selector.disabled = true;
     }
 
@@ -114,8 +138,12 @@
 
       label.innerHTML = `
         <strong>${escapeHtml(currentUser.name)}</strong><br>
-        <span class="muted">${escapeHtml(currentUser.user_type)} | ${escapeHtml(currentUser.pillar || "Sans pilier")}</span><br>
-        <span class="muted">Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Aucun")}</span>
+        <span class="muted">
+          ${escapeHtml(currentUser.user_type)} | ${escapeHtml(currentUser.pillar || "Sans pilier")}
+        </span><br>
+        <span class="muted">
+          Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Aucun")}
+        </span>
       `;
     }
   }
@@ -135,6 +163,7 @@
   function openModal(modalId) {
     const modal = byId(modalId);
     if (!modal) return;
+
     modal.style.display = "block";
     modal.setAttribute("aria-hidden", "false");
   }
@@ -142,6 +171,7 @@
   function closeModal(modalId) {
     const modal = byId(modalId);
     if (!modal) return;
+
     modal.style.display = "none";
     modal.setAttribute("aria-hidden", "true");
   }
@@ -206,7 +236,11 @@
       pillarSupervisor.innerHTML =
         `<option value="">Sélectionner un superviseur</option>` +
         supervisors
-          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)}
+            </option>
+          `)
           .join("");
     }
 
@@ -214,7 +248,11 @@
       userPillar.innerHTML =
         `<option value="">Sélectionner un pilier</option>` +
         visiblePillars
-          .map(pillar => `<option value="${escapeHtml(pillar.id)}">${escapeHtml(pillar.name)}</option>`)
+          .map(pillar => `
+            <option value="${escapeHtml(pillar.id)}">
+              ${escapeHtml(pillar.name)}
+            </option>
+          `)
           .join("");
     }
 
@@ -222,7 +260,11 @@
       userSupervisor.innerHTML =
         `<option value="">Sélectionner un superviseur</option>` +
         supervisors
-          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)}
+            </option>
+          `)
           .join("");
     }
   }
@@ -298,7 +340,11 @@
     );
 
     if (!existingUser) {
-      setMessage("userMessage", "Créez d’abord le compte utilisateur dans Authentication ou utilisez la page d’auto-inscription.", "error");
+      setMessage(
+        "userMessage",
+        "Créez d’abord le compte utilisateur dans Authentication ou utilisez la page d’auto-inscription.",
+        "error"
+      );
       return;
     }
 
@@ -341,7 +387,11 @@
     activityPillar.innerHTML =
       `<option value="">Sélectionner un pilier</option>` +
       visiblePillars
-        .map(pillar => `<option value="${escapeHtml(pillar.id)}">${escapeHtml(pillar.name)}</option>`)
+        .map(pillar => `
+          <option value="${escapeHtml(pillar.id)}">
+            ${escapeHtml(pillar.name)}
+          </option>
+        `)
         .join("");
 
     if (visiblePillars.length === 1) {
@@ -494,6 +544,7 @@
     document.addEventListener("click", event => {
       const disableBtn = event.target.closest(".js-disable-activity");
       if (!disableBtn) return;
+
       disableMainActivity(disableBtn.dataset.activityId);
     });
   }
@@ -520,7 +571,11 @@
       taskPillar.innerHTML =
         `<option value="">Sélectionner un pilier</option>` +
         visiblePillars
-          .map(pillar => `<option value="${escapeHtml(pillar.id)}">${escapeHtml(pillar.name)}</option>`)
+          .map(pillar => `
+            <option value="${escapeHtml(pillar.id)}">
+              ${escapeHtml(pillar.name)}
+            </option>
+          `)
           .join("");
     }
 
@@ -528,7 +583,11 @@
       taskAssignedTo.innerHTML =
         `<option value="">Sélectionner un membre</option>` +
         eligibleUsers
-          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)} — ${escapeHtml(user.pillar || "Sans pilier")}</option>`)
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)} — ${escapeHtml(user.pillar || "Sans pilier")}
+            </option>
+          `)
           .join("");
     }
 
@@ -548,7 +607,11 @@
     activitySelect.innerHTML =
       `<option value="">${activities.length ? "Sélectionner une activité" : "Aucune activité définie pour ce pilier"}</option>` +
       activities
-        .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
+        .map(activity => `
+          <option value="${escapeHtml(activity.id)}">
+            ${escapeHtml(activity.name)}
+          </option>
+        `)
         .join("");
 
     activitySelect.value = activities.some(activity =>
@@ -623,7 +686,11 @@
     const description = String(byId("taskDescription")?.value || "").trim();
 
     if (!title || !pillarId || !assignedToId || !dueDate) {
-      setMessage("taskCreateMessage", "Veuillez renseigner le titre, le pilier, le membre assigné et l’échéance.", "error");
+      setMessage(
+        "taskCreateMessage",
+        "Veuillez renseigner le titre, le pilier, le membre assigné et l’échéance.",
+        "error"
+      );
       return;
     }
 
@@ -692,8 +759,8 @@
 
     if (!task || !canViewTask(task)) return;
 
-    let progressScore = clamp(Number(byId("editProgressScore")?.value), 0, 10);
-    let supervisorScore = clamp(Number(byId("editSupervisorScore")?.value), 0, 10);
+    const progressScore = clamp(Number(byId("editProgressScore")?.value), 0, 10);
+    const supervisorScore = clamp(Number(byId("editSupervisorScore")?.value), 0, 10);
 
     const isAssignedUser = String(currentUser.id) === String(task.assigned_to_id);
     const isSupervisorOnPillar =
@@ -828,25 +895,26 @@
 
         return `
           <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
-            <td>${escapeHtml(task.id)}</td>
+            <td class="id-cell">${escapeHtml(task.id)}</td>
 
             <td>
               <div class="task-cell">
-                <div class="task-title">${escapeHtml(task.title)}</div>
-                <div class="task-meta">
-                  <span class="task-pill">${escapeHtml(task.pillar || "Sans pilier")}</span>
-                  <span class="task-pill activity">${escapeHtml(task.activity_name || "Sans activité")}</span>
-                </div>
+                <div class="task-title">${escapeHtml(task.title || "Sans titre")}</div>
+                <div class="task-pillar">${escapeHtml(task.pillar || "Sans pilier")}</div>
               </div>
             </td>
 
             <td>
-              <span class="task-pill activity">${escapeHtml(task.activity_name || "—")}</span>
+              <span class="task-pill activity">
+                ${escapeHtml(task.activity_name || "Non définie")}
+              </span>
             </td>
 
             ${showDescription ? `
               <td>
-                <div class="task-description ${task.description ? "" : "is-empty"}">${description}</div>
+                <div class="task-description ${task.description ? "" : "is-empty"}">
+                  ${description}
+                </div>
               </td>
             ` : ""}
 
@@ -869,7 +937,7 @@
 
             <td>
               <div class="progress-cell">
-                <div class="progress-track">
+                <div class="progress-track compact">
                   <div class="progress-fill" style="width:${progress}%"></div>
                 </div>
                 <span class="progress-value">${progress}%</span>
@@ -877,12 +945,14 @@
             </td>
 
             <td>
-              <div class="comment-box ${task.staff_comment ? "" : "empty-comment"}">${staffComment}</div>
+              <div class="comment-box ${task.staff_comment ? "" : "empty-comment"}">
+                ${staffComment}
+              </div>
             </td>
 
             <td>
               <div class="supervisor-eval">
-                <div class="progress-track">
+                <div class="progress-track compact">
                   <div class="progress-fill supervisor" style="width:${supervisorProgress}%"></div>
                 </div>
                 <span class="progress-value">${supervisorProgress}%</span>
@@ -891,7 +961,9 @@
             </td>
 
             <td>
-              <div class="comment-box ${task.supervisor_comment ? "" : "empty-comment"}">${supervisorComment}</div>
+              <div class="comment-box ${task.supervisor_comment ? "" : "empty-comment"}">
+                ${supervisorComment}
+              </div>
             </td>
 
             <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
@@ -901,7 +973,7 @@
               </div>
             </td>
 
-            <td class="no-print">
+            <td class="no-print action-cell">
               <div class="table-actions">
                 <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
                   Mettre à jour
@@ -925,10 +997,21 @@
     if (!el) return;
 
     const total = tasks.length;
-    const onTrack = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.ON_TRACK).length;
-    const dueSoon = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON).length;
-    const completed = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE).length;
-    const late = tasks.filter(task => normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE).length;
+    const onTrack = tasks.filter(task =>
+      normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.ON_TRACK
+    ).length;
+
+    const dueSoon = tasks.filter(task =>
+      normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON
+    ).length;
+
+    const completed = tasks.filter(task =>
+      normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE
+    ).length;
+
+    const late = tasks.filter(task =>
+      normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE
+    ).length;
 
     el.innerHTML = `
       <div class="card"><h3>Total des tâches</h3><div class="value">${total}</div></div>
@@ -950,47 +1033,100 @@
     const activityFilter = byId("activityFilter");
 
     let visiblePillars = AppState.pillars;
-    let visibleSupervisors = AppState.users.filter(user => user.user_type === "supervisor" || user.user_type === "admin");
+    let visibleSupervisors = AppState.users.filter(user =>
+      user.user_type === "supervisor" || user.user_type === "admin"
+    );
     let visibleAssignees = AppState.users;
     let visibleActivities = AppState.mainActivities;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(pillar => String(pillar.id) === String(currentUser.pillar_id));
-      visibleSupervisors = visibleSupervisors.filter(user => String(user.pillar_id) === String(currentUser.pillar_id));
-      visibleAssignees = AppState.users.filter(user => String(user.pillar_id) === String(currentUser.pillar_id));
-      visibleActivities = AppState.mainActivities.filter(activity => String(activity.pillar_id) === String(currentUser.pillar_id));
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
+
+      visibleSupervisors = visibleSupervisors.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
+
+      visibleAssignees = AppState.users.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
+
+      visibleActivities = AppState.mainActivities.filter(activity =>
+        String(activity.pillar_id) === String(currentUser.pillar_id)
+      );
     }
 
     if (pillarFilter) {
       const currentValue = pillarFilter.value || "";
+
       pillarFilter.innerHTML =
         `<option value="">Tous les piliers</option>` +
-        visiblePillars.map(pillar => `<option value="${escapeHtml(pillar.name)}">${escapeHtml(pillar.name)}</option>`).join("");
-      pillarFilter.value = visiblePillars.some(pillar => pillar.name === currentValue) ? currentValue : "";
+        visiblePillars
+          .map(pillar => `
+            <option value="${escapeHtml(pillar.name)}">
+              ${escapeHtml(pillar.name)}
+            </option>
+          `)
+          .join("");
+
+      pillarFilter.value = visiblePillars.some(pillar => pillar.name === currentValue)
+        ? currentValue
+        : "";
     }
 
     if (supervisorFilter) {
       const currentValue = supervisorFilter.value || "";
+
       supervisorFilter.innerHTML =
         `<option value="">Tous les superviseurs</option>` +
-        visibleSupervisors.map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join("");
-      supervisorFilter.value = visibleSupervisors.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+        visibleSupervisors
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)}
+            </option>
+          `)
+          .join("");
+
+      supervisorFilter.value = visibleSupervisors.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (assignedToFilter) {
       const currentValue = assignedToFilter.value || "";
+
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
-        visibleAssignees.map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join("");
-      assignedToFilter.value = visibleAssignees.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+        visibleAssignees
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)}
+            </option>
+          `)
+          .join("");
+
+      assignedToFilter.value = visibleAssignees.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (activityFilter) {
       const currentValue = activityFilter.value || "";
+
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
-        visibleActivities.map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`).join("");
-      activityFilter.value = visibleActivities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
+        visibleActivities
+          .map(activity => `
+            <option value="${escapeHtml(activity.id)}">
+              ${escapeHtml(activity.name)}
+            </option>
+          `)
+          .join("");
+
+      activityFilter.value = visibleActivities.some(activity => String(activity.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     const filteredTasks = getFilteredDashboardTasks();
@@ -1021,9 +1157,17 @@
 
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
-        assignees.map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`).join("");
+        assignees
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)}
+            </option>
+          `)
+          .join("");
 
-      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (activityFilter) {
@@ -1036,9 +1180,17 @@
 
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
-        activities.map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`).join("");
+        activities
+          .map(activity => `
+            <option value="${escapeHtml(activity.id)}">
+              ${escapeHtml(activity.name)}
+            </option>
+          `)
+          .join("");
 
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     const filteredTasks = getFilteredMyTasks(myTasks);
@@ -1062,23 +1214,37 @@
       assignedToFilter.innerHTML =
         `<option value="">Tous les membres</option>` +
         teamMembers
-          .map(member => `<option value="${escapeHtml(member.id)}">${escapeHtml(member.name)}</option>`)
+          .map(member => `
+            <option value="${escapeHtml(member.id)}">
+              ${escapeHtml(member.name)}
+            </option>
+          `)
           .join("");
 
-      assignedToFilter.value = teamMembers.some(member => String(member.id) === String(currentValue)) ? currentValue : "";
+      assignedToFilter.value = teamMembers.some(member => String(member.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (supervisorFilter) {
       const currentValue = supervisorFilter.value || "";
-      const supervisors = AppState.users.filter(user => user.user_type === "supervisor" || user.user_type === "admin");
+      const supervisors = AppState.users.filter(user =>
+        user.user_type === "supervisor" || user.user_type === "admin"
+      );
 
       supervisorFilter.innerHTML =
         `<option value="">Tous les superviseurs</option>` +
         supervisors
-          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
+          .map(user => `
+            <option value="${escapeHtml(user.id)}">
+              ${escapeHtml(user.name)}
+            </option>
+          `)
           .join("");
 
-      supervisorFilter.value = supervisors.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+      supervisorFilter.value = supervisors.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (activityFilter) {
@@ -1092,10 +1258,16 @@
       activityFilter.innerHTML =
         `<option value="">Toutes les activités</option>` +
         activities
-          .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
+          .map(activity => `
+            <option value="${escapeHtml(activity.id)}">
+              ${escapeHtml(activity.name)}
+            </option>
+          `)
           .join("");
 
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
   }
 
@@ -1133,9 +1305,14 @@
           .map(member => `
             <div class="member-card">
               <h4>${escapeHtml(member.name)}</h4>
-              <div class="muted">${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}</div>
+              <div class="muted">
+                ${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}
+              </div>
               <div class="kpi-inline">
-                <span>${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length} tâche(s)</span>
+                <span>
+                  ${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length}
+                  tâche(s)
+                </span>
               </div>
             </div>
           `)
@@ -1162,23 +1339,40 @@
     let visibleMembers = AppState.users;
 
     if (currentUser && currentUser.user_type !== "admin") {
-      visiblePillars = AppState.pillars.filter(pillar => String(pillar.id) === String(currentUser.pillar_id));
-      visibleMembers = AppState.users.filter(user => String(user.pillar_id) === String(currentUser.pillar_id));
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
+
+      visibleMembers = AppState.users.filter(user =>
+        String(user.pillar_id) === String(currentUser.pillar_id)
+      );
     }
 
     pillarsList.innerHTML = visiblePillars.length
-      ? visiblePillars.map(pillar => {
-          const supervisor = AppState.users.find(user => String(user.id) === String(pillar.supervisor_profile_id));
-          const activities = AppState.mainActivities.filter(activity => String(activity.pillar_id) === String(pillar.id));
+      ? visiblePillars
+          .map(pillar => {
+            const supervisor = AppState.users.find(user =>
+              String(user.id) === String(pillar.supervisor_profile_id)
+            );
 
-          return `
-            <div class="member-card">
-              <h4>${escapeHtml(pillar.name)}</h4>
-              <div class="muted">Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Non défini")}</div>
-              <div class="muted">Activités principales : ${escapeHtml(activities.length ? activities.map(a => a.name).join(", ") : "Non définies")}</div>
-            </div>
-          `;
-        }).join("")
+            const activities = AppState.mainActivities.filter(activity =>
+              String(activity.pillar_id) === String(pillar.id)
+            );
+
+            return `
+              <div class="member-card">
+                <h4>${escapeHtml(pillar.name)}</h4>
+                <div class="muted">
+                  Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Non défini")}
+                </div>
+                <div class="muted">
+                  Activités principales :
+                  ${escapeHtml(activities.length ? activities.map(a => a.name).join(", ") : "Non définies")}
+                </div>
+              </div>
+            `;
+          })
+          .join("")
       : `<div class="empty">Aucun pilier disponible.</div>`;
 
     membersList.innerHTML = visibleMembers.length
@@ -1186,7 +1380,9 @@
           .map(member => `
             <div class="member-card">
               <h4>${escapeHtml(member.name)}</h4>
-              <div class="muted">${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}</div>
+              <div class="muted">
+                ${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}
+              </div>
               <div class="muted">${escapeHtml(member.email || "")}</div>
             </div>
           `)
