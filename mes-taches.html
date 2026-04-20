@@ -15,7 +15,7 @@
 </head>
 
 <body data-page="my-tasks">
-  <header class="site-header">
+  <header class="site-header fixed-header">
     <div class="header-inner container">
       <div class="brand-block">
         <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
@@ -38,7 +38,7 @@
     </div>
   </header>
 
-  <nav class="main-nav no-print" aria-label="Navigation principale">
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html">Dashboard</a>
       <a href="mes-taches.html" class="active" aria-current="page">Mes tâches</a>
@@ -61,51 +61,80 @@
       </div>
     </section>
 
-    <section id="myTasksKpis" class="dashboard-kpis" aria-label="Indicateurs clés de mes tâches"></section>
-
-    <section class="filters-card no-print" aria-label="Filtres des tâches personnelles">
-      <div class="filters-header">
-        <h3>Filtres</h3>
-        <p>Affinez l’affichage de vos tâches selon l’assignation, l’activité, le statut et l’échéance.</p>
+    <section class="dashboard-control-panel no-print" aria-label="Filtres de mes tâches">
+      <div class="dashboard-command-bar">
+        <div class="dashboard-command-title">
+          <span class="section-kicker">Filtres</span>
+          <h3>Suivi de mes tâches</h3>
+          <p>Recherchez et filtrez vos tâches par activité, statut, assignation ou échéance.</p>
+        </div>
       </div>
 
-      <div class="filters-grid compact-grid">
-        <div class="field">
-          <label for="myTasksAssignedToFilter">Assigné à</label>
-          <select id="myTasksAssignedToFilter">
-            <option value="">Tous les assignés</option>
-          </select>
+      <div class="dashboard-filter-chips" aria-label="Filtres des tâches personnelles">
+        <div class="dashboard-search-chip">
+          <label for="myTasksSearchInput" class="sr-only">Recherche</label>
+          <input
+            type="text"
+            id="myTasksSearchInput"
+            placeholder="Rechercher une tâche, activité ou commentaire..."
+          />
+          <button id="myTasksSearchBtn" class="btn btn-primary" type="button">
+            Rechercher
+          </button>
         </div>
 
-        <div class="field">
-          <label for="myTasksActivityFilter">Activité principale</label>
-          <select id="myTasksActivityFilter">
-            <option value="">Toutes les activités</option>
-          </select>
-        </div>
+        <details class="filter-menu">
+          <summary>Activité</summary>
+          <div class="filter-popover">
+            <label for="myTasksActivityFilter">Activité principale</label>
+            <select id="myTasksActivityFilter">
+              <option value="">Toutes les activités</option>
+            </select>
+          </div>
+        </details>
 
-        <div class="field">
-          <label for="myTasksStatusFilter">Statut</label>
-          <select id="myTasksStatusFilter">
-            <option value="">Tous les statuts</option>
-            <option value="En bonne voie">En bonne voie</option>
-            <option value="Échéance imminente">Échéance imminente</option>
-            <option value="En retard">En retard</option>
-            <option value="Achevé">Achevé</option>
-          </select>
-        </div>
+        <details class="filter-menu">
+          <summary>Statut</summary>
+          <div class="filter-popover">
+            <label for="myTasksStatusFilter">Statut</label>
+            <select id="myTasksStatusFilter">
+              <option value="">Tous les statuts</option>
+              <option value="En bonne voie">En bonne voie</option>
+              <option value="Échéance imminente">Échéance imminente</option>
+              <option value="En retard">En retard</option>
+              <option value="Achevé">Achevé</option>
+            </select>
+          </div>
+        </details>
 
-        <div class="field">
-          <label for="myTasksStartDateFilter">Date de début</label>
-          <input type="date" id="myTasksStartDateFilter" />
-        </div>
+        <details class="filter-menu">
+          <summary>Assigné à</summary>
+          <div class="filter-popover">
+            <label for="myTasksAssignedToFilter">Assigné à</label>
+            <select id="myTasksAssignedToFilter">
+              <option value="">Tous les assignés</option>
+            </select>
+          </div>
+        </details>
 
-        <div class="field">
-          <label for="myTasksEndDateFilter">Date de fin</label>
-          <input type="date" id="myTasksEndDateFilter" />
-        </div>
+        <details class="filter-menu filter-menu-wide">
+          <summary>Dates</summary>
+          <div class="filter-popover date-popover">
+            <div class="field">
+              <label for="myTasksStartDateFilter">Date de début</label>
+              <input type="date" id="myTasksStartDateFilter" />
+            </div>
+
+            <div class="field">
+              <label for="myTasksEndDateFilter">Date de fin</label>
+              <input type="date" id="myTasksEndDateFilter" />
+            </div>
+          </div>
+        </details>
       </div>
     </section>
+
+    <section id="myTasksKpis" class="dashboard-kpis" aria-label="Indicateurs clés de mes tâches"></section>
 
     <section class="table-card">
       <div class="table-card-header">
@@ -157,22 +186,13 @@
     </section>
   </main>
 
-  <div
-    id="taskModal"
-    class="modal no-print"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="taskModalTitle"
-    aria-hidden="true"
-  >
+  <div id="taskModal" class="modal no-print" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
     <div class="modal-overlay"></div>
 
     <div class="modal-content modal-lg">
       <div class="modal-header">
         <h3 id="taskModalTitle">Mise à jour de la tâche</h3>
-        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">
-          ×
-        </button>
+        <button id="closeTaskModalBtn" class="modal-close" type="button" aria-label="Fermer">×</button>
       </div>
 
       <div class="modal-body">
@@ -250,12 +270,8 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
-          Fermer
-        </button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">
-          Enregistrer
-        </button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
       </div>
     </div>
   </div>
