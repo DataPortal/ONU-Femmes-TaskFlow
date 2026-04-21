@@ -40,12 +40,14 @@
       </div>
 
       <div class="info-box">
-        Le pilier et le superviseur sélectionnés lors de l’inscription seront utilisés pour votre rattachement dans le portail.
+        Le rôle public est limité à <strong>Staff</strong>. Les droits Supervisor ou Admin seront attribués uniquement par l’administration.
       </div>
 
       <div id="registerMessage" class="form-message" aria-live="polite"></div>
 
       <form id="registerForm" class="auth-form" novalidate>
+        <input type="hidden" id="registerRole" name="role" value="staff" />
+
         <div class="form-grid two-columns">
           <div class="field">
             <label for="registerFullName">Nom complet</label>
@@ -83,6 +85,19 @@
           </div>
 
           <div class="field">
+            <label>Rôle</label>
+            <input
+              type="text"
+              value="Staff"
+              disabled
+              aria-label="Rôle attribué automatiquement"
+            />
+            <small class="muted">
+              Les rôles Supervisor et Admin sont attribués depuis l’administration.
+            </small>
+          </div>
+
+          <div class="field">
             <label for="registerPillar">Pilier</label>
             <select id="registerPillar" name="pillar" required>
               <option value="">Chargement des piliers...</option>
@@ -92,7 +107,7 @@
           <div class="field">
             <label for="registerSupervisor">Superviseur</label>
             <select id="registerSupervisor" name="supervisor" required>
-              <option value="">Sélectionner un superviseur</option>
+              <option value="">Sélectionner d’abord un pilier</option>
             </select>
           </div>
 
@@ -108,7 +123,7 @@
             />
           </div>
 
-          <div class="field field-full">
+          <div class="field">
             <label for="registerPasswordConfirm">Confirmer le mot de passe</label>
             <input
               id="registerPasswordConfirm"
