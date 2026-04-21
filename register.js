@@ -166,6 +166,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   els.form.addEventListener("submit", async event => {
     event.preventDefault();
+
     authUI.clearMessage(els.message);
 
     const vFullName = authUI.safeTrim(els.fullName?.value);
