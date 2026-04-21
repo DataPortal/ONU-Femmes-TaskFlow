@@ -9,6 +9,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     fullName: document.getElementById("registerFullName"),
     email: document.getElementById("registerEmail"),
     office: document.getElementById("registerOffice"),
+    role: document.getElementById("registerRole"),
     pillar: document.getElementById("registerPillar"),
     supervisor: document.getElementById("registerSupervisor"),
     password: document.getElementById("registerPassword"),
@@ -37,6 +38,10 @@ window.addEventListener("DOMContentLoaded", async () => {
   function enableSelect(select) {
     if (!select) return;
     select.disabled = false;
+  }
+
+  function getPublicRole() {
+    return "staff";
   }
 
   function renderPillarOptions() {
@@ -152,6 +157,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  if (els.role) {
+    els.role.value = "staff";
+  }
+
   try {
     await loadReferenceData();
   } catch (error) {
@@ -172,6 +181,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const vFullName = authUI.safeTrim(els.fullName?.value);
     const vEmail = authUI.normalizeEmail(els.email?.value);
     const vOffice = authUI.safeTrim(els.office?.value);
+    const vRole = getPublicRole();
     const vPillar = els.pillar?.value || "";
     const vSupervisor = els.supervisor?.value || "";
     const vPassword = els.password?.value || "";
@@ -227,7 +237,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             office: vOffice,
             pillar_id: vPillar,
             supervisor_id: vSupervisor,
-            role: "staff"
+            role: vRole
           }
         }
       });
@@ -243,6 +253,11 @@ window.addEventListener("DOMContentLoaded", async () => {
       );
 
       els.form.reset();
+
+      if (els.role) {
+        els.role.value = "staff";
+      }
+
       renderSupervisorOptions("");
 
       setTimeout(() => {
