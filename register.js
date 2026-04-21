@@ -125,7 +125,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     if (!cachedPillars.length) {
       showMessage(
-        "Aucun pilier n’est disponible. Veuillez demander à un administrateur de créer les piliers dans la page Administration.",
+        "Aucun pilier n’est disponible. Veuillez demander à un administrateur de créer les piliers.",
         "error"
       );
       return;
@@ -133,7 +133,7 @@ window.addEventListener("DOMContentLoaded", async () => {
 
     if (!cachedSupervisors.length) {
       showMessage(
-        "Aucun superviseur actif n’est disponible. Veuillez vérifier les profils avec le rôle supervisor ou admin.",
+        "Aucun superviseur actif n’est disponible. Vérifiez les profils supervisor/admin.",
         "error"
       );
       return;
@@ -166,7 +166,6 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   els.form.addEventListener("submit", async event => {
     event.preventDefault();
-
     authUI.clearMessage(els.message);
 
     const vFullName = authUI.safeTrim(els.fullName?.value);
@@ -218,7 +217,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     authUI.setButtonLoading(els.btn, true, "Création...", "Créer mon compte");
 
     try {
-      const { data, error } = await sb.auth.signUp({
+      const { error } = await sb.auth.signUp({
         email: vEmail,
         password: vPassword,
         options: {
@@ -237,40 +236,10 @@ window.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      const authUserId = data?.user?.id;
-
-      if (!authUserId) {
-        showMessage(
-          "Compte créé, mais l’identifiant utilisateur est introuvable. Vérifiez la confirmation email Supabase.",
-          "error"
-        );
-        return;
-      }
-
-      const { error: profileError } = await sb
-        .from("profiles")
-        .upsert(
-          [
-            {
-              id: authUserId,
-              full_name: vFullName,
-              email: vEmail,
-              role: "staff",
-              pillar_id: vPillar,
-              supervisor_id: vSupervisor,
-              office: vOffice,
-              is_active: true
-            }
-          ],
-          { onConflict: "id" }
-        );
-
-      if (profileError) {
-        showMessage(`Compte créé, mais erreur création profil : ${profileError.message}`, "error");
-        return;
-      }
-
-      showMessage("Compte créé avec succès. Vous pouvez maintenant vous connecter.", "success");
+      showMessage(
+        "Compte créé avec succès. Vous pouvez maintenant vous connecter.",
+        "success"
+      );
 
       els.form.reset();
       renderSupervisorOptions("");
