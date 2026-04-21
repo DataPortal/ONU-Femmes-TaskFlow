@@ -15,8 +15,131 @@ window.addEventListener("DOMContentLoaded", async () => {
     passwordConfirm: document.getElementById("registerPasswordConfirm")
   };
 
+  let cachedPillars = [];
+  let cachedSupervisors = [];
+
   function showMessage(text, type = "info") {
     authUI?.showMessage(els.message, text, type);
+  }
+
+  function setSelectLoading(select, label = "Chargement...") {
+    if (!select) return;
+    select.innerHTML = `<option value="">${label}</option>`;
+    select.disabled = true;
+  }
+
+  function setSelectEmpty(select, label) {
+    if (!select) return;
+    select.innerHTML = `<option value="">${label}</option>`;
+    select.disabled = true;
+  }
+
+  function enableSelect(select) {
+    if (!select) return;
+    select.disabled = false;
+  }
+
+  function renderPillarOptions() {
+    if (!els.pillar) return;
+
+    if (!cachedPillars.length) {
+      setSelectEmpty(els.pillar, "Aucun pilier disponible");
+      return;
+    }
+
+    els.pillar.innerHTML =
+      `<option value="">Sélectionner un pilier</option>` +
+      cachedPillars
+        .map(pillar => `
+          <option value="${authUI.escapeHtml(pillar.id)}">
+            ${authUI.escapeHtml(pillar.name)}
+          </option>
+        `)
+        .join("");
+
+    enableSelect(els.pillar);
+  }
+
+  function renderSupervisorOptions(selectedPillarId = "") {
+    if (!els.supervisor) return;
+
+    if (!selectedPillarId) {
+      els.supervisor.innerHTML = `<option value="">Sélectionner d’abord un pilier</option>`;
+      els.supervisor.disabled = true;
+      return;
+    }
+
+    const filteredSupervisors = cachedSupervisors.filter(supervisor =>
+      String(supervisor.pillar_id) === String(selectedPillarId)
+    );
+
+    if (!filteredSupervisors.length) {
+      setSelectEmpty(els.supervisor, "Aucun superviseur pour ce pilier");
+      return;
+    }
+
+    els.supervisor.innerHTML =
+      `<option value="">Sélectionner un superviseur</option>` +
+      filteredSupervisors
+        .map(supervisor => `
+          <option value="${authUI.escapeHtml(supervisor.id)}">
+            ${authUI.escapeHtml(supervisor.full_name || "Superviseur sans nom")}
+          </option>
+        `)
+        .join("");
+
+    enableSelect(els.supervisor);
+  }
+
+  async function loadReferenceData() {
+    setSelectLoading(els.pillar, "Chargement des piliers...");
+    setSelectLoading(els.supervisor, "Chargement des superviseurs...");
+
+    const [pillarsRes, supervisorsRes] = await Promise.all([
+      sb
+        .from("pillars")
+        .select("id, name")
+        .order("name", { ascending: true }),
+
+      sb
+        .from("profiles")
+        .select("id, full_name, role, pillar_id, is_active")
+        .in("role", ["supervisor", "admin"])
+        .eq("is_active", true)
+        .order("full_name", { ascending: true })
+    ]);
+
+    if (pillarsRes.error) {
+      throw new Error(`Erreur chargement piliers : ${pillarsRes.error.message}`);
+    }
+
+    if (supervisorsRes.error) {
+      throw new Error(`Erreur chargement superviseurs : ${supervisorsRes.error.message}`);
+    }
+
+    cachedPillars = pillarsRes.data || [];
+    cachedSupervisors = supervisorsRes.data || [];
+
+    renderPillarOptions();
+    renderSupervisorOptions("");
+
+    if (!cachedPillars.length) {
+      showMessage(
+        "Aucun pilier n’est disponible. Veuillez demander à un administrateur de créer les piliers dans la page Administration.",
+        "error"
+      );
+      return;
+    }
+
+    if (!cachedSupervisors.length) {
+      showMessage(
+        "Aucun superviseur actif n’est disponible. Veuillez vérifier les profils avec le rôle supervisor ou admin.",
+        "error"
+      );
+      return;
+    }
+
+    showMessage("Formulaire prêt. Sélectionnez votre pilier puis votre superviseur.", "info");
   }
 
   if (!authUI || !sb) {
@@ -29,57 +152,21 @@ window.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  async function loadReferenceData() {
-    const [pillarsRes, usersRes] = await Promise.all([
-      sb.from("pillars").select("id, name").order("name", { ascending: true }),
-      sb.from("profiles")
-        .select("id, full_name, role, pillar_id, is_active")
-        .in("role", ["supervisor", "admin"])
-        .eq("is_active", true)
-        .order("full_name", { ascending: true })
-    ]);
-
-    if (pillarsRes.error) {
-      throw new Error(`Erreur chargement piliers : ${pillarsRes.error.message}`);
-    }
-
-    if (usersRes.error) {
-      throw new Error(`Erreur chargement superviseurs : ${usersRes.error.message}`);
-    }
-
-    const pillars = pillarsRes.data || [];
-    const supervisors = usersRes.data || [];
-
-    els.pillar.innerHTML =
-      `<option value="">Sélectionner un pilier</option>` +
-      pillars.map(p => `<option value="${authUI.escapeHtml(p.id)}">${authUI.escapeHtml(p.name)}</option>`).join("");
-
-    function renderSupervisorOptions(selectedPillarId = "") {
-      const filtered = selectedPillarId
-        ? supervisors.filter(u => String(u.pillar_id) === String(selectedPillarId))
-        : supervisors;
-
-      els.supervisor.innerHTML =
-        `<option value="">Sélectionner un superviseur</option>` +
-        filtered.map(u => `<option value="${authUI.escapeHtml(u.id)}">${authUI.escapeHtml(u.full_name)}</option>`).join("");
-    }
-
-    renderSupervisorOptions();
-
-    els.pillar?.addEventListener("change", () => {
-      renderSupervisorOptions(els.pillar.value);
-    });
-  }
-
   try {
     await loadReferenceData();
   } catch (error) {
+    console.error("Erreur chargement données inscription :", error);
     showMessage(error.message || String(error), "error");
     return;
   }
 
+  els.pillar?.addEventListener("change", () => {
+    renderSupervisorOptions(els.pillar.value);
+  });
+
   els.form.addEventListener("submit", async event => {
     event.preventDefault();
+
     authUI.clearMessage(els.message);
 
     const vFullName = authUI.safeTrim(els.fullName?.value);
@@ -121,18 +208,28 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
 
     const passwordError = authUI.validatePasswordPair(vPassword, vPasswordConfirm);
+
     if (passwordError) {
       showMessage(passwordError, "error");
       els.password?.focus();
       return;
     }
 
-    authUI.setButtonLoading(els.btn, true, "Création...");
+    authUI.setButtonLoading(els.btn, true, "Création...", "Créer mon compte");
 
     try {
       const { data, error } = await sb.auth.signUp({
         email: vEmail,
-        password: vPassword
+        password: vPassword,
+        options: {
+          data: {
+            full_name: vFullName,
+            office: vOffice,
+            pillar_id: vPillar,
+            supervisor_id: vSupervisor,
+            role: "staff"
+          }
+        }
       });
 
       if (error) {
@@ -141,8 +238,12 @@ window.addEventListener("DOMContentLoaded", async () => {
       }
 
       const authUserId = data?.user?.id;
+
       if (!authUserId) {
-        showMessage("Compte créé, mais identifiant utilisateur introuvable.", "error");
+        showMessage(
+          "Compte créé, mais l’identifiant utilisateur est introuvable. Vérifiez la confirmation email Supabase.",
+          "error"
+        );
         return;
       }
 
@@ -165,18 +266,23 @@ window.addEventListener("DOMContentLoaded", async () => {
         );
 
       if (profileError) {
-        showMessage(`Erreur création profil : ${profileError.message}`, "error");
+        showMessage(`Compte créé, mais erreur création profil : ${profileError.message}`, "error");
         return;
       }
 
       showMessage("Compte créé avec succès. Vous pouvez maintenant vous connecter.", "success");
+
       els.form.reset();
-      els.supervisor.innerHTML = `<option value="">Sélectionner un superviseur</option>`;
+      renderSupervisorOptions("");
+
+      setTimeout(() => {
+        window.location.href = "./login.html";
+      }, 1800);
     } catch (error) {
-      console.error(error);
+      console.error("Erreur inscription :", error);
       showMessage(`Erreur technique : ${error.message || error}`, "error");
     } finally {
-      authUI.setButtonLoading(els.btn, false);
+      authUI.setButtonLoading(els.btn, false, "Création...", "Créer mon compte");
     }
   });
 });
