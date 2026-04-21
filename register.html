@@ -3,135 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta
-    name="description"
-    content="Page d’inscription au TaskFlow Management Portal - ONU Femmes RDC."
-  />
-  <title>ONU Femmes — Inscription</title>
-  <link rel="stylesheet" href="style.css" />
+
+  <title>ONU Femmes — Redirection inscription</title>
+
+  <script>
+    window.location.replace("./inscription.html");
+  </script>
 </head>
-<body class="auth-page">
-  <header class="site-header auth-header">
-    <div class="header-inner container">
-      <div class="brand-block">
-        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
-        <div class="brand-text">
-          <span class="eyebrow">TaskFlow Management Portal</span>
-          <h1>ONU Femmes RDC</h1>
-          <p>Création d’un compte membre</p>
-        </div>
-      </div>
-    </div>
-  </header>
 
-  <main class="container login-page">
-    <section class="login-card auth-card" aria-labelledby="registerTitle">
-      <div class="login-card-header">
-        <span class="section-kicker">Inscription</span>
-        <h2 id="registerTitle" class="section-title">Créer un compte</h2>
-        <p class="section-subtitle">
-          Renseignez vos informations pour accéder à l’espace de gestion des tâches.
-        </p>
-      </div>
-
-      <div class="info-box">
-        Le pilier et le superviseur sélectionnés lors de l’inscription seront figés après création du compte.
-      </div>
-
-      <div id="registerMessage" class="form-message" aria-live="polite"></div>
-
-      <form id="registerForm" class="auth-form" novalidate>
-        <div class="form-grid two-columns">
-          <div class="field">
-            <label for="registerFullName">Nom complet</label>
-            <input
-              id="registerFullName"
-              name="full_name"
-              type="text"
-              autocomplete="name"
-              placeholder="Nom et prénom"
-              required
-            />
-          </div>
-
-          <div class="field">
-            <label for="registerEmail">Email</label>
-            <input
-              id="registerEmail"
-              name="email"
-              type="email"
-              autocomplete="email"
-              placeholder="prenom.nom@unwomen.org"
-              required
-            />
-          </div>
-
-          <div class="field">
-            <label for="registerOffice">Bureau / Office</label>
-            <input
-              id="registerOffice"
-              name="office"
-              type="text"
-              autocomplete="organization"
-              placeholder="Ex. Kinshasa"
-            />
-          </div>
-
-          <div class="field">
-            <label for="registerPillar">Pilier</label>
-            <select id="registerPillar" name="pillar" required>
-              <option value="">Sélectionner un pilier</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="registerSupervisor">Superviseur</label>
-            <select id="registerSupervisor" name="supervisor" required>
-              <option value="">Sélectionner un superviseur</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="registerPassword">Mot de passe</label>
-            <input
-              id="registerPassword"
-              name="password"
-              type="password"
-              autocomplete="new-password"
-              placeholder="Entrez votre mot de passe"
-              required
-            />
-          </div>
-
-          <div class="field field-full">
-            <label for="registerPasswordConfirm">Confirmer le mot de passe</label>
-            <input
-              id="registerPasswordConfirm"
-              name="password_confirm"
-              type="password"
-              autocomplete="new-password"
-              placeholder="Confirmez votre mot de passe"
-              required
-            />
-          </div>
-        </div>
-
-        <div class="login-actions">
-          <button id="registerBtn" class="btn btn-primary btn-block" type="submit">
-            Créer mon compte
-          </button>
-        </div>
-
-        <div class="auth-links">
-          <a href="login.html" class="text-link">Retour à la connexion</a>
-        </div>
-      </form>
-    </section>
-  </main>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="supabase-client.js"></script>
-  <script src="auth-utils.js"></script>
-  <script src="register.js"></script>
+<body>
+  <p>
+    Redirection vers la page d’inscription :
+    <a href="./inscription.html">inscription.html</a>
+  </p>
 </body>
 </html>
