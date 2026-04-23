@@ -445,10 +445,9 @@ async function deleteTaskDocument(documentId, filePath) {
         : (payload.status || "En bonne voie")
     };
 
-    const { error } = await sb.from("tasks").insert([safePayload]);
-
-    if (error) {
-      throw error;
+    const { data, error } = await sb.from("tasks").insert([safePayload]).select().single();
+      if (error) throw error;
+      return data;
     }
   }
 
