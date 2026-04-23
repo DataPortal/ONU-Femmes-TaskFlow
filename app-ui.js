@@ -496,28 +496,30 @@
       endDate: byId("endDateFilter")?.value || ""
     });
   }
-async function resetAndRefreshDashboard() {
-  const searchInput = byId("searchInput");
-  const pillarFilter = byId("pillarFilter");
-  const supervisorFilter = byId("supervisorFilter");
-  const assignedToFilter = byId("assignedToFilter");
-  const activityFilter = byId("activityFilter");
-  const statusFilter = byId("statusFilter");
-  const startDateFilter = byId("startDateFilter");
-  const endDateFilter = byId("endDateFilter");
 
-  if (searchInput) searchInput.value = "";
-  if (pillarFilter) pillarFilter.value = "";
-  if (supervisorFilter) supervisorFilter.value = "";
-  if (assignedToFilter) assignedToFilter.value = "";
-  if (activityFilter) activityFilter.value = "";
-  if (statusFilter) statusFilter.value = "";
-  if (startDateFilter) startDateFilter.value = "";
-  if (endDateFilter) endDateFilter.value = "";
+  async function resetAndRefreshDashboard() {
+    const searchInput = byId("searchInput");
+    const pillarFilter = byId("pillarFilter");
+    const supervisorFilter = byId("supervisorFilter");
+    const assignedToFilter = byId("assignedToFilter");
+    const activityFilter = byId("activityFilter");
+    const statusFilter = byId("statusFilter");
+    const startDateFilter = byId("startDateFilter");
+    const endDateFilter = byId("endDateFilter");
 
-  await Services.loadReferenceData();
-  renderDashboardPage();
-}
+    if (searchInput) searchInput.value = "";
+    if (pillarFilter) pillarFilter.value = "";
+    if (supervisorFilter) supervisorFilter.value = "";
+    if (assignedToFilter) assignedToFilter.value = "";
+    if (activityFilter) activityFilter.value = "";
+    if (statusFilter) statusFilter.value = "";
+    if (startDateFilter) startDateFilter.value = "";
+    if (endDateFilter) endDateFilter.value = "";
+
+    await Services.loadReferenceData();
+    renderDashboardPage();
+  }
+
   function renderDashboardPage() {
     const tbody = byId("tasksTbody");
     if (!tbody) return;
@@ -749,47 +751,73 @@ async function resetAndRefreshDashboard() {
           .join("");
     }
   }
-async function renderTaskDocuments(taskId) {
-  const list = byId("taskDocumentsList");
-  if (!list) return;
 
-  try {
-    const docs = await Services.loadTaskDocuments(taskId);
+  async function renderTaskDocuments(taskId) {
+    const list = byId("taskDocumentsList");
+    if (!list) return;
 
-    if (!docs.length) {
-      list.innerHTML = `<div class="empty">Aucun document lié à cette tâche.</div>`;
-      return;
-    }
+    try {
+      const docs = await Services.loadTaskDocuments(taskId);
 
-    const rows = await Promise.all(
-      docs.map(async doc => {
-        const url = await Services.getTaskDocumentSignedUrl(doc.file_path);
-        return `
-          <div class="member-card">
-            <h4>${escapeHtml(doc.file_name)}</h4>
-            <div class="muted">${escapeHtml(doc.mime_type || "Fichier")}</div>
-            <div class="muted">${Number(doc.file_size || 0).toLocaleString()} octets</div>
-            <div class="card-actions" style="margin-top:12px;">
-              <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
-              <button
-                class="action-btn secondary-danger js-delete-task-document"
-                type="button"
-                data-document-id="${Number(doc.id)}"
-                data-file-path="${escapeHtml(doc.file_path)}"
-              >
-                Supprimer
-              </button>
+      if (!docs.length) {
+        list.innerHTML = `<div class="empty">Aucun document lié à cette tâche.</div>`;
+        return;
+      }
+
+      const rows = await Promise.all(
+        docs.map(async doc => {
+          const url = await Services.getTaskDocumentSignedUrl(doc.file_path);
+          return `
+            <div class="member-card">
+              <h4>${escapeHtml(doc.file_name)}</h4>
+              <div class="muted">${escapeHtml(doc.mime_type || "Fichier")}</div>
+              <div class="muted">${Number(doc.file_size || 0).toLocaleString()} octets</div>
+              <div class="card-actions" style="margin-top:12px;">
+                <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
+                <button
+                  class="action-btn secondary-danger js-delete-task-document"
+                  type="button"
+                  data-document-id="${Number(doc.id)}"
+                  data-file-path="${escapeHtml(doc.file_path)}"
+                >
+                  Supprimer
+                </button>
+              </div>
             </div>
-          </div>
-        `;
-      })
-    );
+          `;
+        })
+      );
 
-    list.innerHTML = rows.join("");
-  } catch (error) {
-    list.innerHTML = `<div class="error-box">Erreur chargement documents : ${escapeHtml(error.message || error)}</div>`;
+      list.innerHTML = rows.join("");
+    } catch (error) {
+      list.innerHTML = `<div class="error-box">Erreur chargement documents : ${escapeHtml(error.message || error)}</div>`;
+    }
   }
-}
+
+  async function renderTaskActivityLogs(taskId) {
+    const list = byId("taskActivityLogsList");
+    if (!list) return;
+
+    try {
+      const logs = await Services.loadTaskActivityLogs(taskId);
+
+      if (!logs.length) {
+        list.innerHTML = `<div class="empty">Aucune action enregistrée.</div>`;
+        return;
+      }
+
+      list.innerHTML = logs.map(log => `
+        <div class="member-card">
+          <h4>${escapeHtml(log.action_label)}</h4>
+          <div class="muted">Par : ${escapeHtml(log.actor_name || "Utilisateur")}</div>
+          <div class="muted">Date : ${escapeHtml(log.created_at || "")}</div>
+        </div>
+      `).join("");
+    } catch (error) {
+      list.innerHTML = `<div class="error-box">Erreur chargement historique : ${escapeHtml(error.message || error)}</div>`;
+    }
+  }
+
   async function createNewPillar() {
     const sb = getSb();
     if (!sb) return;
@@ -824,29 +852,7 @@ async function renderTaskDocuments(taskId) {
     if (byId("pillarName")) byId("pillarName").value = "";
     await Services.reloadAndRerender();
   }
-async function renderTaskActivityLogs(taskId) {
-  const list = byId("taskActivityLogsList");
-  if (!list) return;
 
-  try {
-    const logs = await Services.loadTaskActivityLogs(taskId);
-
-    if (!logs.length) {
-      list.innerHTML = `<div class="empty">Aucune action enregistrée.</div>`;
-      return;
-    }
-
-    list.innerHTML = logs.map(log => `
-      <div class="member-card">
-        <h4>${escapeHtml(log.action_label)}</h4>
-        <div class="muted">Par : ${escapeHtml(log.actor_name || "Utilisateur")}</div>
-        <div class="muted">Date : ${escapeHtml(log.created_at || "")}</div>
-      </div>
-    `).join("");
-  } catch (error) {
-    list.innerHTML = `<div class="error-box">Erreur chargement historique : ${escapeHtml(error.message || error)}</div>`;
-  }
-}
   async function createOrAssignUserFromRegisterPage() {
     const sb = getSb();
     const currentUser = getCurrentUser();
@@ -1153,7 +1159,15 @@ async function renderTaskActivityLogs(taskId) {
     let visiblePillars = AppState.pillars;
     let eligibleUsers = AppState.users;
 
-    if (currentUser && currentRole !== "admin") {
+    if (currentUser && currentRole === "staff") {
+      visiblePillars = AppState.pillars.filter(pillar =>
+        String(pillar.id) === String(currentUser.pillar_id)
+      );
+
+      eligibleUsers = AppState.users.filter(user =>
+        String(user.id) === String(currentUser.id)
+      );
+    } else if (currentUser && currentRole !== "admin") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -1305,9 +1319,19 @@ async function renderTaskActivityLogs(taskId) {
     };
 
     try {
-      await Services.createTaskWithFallbackStatus(payload);
+      const createdTask = await Services.createTaskWithFallbackStatus(payload);
+
+      await Services.logTaskActivity({
+        taskId: createdTask.id,
+        actionType: "create",
+        actionLabel: "Tâche créée",
+        actorId: currentUser.id,
+        actorName: getUserDisplayName(currentUser),
+        oldValue: null,
+        newValue: payload
+      });
+
       setMessage("taskCreateMessage", "Tâche créée avec succès.", "success");
-      const createdTask = AppState.tasks[AppState.tasks.length - 1];
       await Services.reloadAndRerender();
       closeCreateTaskModal();
     } catch (error) {
@@ -1326,6 +1350,7 @@ async function renderTaskActivityLogs(taskId) {
     if (byId("editSupervisorScore")) byId("editSupervisorScore").value = task.supervisor_score ?? 0;
     if (byId("editSupervisorStatus")) byId("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
     if (byId("editSupervisorComment")) byId("editSupervisorComment").value = "";
+
     renderTaskDocuments(task.id);
     renderTaskActivityLogs(task.id);
     openModal("taskModal");
@@ -1334,25 +1359,39 @@ async function renderTaskActivityLogs(taskId) {
   function closeTaskModal() {
     closeModal("taskModal");
   }
+
   async function uploadDocumentForCurrentTask() {
-  const currentUser = getCurrentUser();
-  const taskId = Number(byId("editTaskId")?.value);
-  const fileInput = byId("taskDocumentFile");
-  const file = fileInput?.files?.[0];
+    const currentUser = getCurrentUser();
+    const taskId = Number(byId("editTaskId")?.value);
+    const fileInput = byId("taskDocumentFile");
+    const file = fileInput?.files?.[0];
 
-  if (!currentUser || !taskId || !file) {
-    alert("Veuillez sélectionner un fichier.");
-    return;
+    if (!currentUser || !taskId || !file) {
+      alert("Veuillez sélectionner un fichier.");
+      return;
+    }
+
+    try {
+      await Services.uploadTaskDocument(taskId, file, currentUser.id);
+
+      await Services.logTaskActivity({
+        taskId,
+        actionType: "document_upload",
+        actionLabel: "Document ajouté",
+        actorId: currentUser.id,
+        actorName: getUserDisplayName(currentUser),
+        oldValue: null,
+        newValue: { file_name: file.name }
+      });
+
+      if (fileInput) fileInput.value = "";
+      await renderTaskDocuments(taskId);
+      await renderTaskActivityLogs(taskId);
+    } catch (error) {
+      alert(`Erreur upload document : ${error.message || error}`);
+    }
   }
 
-  try {
-    await Services.uploadTaskDocument(taskId, file, currentUser.id);
-    if (fileInput) fileInput.value = "";
-    await renderTaskDocuments(taskId);
-  } catch (error) {
-    alert(`Erreur upload document : ${error.message || error}`);
-  }
-}
   async function saveTaskUpdate() {
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
@@ -1363,6 +1402,17 @@ async function renderTaskActivityLogs(taskId) {
     const task = AppState.tasks.find(item => Number(item.id) === taskId);
 
     if (!task || !canViewTask(task)) return;
+
+    const oldSnapshot = {
+      progress_score: task.progress_score,
+      progress: task.progress,
+      staff_comment: task.staff_comment,
+      supervisor_score: task.supervisor_score,
+      supervisor_progress: task.supervisor_progress,
+      supervisor_status: task.supervisor_status,
+      supervisor_comment: task.supervisor_comment,
+      status: task.status
+    };
 
     const progressScore = clamp(Number(byId("editProgressScore")?.value), 0, 10);
     const supervisorScore = clamp(Number(byId("editSupervisorScore")?.value), 0, 10);
@@ -1399,6 +1449,17 @@ async function renderTaskActivityLogs(taskId) {
 
     try {
       await Services.updateTaskWithFallbackStatus(taskId, payload);
+
+      await Services.logTaskActivity({
+        taskId,
+        actionType: "update",
+        actionLabel: "Tâche mise à jour",
+        actorId: currentUser.id,
+        actorName: getUserDisplayName(currentUser),
+        oldValue: oldSnapshot,
+        newValue: payload
+      });
+
       closeTaskModal();
       await Services.reloadAndRerender();
     } catch (error) {
@@ -1409,8 +1470,9 @@ async function renderTaskActivityLogs(taskId) {
   async function deleteTask(taskId) {
     const sb = getSb();
     const task = AppState.tasks.find(item => String(item.id) === String(taskId));
+    const currentUser = getCurrentUser();
 
-    if (!sb || !task) return;
+    if (!sb || !task || !currentUser) return;
 
     if (!canDeleteTask(task)) {
       alert("Vous n’êtes pas autorisé à supprimer cette tâche.");
@@ -1420,11 +1482,32 @@ async function renderTaskActivityLogs(taskId) {
     const confirmed = confirm(`Supprimer la tâche "${task.title}" ?`);
     if (!confirmed) return;
 
+    const oldSnapshot = {
+      title: task.title,
+      status: task.status,
+      assigned_to_id: task.assigned_to_id,
+      pillar_id: task.pillar_id
+    };
+
     const { error } = await sb.from("tasks").delete().eq("id", taskId);
 
     if (error) {
       alert(`Erreur suppression: ${error.message}`);
       return;
+    }
+
+    try {
+      await Services.logTaskActivity({
+        taskId,
+        actionType: "delete",
+        actionLabel: "Tâche supprimée",
+        actorId: currentUser.id,
+        actorName: getUserDisplayName(currentUser),
+        oldValue: oldSnapshot,
+        newValue: null
+      });
+    } catch (e) {
+      console.warn("Journal suppression non enregistré :", e);
     }
 
     await Services.reloadAndRerender();
@@ -1435,10 +1518,12 @@ async function renderTaskActivityLogs(taskId) {
     const closeBottomBtn = byId("closeTaskModalBtnFooter");
     const saveBtn = byId("saveTaskBtn");
     const uploadBtn = byId("uploadTaskDocumentBtn");
-  if (uploadBtn && !uploadBtn.dataset.boundClick) {
-  uploadBtn.addEventListener("click", uploadDocumentForCurrentTask);
-  uploadBtn.dataset.boundClick = "true";
-}
+
+    if (uploadBtn && !uploadBtn.dataset.boundClick) {
+      uploadBtn.addEventListener("click", uploadDocumentForCurrentTask);
+      uploadBtn.dataset.boundClick = "true";
+    }
+
     if (closeTopBtn && !closeTopBtn.dataset.boundClick) {
       closeTopBtn.addEventListener("click", closeTaskModal);
       closeTopBtn.dataset.boundClick = "true";
@@ -1455,20 +1540,40 @@ async function renderTaskActivityLogs(taskId) {
     }
 
     document.addEventListener("click", event => {
-      const openBtn = event.target.closest(".js-open-task-modal");
       const deleteDocBtn = event.target.closest(".js-delete-task-document");
-if (deleteDocBtn) {
-  Services.deleteTaskDocument(
-    deleteDocBtn.dataset.documentId,
-    deleteDocBtn.dataset.filePath
-  ).then(() => {
-    const taskId = Number(byId("editTaskId")?.value);
-    renderTaskDocuments(taskId);
-  }).catch(error => {
-    alert(`Erreur suppression document : ${error.message || error}`);
-  });
-  return;
-}
+      if (deleteDocBtn) {
+        const taskId = Number(byId("editTaskId")?.value);
+        const currentUser = getCurrentUser();
+
+        Services.deleteTaskDocument(
+          deleteDocBtn.dataset.documentId,
+          deleteDocBtn.dataset.filePath
+        ).then(async () => {
+          if (currentUser && taskId) {
+            try {
+              await Services.logTaskActivity({
+                taskId,
+                actionType: "document_delete",
+                actionLabel: "Document supprimé",
+                actorId: currentUser.id,
+                actorName: getUserDisplayName(currentUser),
+                oldValue: { file_path: deleteDocBtn.dataset.filePath },
+                newValue: null
+              });
+            } catch (e) {
+              console.warn("Journal suppression document non enregistré :", e);
+            }
+          }
+
+          await renderTaskDocuments(taskId);
+          await renderTaskActivityLogs(taskId);
+        }).catch(error => {
+          alert(`Erreur suppression document : ${error.message || error}`);
+        });
+        return;
+      }
+
+      const openBtn = event.target.closest(".js-open-task-modal");
       if (openBtn) {
         openTaskModal(openBtn.dataset.taskId);
         return;
@@ -1613,9 +1718,9 @@ if (deleteDocBtn) {
 
   function initExportAndPrint() {
     const page = document.body.dataset.page;
-    const resetBtn = byId("resetDashboardBtn");
     if (page !== "dashboard") return;
 
+    const resetBtn = byId("resetDashboardBtn");
     const exportBtn = byId("exportXlsxBtn");
     const printBtn = byId("printPageBtn");
     const searchBtn = byId("searchBtn");
@@ -1636,6 +1741,11 @@ if (deleteDocBtn) {
     if (exportBtn && canExportDashboard() && !exportBtn.dataset.boundClick) {
       exportBtn.addEventListener("click", exportCurrentViewToXlsx);
       exportBtn.dataset.boundClick = "true";
+    }
+
+    if (resetBtn && !resetBtn.dataset.boundClick) {
+      resetBtn.addEventListener("click", resetAndRefreshDashboard);
+      resetBtn.dataset.boundClick = "true";
     }
 
     if (printBtn && !printBtn.dataset.boundClick) {
@@ -1663,10 +1773,7 @@ if (deleteDocBtn) {
       }
     });
   }
-if (resetBtn && !resetBtn.dataset.boundClick) {
-  resetBtn.addEventListener("click", resetAndRefreshDashboard);
-  resetBtn.dataset.boundClick = "true";
-}
+
   function initMyTasksFilters() {
     const page = document.body.dataset.page;
     if (page !== "my-tasks") return;
