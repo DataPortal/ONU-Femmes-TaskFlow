@@ -1,24 +1,66 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    if (!window.AppServices) {
-      throw new Error("AppServices introuvable. Vérifiez le chargement de app-services.js.");
+(function () {
+  async function waitForAppModules(maxWaitMs = 10000) {
+    const start = Date.now();
+
+    while (true) {
+      const hasServices =
+        window.AppServices &&
+        typeof window.AppServices.waitForSupabaseClient === "function" &&
+        typeof window.AppServices.requireSession === "function" &&
+        typeof window.AppServices.loadCurrentUser === "function" &&
+        typeof window.AppServices.loadReferenceData === "function";
+
+      const hasUI =
+        window.AppUI &&
+        typeof window.AppUI.initUserHeader === "function" &&
+        typeof window.AppUI.initLogout === "function" &&
+        typeof window.AppUI.initModalSystem === "function" &&
+        typeof window.AppUI.initFilterMenus === "function" &&
+        typeof window.AppUI.initGlobalActions === "function" &&
+        typeof window.AppUI.initTaskCreation === "function" &&
+        typeof window.AppUI.initPillarCreation === "function" &&
+        typeof window.AppUI.initRegisterPage === "function" &&
+        typeof window.AppUI.initMainActivitiesManagement === "function" &&
+        typeof window.AppUI.initExportAndPrint === "function" &&
+        typeof window.AppUI.initMyTasksFilters === "function" &&
+        typeof window.AppUI.initTeamFilters === "function" &&
+        typeof window.AppUI.renderCurrentPage === "function";
+
+      const hasCore =
+        window.AppCore &&
+        window.AppCore.AppState &&
+        typeof window.AppCore.getCurrentUser === "function";
+
+      if (hasServices && hasUI && hasCore) {
+        return true;
+      }
+
+      if (Date.now() - start > maxWaitMs) {
+        throw new Error("Les modules de l’application ne sont pas complètement chargés.");
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 80));
+    }
+  }
+
+  function showStartupError(message) {
+    console.error(message);
+
+    if (window.AppUI?.showGlobalError) {
+      window.AppUI.showGlobalError(message);
+      return;
     }
 
-    if (typeof window.AppServices.waitForSupabaseClient !== "function") {
-      throw new Error("waitForSupabaseClient est introuvable dans AppServices.");
+    if (window.AuthUI?.showMessage && document.getElementById("pageDebugMessage")) {
+      window.AuthUI.showMessage("pageDebugMessage", message, "error");
+      return;
     }
 
-    if (typeof window.AppServices.requireSession !== "function") {
-      throw new Error("requireSession est introuvable dans AppServices.");
-    }
+    alert(message);
+  }
 
-    if (typeof window.AppServices.loadCurrentUser !== "function") {
-      throw new Error("loadCurrentUser est introuvable dans AppServices.");
-    }
-
-    if (typeof window.AppServices.loadReferenceData !== "function") {
-      throw new Error("loadReferenceData est introuvable dans AppServices.");
-    }
+  async function bootstrap() {
+    await waitForAppModules();
 
     await window.AppServices.waitForSupabaseClient();
 
@@ -28,43 +70,43 @@ document.addEventListener("DOMContentLoaded", async () => {
     await window.AppServices.loadCurrentUser();
     await window.AppServices.loadReferenceData();
 
-    if (!window.AppUI) {
-      throw new Error("AppUI introuvable. Vérifiez le chargement de app-ui.js.");
+    const currentUser = window.AppCore.getCurrentUser?.();
+    if (!currentUser) {
+      throw new Error("Utilisateur courant introuvable après chargement du profil.");
     }
 
-    const safeCall = (fnName) => {
-      const fn = window.AppUI?.[fnName];
-      if (typeof fn === "function") {
-        fn();
-      } else {
-        console.warn(`AppUI.${fnName} introuvable ou non exécutable.`);
+    window.AppUI.initUserHeader();
+    window.AppUI.initLogout();
+    window.AppUI.initModalSystem();
+    window.AppUI.initFilterMenus();
+    window.AppUI.initGlobalActions();
+    window.AppUI.initTaskCreation();
+    window.AppUI.initPillarCreation();
+    window.AppUI.initRegisterPage();
+    window.AppUI.initMainActivitiesManagement();
+    window.AppUI.initExportAndPrint();
+    window.AppUI.initMyTasksFilters();
+    window.AppUI.initTeamFilters();
+    window.AppUI.renderCurrentPage();
+
+    // Deuxième rendu léger pour éviter les cas où les références
+    // se chargent juste après le premier cycle visuel
+    requestAnimationFrame(() => {
+      try {
+        window.AppUI.initTaskCreation();
+        window.AppUI.initExportAndPrint();
+        window.AppUI.renderCurrentPage();
+      } catch (error) {
+        console.warn("Rerender secondaire ignoré :", error);
       }
-    };
-
-    safeCall("initUserHeader");
-    safeCall("initLogout");
-    safeCall("initModalSystem");
-    safeCall("initFilterMenus");
-    safeCall("initGlobalActions");
-    safeCall("initTaskCreation");
-    safeCall("initPillarCreation");
-    safeCall("initRegisterPage");
-    safeCall("initMainActivitiesManagement");
-    safeCall("initExportAndPrint");
-    safeCall("initMyTasksFilters");
-    safeCall("initTeamFilters");
-    safeCall("renderCurrentPage");
-  } catch (error) {
-    console.error("Erreur au démarrage :", error);
-
-    const message = `Une erreur empêche le chargement : ${error?.message || error}`;
-
-    if (window.AppUI?.showGlobalError) {
-      window.AppUI.showGlobalError(message);
-    } else if (window.AuthUI?.showMessage && document.getElementById("pageDebugMessage")) {
-      window.AuthUI.showMessage("pageDebugMessage", message, "error");
-    } else {
-      alert(message);
-    }
+    });
   }
-});
+
+  document.addEventListener("DOMContentLoaded", async () => {
+    try {
+      await bootstrap();
+    } catch (error) {
+      showStartupError(`Une erreur empêche le chargement : ${error?.message || error}`);
+    }
+  });
+})();
