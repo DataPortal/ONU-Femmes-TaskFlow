@@ -49,6 +49,21 @@
     return user?.pillar || user?.pillar_name || "Sans pilier";
   }
 
+  function setRoleControlledVisibility(buttonId, isAllowed) {
+    const btn = byId(buttonId);
+    if (!btn) return;
+
+    if (isAllowed) {
+      btn.classList.remove("is-role-hidden");
+      btn.hidden = false;
+      btn.style.display = "";
+    } else {
+      btn.classList.add("is-role-hidden");
+      btn.hidden = true;
+      btn.style.display = "none";
+    }
+  }
+
   function showGlobalError(message) {
     const debugBox = byId("pageDebugMessage");
 
@@ -1162,399 +1177,12 @@
       : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
   }
 
-  function renderMyTasksPage() {
-    const currentUser = getCurrentUser();
-    const tbody = byId("myTasksTbody");
-    const title = byId("myTasksTitle");
-    const assignedToFilter = byId("myTasksAssignedToFilter");
-    const activityFilter = byId("myTasksActivityFilter");
-
-    if (!currentUser || !tbody || !title) return;
-
-    const myTasks = getVisibleTasks().filter(task =>
-      String(task.assigned_to_id) === String(currentUser.id)
-    );
-
-    if (assignedToFilter) {
-      const currentValue = assignedToFilter.value || "";
-      const assignees = myTasks.length ? [{ id: currentUser.id, name: getUserDisplayName(currentUser) }] : [];
-
-      assignedToFilter.innerHTML =
-        `<option value="">Tous les assignés</option>` +
-        assignees
-          .map(user => `
-            <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)}
-            </option>
-          `)
-          .join("");
-
-      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue))
-        ? currentValue
-        : "";
-    }
-
-    if (activityFilter) {
-      const currentValue = activityFilter.value || "";
-      const activityIds = [...new Set(myTasks.map(task => task.activity_id).filter(Boolean))];
-
-      const activities = AppState.mainActivities.filter(activity =>
-        activityIds.some(id => String(id) === String(activity.id))
-      );
-
-      activityFilter.innerHTML =
-        `<option value="">Toutes les activités</option>` +
-        activities
-          .map(activity => `
-            <option value="${escapeHtml(activity.id)}">
-              ${escapeHtml(activity.name)}
-            </option>
-          `)
-          .join("");
-
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
-        ? currentValue
-        : "";
-    }
-
-    const filteredTasks = getFilteredMyTasks(myTasks);
-
-    title.textContent = `Mes tâches — ${getUserDisplayName(currentUser)}`;
-    renderKPIs("myTasksKpis", filteredTasks);
-
-    tbody.innerHTML = filteredTasks.length
-      ? renderTaskRows(filteredTasks, { showDescription: true })
-      : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
-  }
-
-  function populateTeamFilters(teamTasks, teamMembers) {
-    const assignedToFilter = byId("teamAssignedToFilter");
-    const supervisorFilter = byId("teamSupervisorFilter");
-    const activityFilter = byId("teamActivityFilter");
-
-    if (assignedToFilter) {
-      const currentValue = assignedToFilter.value || "";
-
-      assignedToFilter.innerHTML =
-        `<option value="">Tous les membres</option>` +
-        teamMembers
-          .map(member => `
-            <option value="${escapeHtml(member.id)}">
-              ${escapeHtml(getUserDisplayName(member))}
-            </option>
-          `)
-          .join("");
-
-      assignedToFilter.value = teamMembers.some(member => String(member.id) === String(currentValue))
-        ? currentValue
-        : "";
-    }
-
-    if (supervisorFilter) {
-      const currentValue = supervisorFilter.value || "";
-      const supervisors = AppState.users.filter(user => {
-        const role = getUserRole(user);
-        return role === "supervisor" || role === "admin";
-      });
-
-      supervisorFilter.innerHTML =
-        `<option value="">Tous les superviseurs</option>` +
-        supervisors
-          .map(user => `
-            <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(getUserDisplayName(user))}
-            </option>
-          `)
-          .join("");
-
-      supervisorFilter.value = supervisors.some(user => String(user.id) === String(currentValue))
-        ? currentValue
-        : "";
-    }
-
-    if (activityFilter) {
-      const currentValue = activityFilter.value || "";
-      const activityIds = [...new Set(teamTasks.map(task => task.activity_id).filter(Boolean))];
-
-      const activities = AppState.mainActivities.filter(activity =>
-        activityIds.some(id => String(id) === String(activity.id))
-      );
-
-      activityFilter.innerHTML =
-        `<option value="">Toutes les activités</option>` +
-        activities
-          .map(activity => `
-            <option value="${escapeHtml(activity.id)}">
-              ${escapeHtml(activity.name)}
-            </option>
-          `)
-          .join("");
-
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
-        ? currentValue
-        : "";
-    }
-  }
-
-  function renderMyTeamPage() {
-    const currentUser = getCurrentUser();
-    const currentRole = getUserRole(currentUser);
-    const membersBox = byId("teamMembersList");
-    const tbody = byId("teamTasksTbody");
-    const title = byId("myTeamTitle");
-
-    if (!currentUser || !membersBox || !tbody || !title) return;
-
-    let teamMembers = [];
-    let teamTasks = [];
-
-    if (currentRole === "admin") {
-      teamMembers = AppState.users;
-      teamTasks = AppState.tasks;
-    } else {
-      teamMembers = AppState.users.filter(user =>
-        String(user.pillar_id) === String(currentUser.pillar_id)
-      );
-
-      teamTasks = getVisibleTasks();
-    }
-
-    populateTeamFilters(teamTasks, teamMembers);
-
-    const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
-
-    title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
-    renderKPIs("myTeamKpis", filteredTeamTasks);
-
-    membersBox.innerHTML = teamMembers.length
-      ? teamMembers
-          .map(member => `
-            <div class="member-card">
-              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
-              <div class="muted">
-                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
-              </div>
-              <div class="kpi-inline">
-                <span>
-                  ${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length}
-                  tâche(s)
-                </span>
-              </div>
-            </div>
-          `)
-          .join("")
-      : `<div class="empty">Aucun membre rattaché.</div>`;
-
-    tbody.innerHTML = filteredTeamTasks.length
-      ? renderTaskRows(filteredTeamTasks)
-      : `<tr><td colspan="13"><span class="muted">Aucune tâche d'équipe correspondant aux filtres.</span></td></tr>`;
-  }
-
-  function renderRegisterPage() {
-    populateRegisterDropdowns();
-    populateActivityManagementDropdown();
-    renderMainActivitiesList();
-
-    const pillarsList = byId("pillarsList");
-    const membersList = byId("registeredMembersList");
-    const currentUser = getCurrentUser();
-    const currentRole = getUserRole(currentUser);
-
-    if (!pillarsList || !membersList) return;
-
-    let visiblePillars = AppState.pillars;
-    let visibleMembers = AppState.users;
-
-    if (currentUser && currentRole !== "admin") {
-      visiblePillars = AppState.pillars.filter(pillar =>
-        String(pillar.id) === String(currentUser.pillar_id)
-      );
-
-      visibleMembers = AppState.users.filter(user =>
-        String(user.pillar_id) === String(currentUser.pillar_id)
-      );
-    }
-
-    pillarsList.innerHTML = visiblePillars.length
-      ? visiblePillars
-          .map(pillar => {
-            const supervisor = AppState.users.find(user =>
-              String(user.id) === String(pillar.supervisor_profile_id)
-            );
-
-            const activities = AppState.mainActivities.filter(activity =>
-              String(activity.pillar_id) === String(pillar.id)
-            );
-
-            return `
-              <div class="member-card">
-                <h4>${escapeHtml(pillar.name)}</h4>
-                <div class="muted">
-                  Superviseur : ${escapeHtml(supervisor ? getUserDisplayName(supervisor) : "Non défini")}
-                </div>
-                <div class="muted">
-                  Activités principales :
-                  ${escapeHtml(activities.length ? activities.map(a => a.name).join(", ") : "Non définies")}
-                </div>
-              </div>
-            `;
-          })
-          .join("")
-      : `<div class="empty">Aucun pilier disponible.</div>`;
-
-    membersList.innerHTML = visibleMembers.length
-      ? visibleMembers
-          .map(member => `
-            <div class="member-card">
-              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
-              <div class="muted">
-                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
-              </div>
-              <div class="muted">${escapeHtml(member.email || "")}</div>
-            </div>
-          `)
-          .join("")
-      : `<div class="empty">Aucun membre trouvé.</div>`;
-  }
-
-  async function deleteTask(taskId) {
-    const sb = getSb();
-    const task = AppState.tasks.find(item => String(item.id) === String(taskId));
-
-    if (!sb || !task) return;
-
-    if (!canDeleteTask(task)) {
-      alert("Vous n’êtes pas autorisé à supprimer cette tâche.");
-      return;
-    }
-
-    const confirmed = confirm(`Supprimer la tâche "${task.title}" ?`);
-    if (!confirmed) return;
-
-    const { error } = await sb.from("tasks").delete().eq("id", taskId);
-
-    if (error) {
-      alert(`Erreur suppression: ${error.message}`);
-      return;
-    }
-
-    await Services.reloadAndRerender();
-  }
-
-  function initGlobalActions() {
-    const closeTopBtn = byId("closeTaskModalBtn");
-    const closeBottomBtn = byId("closeTaskModalBtnFooter");
-    const saveBtn = byId("saveTaskBtn");
-
-    if (closeTopBtn) closeTopBtn.addEventListener("click", closeTaskModal);
-    if (closeBottomBtn) closeBottomBtn.addEventListener("click", closeTaskModal);
-    if (saveBtn) saveBtn.addEventListener("click", saveTaskUpdate);
-
-    document.addEventListener("click", event => {
-      const openBtn = event.target.closest(".js-open-task-modal");
-
-      if (openBtn) {
-        openTaskModal(openBtn.dataset.taskId);
-        return;
-      }
-
-      const deleteBtn = event.target.closest(".js-delete-task");
-
-      if (deleteBtn) {
-        deleteTask(deleteBtn.dataset.taskId);
-      }
-    });
-  }
-
-  function initTaskCreation() {
-    const page = document.body.dataset.page;
-
-    if (page !== "dashboard") return;
-
-    populateTaskCreationDropdowns();
-
-    const openBtn = byId("openCreateTaskModalBtn");
-    const closeTopBtn = byId("closeCreateTaskModalBtn");
-    const closeBottomBtn = byId("closeCreateTaskModalBtnFooter");
-    const createBtn = byId("createTaskBtn");
-    const dueDateInput = byId("taskDueDate");
-    const pillarInput = byId("taskPillar");
-
-    if (openBtn) {
-      if (canCreateTask()) {
-        openBtn.classList.remove("is-role-hidden");
-        openBtn.addEventListener("click", openCreateTaskModal);
-      } else {
-        openBtn.classList.add("is-role-hidden");
-      }
-    }
-
-    if (closeTopBtn) closeTopBtn.addEventListener("click", closeCreateTaskModal);
-    if (closeBottomBtn) closeBottomBtn.addEventListener("click", closeCreateTaskModal);
-    if (createBtn) createBtn.addEventListener("click", createNewTask);
-    if (dueDateInput) dueDateInput.addEventListener("change", updateCreateTaskAutoStatus);
-    if (pillarInput) pillarInput.addEventListener("change", populateTaskActivityOptions);
-  }
-
-  function initPillarCreation() {
-    const page = document.body.dataset.page;
-    if (page !== "register") return;
-
-    const createPillarBtn = byId("createPillarBtn");
-    if (createPillarBtn) createPillarBtn.addEventListener("click", createNewPillar);
-  }
-
-  function initRegisterPage() {
-    const page = document.body.dataset.page;
-    if (page !== "register") return;
-
-    populateRegisterDropdowns();
-
-    const createUserBtn = byId("createUserBtn");
-    if (createUserBtn) createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
-  }
-
-  function initExportAndPrint() {
+  function initRoleControlledButtons() {
     const page = document.body.dataset.page;
     if (page !== "dashboard") return;
 
-    const exportBtn = byId("exportXlsxBtn");
-    const printBtn = byId("printPageBtn");
-    const searchBtn = byId("searchBtn");
-    const searchInput = byId("searchInput");
-
-    const filters = [
-      "pillarFilter",
-      "supervisorFilter",
-      "assignedToFilter",
-      "activityFilter",
-      "statusFilter",
-      "startDateFilter",
-      "endDateFilter"
-    ];
-
-    if (exportBtn) {
-      if (canExportDashboard()) {
-        exportBtn.classList.remove("is-role-hidden");
-        exportBtn.addEventListener("click", exportCurrentViewToXlsx);
-      } else {
-        exportBtn.classList.add("is-role-hidden");
-      }
-    }
-
-    if (printBtn) printBtn.addEventListener("click", printCurrentPage);
-    if (searchBtn) searchBtn.addEventListener("click", renderDashboardPage);
-
-    if (searchInput) {
-      searchInput.addEventListener("keydown", event => {
-        if (event.key === "Enter") renderDashboardPage();
-      });
-    }
-
-    filters.forEach(id => {
-      const el = byId(id);
-      if (el) el.addEventListener("change", renderDashboardPage);
-    });
+    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask());
+    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard());
   }
 
   function initMyTasksFilters() {
@@ -1619,10 +1247,135 @@
   function renderCurrentPage() {
     const page = document.body.dataset.page;
 
-    if (page === "dashboard") renderDashboardPage();
+    if (page === "dashboard") {
+      initRoleControlledButtons();
+      renderDashboardPage();
+    }
     if (page === "my-tasks") renderMyTasksPage();
     if (page === "my-team") renderMyTeamPage();
     if (page === "register") renderRegisterPage();
+  }
+
+  function initTaskCreation() {
+    const page = document.body.dataset.page;
+    if (page !== "dashboard") return;
+
+    populateTaskCreationDropdowns();
+
+    const openBtn = byId("openCreateTaskModalBtn");
+    const closeTopBtn = byId("closeCreateTaskModalBtn");
+    const closeBottomBtn = byId("closeCreateTaskModalBtnFooter");
+    const createBtn = byId("createTaskBtn");
+    const dueDateInput = byId("taskDueDate");
+    const pillarInput = byId("taskPillar");
+
+    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask());
+
+    if (openBtn && canCreateTask() && !openBtn.dataset.boundClick) {
+      openBtn.addEventListener("click", openCreateTaskModal);
+      openBtn.dataset.boundClick = "true";
+    }
+
+    if (closeTopBtn && !closeTopBtn.dataset.boundClick) {
+      closeTopBtn.addEventListener("click", closeCreateTaskModal);
+      closeTopBtn.dataset.boundClick = "true";
+    }
+
+    if (closeBottomBtn && !closeBottomBtn.dataset.boundClick) {
+      closeBottomBtn.addEventListener("click", closeCreateTaskModal);
+      closeBottomBtn.dataset.boundClick = "true";
+    }
+
+    if (createBtn && !createBtn.dataset.boundClick) {
+      createBtn.addEventListener("click", createNewTask);
+      createBtn.dataset.boundClick = "true";
+    }
+
+    if (dueDateInput && !dueDateInput.dataset.boundChange) {
+      dueDateInput.addEventListener("change", updateCreateTaskAutoStatus);
+      dueDateInput.dataset.boundChange = "true";
+    }
+
+    if (pillarInput && !pillarInput.dataset.boundChange) {
+      pillarInput.addEventListener("change", populateTaskActivityOptions);
+      pillarInput.dataset.boundChange = "true";
+    }
+  }
+
+  function initPillarCreation() {
+    const page = document.body.dataset.page;
+    if (page !== "register") return;
+
+    const createPillarBtn = byId("createPillarBtn");
+    if (createPillarBtn && !createPillarBtn.dataset.boundClick) {
+      createPillarBtn.addEventListener("click", createNewPillar);
+      createPillarBtn.dataset.boundClick = "true";
+    }
+  }
+
+  function initRegisterPage() {
+    const page = document.body.dataset.page;
+    if (page !== "register") return;
+
+    populateRegisterDropdowns();
+
+    const createUserBtn = byId("createUserBtn");
+    if (createUserBtn && !createUserBtn.dataset.boundClick) {
+      createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
+      createUserBtn.dataset.boundClick = "true";
+    }
+  }
+
+  function initExportAndPrint() {
+    const page = document.body.dataset.page;
+    if (page !== "dashboard") return;
+
+    const exportBtn = byId("exportXlsxBtn");
+    const printBtn = byId("printPageBtn");
+    const searchBtn = byId("searchBtn");
+    const searchInput = byId("searchInput");
+
+    const filters = [
+      "pillarFilter",
+      "supervisorFilter",
+      "assignedToFilter",
+      "activityFilter",
+      "statusFilter",
+      "startDateFilter",
+      "endDateFilter"
+    ];
+
+    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard());
+
+    if (exportBtn && canExportDashboard() && !exportBtn.dataset.boundClick) {
+      exportBtn.addEventListener("click", exportCurrentViewToXlsx);
+      exportBtn.dataset.boundClick = "true";
+    }
+
+    if (printBtn && !printBtn.dataset.boundClick) {
+      printBtn.addEventListener("click", printCurrentPage);
+      printBtn.dataset.boundClick = "true";
+    }
+
+    if (searchBtn && !searchBtn.dataset.boundClick) {
+      searchBtn.addEventListener("click", renderDashboardPage);
+      searchBtn.dataset.boundClick = "true";
+    }
+
+    if (searchInput && !searchInput.dataset.boundKeydown) {
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") renderDashboardPage();
+      });
+      searchInput.dataset.boundKeydown = "true";
+    }
+
+    filters.forEach(id => {
+      const el = byId(id);
+      if (el && !el.dataset.boundChange) {
+        el.addEventListener("change", renderDashboardPage);
+        el.dataset.boundChange = "true";
+      }
+    });
   }
 
   window.AppUI = {
