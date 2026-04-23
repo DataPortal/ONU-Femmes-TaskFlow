@@ -1,5 +1,5 @@
 (function () {
-  const Core = window.AppCore;
+  const Core = window.AppCore || {};
 
   const {
     AppState,
@@ -8,6 +8,168 @@
     hydrateTaskStatus,
     normalizeStatusToDatabase
   } = Core;
+
+  if (!AppState || typeof getSb !== "function") {
+    console.error("AppCore est incomplet ou indisponible.");
+    window.AppServices = {
+      waitForSupabaseClient: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      requireSession: async () => false,
+      loadCurrentUser: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      loadReferenceData: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      reloadAndRerender: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      createTaskWithFallbackStatus: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      updateTaskWithFallbackStatus: async () => {
+        throw new Error("AppCore indisponible.");
+      }
+    };
+    return;
+  }
+
+  function normalizeRole(value) {
+    const role = String(value || "staff").trim().toLowerCase();
+    if (role === "admin") return "admin";
+    if (role === "supervisor") return "supervisor";
+    return "staff";
+  }
+
+  function normalizeProfileRecord(profile, pillars = []) {
+    const safeProfile = profile || {};
+    return {
+      ...safeProfile,
+      full_name: safeProfile.full_name || "",
+      name: safeProfile.full_name || safeProfile.name || "Utilisateur",
+      email: safeProfile.email || "",
+      role: normalizeRole(safeProfile.role || safeProfile.user_type),
+      user_type: normalizeRole(safeProfile.role || safeProfile.user_type),
+      pillar_id: safeProfile.pillar_id ?? null,
+      supervisor_id: safeProfile.supervisor_id ?? null,
+      office: safeProfile.office || "",
+      is_active: safeProfile.is_active !== false,
+      pillar: getPillarNameByIdFromArray
+        ? getPillarNameByIdFromArray(safeProfile.pillar_id, pillars)
+        : ""
+    };
+  }
+
+  function normalizeActivityRecord(activity, pillars = []) {
+    const safeActivity = activity || {};
+    return {
+      ...safeActivity,
+      pillar_name: getPillarNameByIdFromArray
+        ? getPillarNameByIdFromArray(safeActivity.pillar_id, pillars)
+        : ""
+    };
+  }
+
+  function normalizeTaskRecordFromEnriched(task) {
+    const safeTask = task || {};
+
+    return {
+      id: safeTask.id,
+      title: safeTask.title || "",
+
+      pillar_id: safeTask.pillar_id ?? null,
+      pillar: safeTask.pillar_name || "",
+
+      activity_id: safeTask.activity_id ?? null,
+      activity_name: safeTask.activity_name || "",
+
+      assigned_to_id: safeTask.assigned_to_id ?? null,
+      assigned_to_name: safeTask.assigned_to_name || "Non défini",
+      assigned_to_role: normalizeRole(safeTask.assigned_to_role),
+
+      supervisor_id: safeTask.supervisor_id ?? null,
+      supervisor_name: safeTask.supervisor_name || "Non défini",
+      supervisor_role: normalizeRole(safeTask.supervisor_role),
+
+      priority: safeTask.priority || "Moyenne",
+      status: normalizeStatusToDatabase
+        ? normalizeStatusToDatabase(safeTask.status)
+        : (safeTask.status || "En bonne voie"),
+
+      progress_score: Number(safeTask.progress_score ?? 0),
+      progress: Number(safeTask.progress ?? 0),
+      staff_comment: safeTask.staff_comment || "",
+
+      supervisor_score: Number(safeTask.supervisor_score ?? 0),
+      supervisor_progress: Number(safeTask.supervisor_progress ?? 0),
+      supervisor_status: safeTask.supervisor_status || "Non évalué",
+      supervisor_comment: safeTask.supervisor_comment || "",
+
+      due_date: safeTask.due_date || null,
+      description: safeTask.description || "",
+      created_by: safeTask.created_by ?? null,
+      created_at: safeTask.created_at || null
+    };
+  }
+
+  function normalizeTaskRecordFromRaw(task, users, pillars, activities) {
+    const safeTask = task || {};
+
+    const assigned = users.find(user =>
+      String(user.id) === String(safeTask.assigned_to_id)
+    );
+
+    const supervisor = assigned
+      ? users.find(user => String(user.id) === String(assigned.supervisor_id))
+      : null;
+
+    const pillar = pillars.find(p =>
+      String(p.id) === String(safeTask.pillar_id)
+    );
+
+    const activity = activities.find(a =>
+      String(a.id) === String(safeTask.activity_id)
+    );
+
+    return {
+      id: safeTask.id,
+      title: safeTask.title || "",
+
+      pillar_id: safeTask.pillar_id ?? null,
+      pillar: pillar ? pillar.name : "",
+
+      activity_id: safeTask.activity_id ?? null,
+      activity_name: activity ? activity.name : "",
+
+      assigned_to_id: safeTask.assigned_to_id ?? null,
+      assigned_to_name: assigned ? assigned.name : "Non défini",
+      assigned_to_role: assigned ? assigned.user_type : "staff",
+
+      supervisor_id: supervisor ? supervisor.id : null,
+      supervisor_name: supervisor ? supervisor.name : "Non défini",
+      supervisor_role: supervisor ? supervisor.user_type : "staff",
+
+      priority: safeTask.priority || "Moyenne",
+      status: normalizeStatusToDatabase
+        ? normalizeStatusToDatabase(safeTask.status)
+        : (safeTask.status || "En bonne voie"),
+
+      progress_score: Number(safeTask.progress_score ?? 0),
+      progress: Number(safeTask.progress ?? 0),
+      staff_comment: safeTask.staff_comment || "",
+
+      supervisor_score: Number(safeTask.supervisor_score ?? 0),
+      supervisor_progress: Number(safeTask.supervisor_progress ?? 0),
+      supervisor_status: safeTask.supervisor_status || "Non évalué",
+      supervisor_comment: safeTask.supervisor_comment || "",
+
+      due_date: safeTask.due_date || null,
+      description: safeTask.description || "",
+      created_by: safeTask.created_by ?? null,
+      created_at: safeTask.created_at || null
+    };
+  }
 
   async function waitForSupabaseClient(maxWaitMs = 5000) {
     const start = Date.now();
@@ -72,7 +234,7 @@
       throw new Error("Compte désactivé.");
     }
 
-    AppState.currentUser = profile;
+    AppState.currentUser = normalizeProfileRecord(profile, AppState.pillars || []);
   }
 
   async function loadReferenceData() {
@@ -106,131 +268,67 @@
 
     AppState.pillars = pillarsRes.data || [];
 
-    AppState.users = (usersRes.data || []).map(user => ({
-      ...user,
-      name: user.full_name,
-      user_type: user.role,
-      pillar: getPillarNameByIdFromArray(user.pillar_id, AppState.pillars)
-    }));
+    AppState.users = (usersRes.data || []).map(user =>
+      normalizeProfileRecord(user, AppState.pillars)
+    );
 
-    AppState.mainActivities = (activitiesRes.data || []).map(activity => ({
-      ...activity,
-      pillar_name: getPillarNameByIdFromArray(activity.pillar_id, AppState.pillars)
-    }));
+    AppState.mainActivities = (activitiesRes.data || []).map(activity =>
+      normalizeActivityRecord(activity, AppState.pillars)
+    );
+
+    if (AppState.currentUser?.id) {
+      const refreshedCurrentUser = AppState.users.find(user =>
+        String(user.id) === String(AppState.currentUser.id)
+      );
+
+      if (refreshedCurrentUser) {
+        AppState.currentUser = refreshedCurrentUser;
+      }
+    }
 
     const tasksViewRes = await sb
       .from("tasks_enriched")
       .select("*")
       .order("id", { ascending: true });
 
-    if (!tasksViewRes.error) {
-      AppState.tasks = (tasksViewRes.data || [])
-        .map(task => ({
-          id: task.id,
-          title: task.title,
-
-          pillar_id: task.pillar_id,
-          pillar: task.pillar_name || "",
-
-          activity_id: task.activity_id || null,
-          activity_name: task.activity_name || "",
-
-          assigned_to_id: task.assigned_to_id,
-          assigned_to_name: task.assigned_to_name || "Non défini",
-          assigned_to_role: task.assigned_to_role || "",
-
-          supervisor_id: task.supervisor_id,
-          supervisor_name: task.supervisor_name || "Non défini",
-          supervisor_role: task.supervisor_role || "",
-
-          priority: task.priority,
-          status: normalizeStatusToDatabase(task.status),
-
-          progress_score: task.progress_score,
-          progress: task.progress,
-          staff_comment: task.staff_comment || "",
-
-          supervisor_score: task.supervisor_score,
-          supervisor_progress: task.supervisor_progress,
-          supervisor_status: task.supervisor_status,
-          supervisor_comment: task.supervisor_comment || "",
-
-          due_date: task.due_date,
-          description: task.description || "",
-          created_by: task.created_by,
-          created_at: task.created_at
-        }))
-        .map(hydrateTaskStatus);
+    if (!tasksViewRes.error && Array.isArray(tasksViewRes.data)) {
+      AppState.tasks = tasksViewRes.data
+        .map(normalizeTaskRecordFromEnriched)
+        .map(task => (hydrateTaskStatus ? hydrateTaskStatus(task) : task));
 
       return;
     }
 
-    const tasksRes = await sb.from("tasks").select("*").order("id", { ascending: true });
+    const tasksRes = await sb
+      .from("tasks")
+      .select("*")
+      .order("id", { ascending: true });
 
     if (tasksRes.error) {
-      throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}`);
+      const enrichedMessage = tasksViewRes.error?.message
+        ? ` | tasks_enriched: ${tasksViewRes.error.message}`
+        : "";
+      throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}${enrichedMessage}`);
     }
 
     AppState.tasks = (tasksRes.data || [])
-      .map(task => {
-        const assigned = AppState.users.find(user =>
-          String(user.id) === String(task.assigned_to_id)
-        );
-
-        const supervisor = assigned
-          ? AppState.users.find(user => String(user.id) === String(assigned.supervisor_id))
-          : null;
-
-        const pillar = AppState.pillars.find(p =>
-          String(p.id) === String(task.pillar_id)
-        );
-
-        const activity = AppState.mainActivities.find(a =>
-          String(a.id) === String(task.activity_id)
-        );
-
-        return {
-          id: task.id,
-          title: task.title,
-
-          pillar_id: task.pillar_id,
-          pillar: pillar ? pillar.name : "",
-
-          activity_id: task.activity_id || null,
-          activity_name: activity ? activity.name : "",
-
-          assigned_to_id: task.assigned_to_id,
-          assigned_to_name: assigned ? assigned.name : "Non défini",
-          assigned_to_role: assigned ? assigned.user_type : "",
-
-          supervisor_id: supervisor ? supervisor.id : null,
-          supervisor_name: supervisor ? supervisor.name : "Non défini",
-          supervisor_role: supervisor ? supervisor.user_type : "",
-
-          priority: task.priority,
-          status: normalizeStatusToDatabase(task.status),
-
-          progress_score: task.progress_score,
-          progress: task.progress,
-          staff_comment: task.staff_comment || "",
-
-          supervisor_score: task.supervisor_score,
-          supervisor_progress: task.supervisor_progress,
-          supervisor_status: task.supervisor_status,
-          supervisor_comment: task.supervisor_comment || "",
-
-          due_date: task.due_date,
-          description: task.description || "",
-          created_by: task.created_by,
-          created_at: task.created_at
-        };
-      })
-      .map(hydrateTaskStatus);
+      .map(task =>
+        normalizeTaskRecordFromRaw(
+          task,
+          AppState.users,
+          AppState.pillars,
+          AppState.mainActivities
+        )
+      )
+      .map(task => (hydrateTaskStatus ? hydrateTaskStatus(task) : task));
   }
 
   async function reloadAndRerender() {
     await loadReferenceData();
-    window.AppUI.renderCurrentPage();
+
+    if (window.AppUI?.renderCurrentPage) {
+      window.AppUI.renderCurrentPage();
+    }
   }
 
   async function createTaskWithFallbackStatus(payload) {
@@ -238,7 +336,9 @@
 
     const safePayload = {
       ...payload,
-      status: normalizeStatusToDatabase(payload.status)
+      status: normalizeStatusToDatabase
+        ? normalizeStatusToDatabase(payload.status)
+        : (payload.status || "En bonne voie")
     };
 
     const { error } = await sb.from("tasks").insert([safePayload]);
@@ -253,7 +353,9 @@
 
     const safePayload = {
       ...payload,
-      status: normalizeStatusToDatabase(payload.status)
+      status: normalizeStatusToDatabase
+        ? normalizeStatusToDatabase(payload.status)
+        : (payload.status || "En bonne voie")
     };
 
     const { error } = await sb
