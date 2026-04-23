@@ -773,17 +773,26 @@
               <div class="muted">${escapeHtml(doc.mime_type || "Fichier")}</div>
               <div class="muted">${Number(doc.file_size || 0).toLocaleString()} octets</div>
               <div class="card-actions" style="margin-top:12px;">
-                <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
-                <button
-                  class="action-btn secondary-danger js-delete-task-document"
-                  type="button"
-                  data-document-id="${Number(doc.id)}"
-                  data-file-path="${escapeHtml(doc.file_path)}"
-                >
-                  Supprimer
-                </button>
+  <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
+
+  <button
+    class="action-btn js-replace-task-document"
+    type="button"
+    data-document-id="${Number(doc.id)}"
+  >
+    Remplacer
+  </button>
+
+  <button
+    class="action-btn secondary-danger js-delete-task-document"
+    type="button"
+    data-document-id="${Number(doc.id)}"
+    data-file-path="${escapeHtml(doc.file_path)}"
+  >
+    Supprimer
+  </button>
+</div>
               </div>
-            </div>
           `;
         })
       );
@@ -793,7 +802,47 @@
       list.innerHTML = `<div class="error-box">Erreur chargement documents : ${escapeHtml(error.message || error)}</div>`;
     }
   }
+async function replaceCurrentTaskDocument(documentId) {
+  const currentUser = getCurrentUser();
+  const taskId = Number(byId("editTaskId")?.value);
 
+  if (!currentUser || !taskId || !documentId) return;
+
+  const tempInput = document.createElement("input");
+  tempInput.type = "file";
+
+  tempInput.onchange = async () => {
+    const newFile = tempInput.files?.[0];
+    if (!newFile) return;
+
+    try {
+      const result = await Services.replaceTaskDocument(documentId, newFile, currentUser.id);
+
+      await Services.logTaskActivity({
+        taskId,
+        actionType: "document_replace",
+        actionLabel: "Document remplacé",
+        actorId: currentUser.id,
+        actorName: getUserDisplayName(currentUser),
+        oldValue: {
+          file_name: result.oldDocument.file_name,
+          file_path: result.oldDocument.file_path
+        },
+        newValue: {
+          file_name: result.newDocument.file_name,
+          file_path: result.newDocument.file_path
+        }
+      });
+
+      await renderTaskDocuments(taskId);
+      await renderTaskActivityLogs(taskId);
+    } catch (error) {
+      alert(`Erreur remplacement document : ${error.message || error}`);
+    }
+  };
+
+  tempInput.click();
+}
   async function renderTaskActivityLogs(taskId) {
     const list = byId("taskActivityLogsList");
     if (!list) return;
@@ -1543,6 +1592,11 @@ async function uploadDocumentForCurrentTask() {
     }
 
     document.addEventListener("click", event => {
+      const replaceDocBtn = event.target.closest(".js-replace-task-document");
+if (replaceDocBtn) {
+  replaceCurrentTaskDocument(replaceDocBtn.dataset.documentId);
+  return;
+}
       const deleteDocBtn = event.target.closest(".js-delete-task-document");
       if (deleteDocBtn) {
         const taskId = Number(byId("editTaskId")?.value);
