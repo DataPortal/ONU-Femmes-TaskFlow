@@ -404,42 +404,115 @@
   if (error) throw error;
   return data || [];
 }
-
-  async function uploadTaskDocument(taskId, file, currentUserId) {
+async function uploadTaskDocuments(taskId, files, currentUserId) {
   const sb = getSb();
 
-  const safeName = `${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-  const filePath = `task-${taskId}/${safeName}`;
+  if (!files || !files.length) {
+    throw new Error("Aucun fichier sélectionné.");
+  }
+
+  const existingCount = await countTaskDocuments(taskId);
+  const remainingSlots = 5 - existingCount;
+
+  if (remainingSlots <= 0) {
+    throw new Error("Cette tâche a déjà atteint la limite de 5 fichiers.");
+  }
+
+  if (files.length > remainingSlots) {
+    throw new Error(`Vous pouvez encore ajouter ${remainingSlots} fichier(s) maximum pour cette tâche.`);
+  }
+
+  const uploadedRows = [];
+
+  for (const file of files) {
+    const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${file.name.replace(/\s+/g, "_")}`;
+    const filePath = `task-${taskId}/${safeName}`;
+
+    const { error: uploadError } = await sb.storage
+      .from("task-documents")
+      .upload(filePath, file, { upsert: false });
+
+    if (uploadError) {
+      throw new Error(`Storage upload refusé : ${uploadError.message}`);
+    }
+
+    const { data, error: insertError } = await sb
+      .from("task_documents")
+      .insert([{
+        task_id: taskId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        mime_type: file.type,
+        uploaded_by: currentUserId
+      }])
+      .select()
+      .single();
+
+    if (insertError) {
+      await sb.storage.from("task-documents").remove([filePath]).catch(() => {});
+      throw new Error(`Enregistrement du document refusé : ${insertError.message}`);
+    }
+
+    uploadedRows.push(data);
+  }
+
+  return uploadedRows;
+}
+  async function replaceTaskDocument(documentId, newFile, currentUserId) {
+  const sb = getSb();
+
+  if (!newFile) {
+    throw new Error("Aucun nouveau fichier sélectionné.");
+  }
+
+  const { data: existingDoc, error: readError } = await sb
+    .from("task_documents")
+    .select("*")
+    .eq("id", documentId)
+    .single();
+
+  if (readError || !existingDoc) {
+    throw new Error("Document introuvable.");
+  }
+
+  const newSafeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${newFile.name.replace(/\s+/g, "_")}`;
+  const newFilePath = `task-${existingDoc.task_id}/${newSafeName}`;
 
   const { error: uploadError } = await sb.storage
     .from("task-documents")
-    .upload(filePath, file, { upsert: false });
+    .upload(newFilePath, newFile, { upsert: false });
 
   if (uploadError) {
     throw new Error(`Storage upload refusé : ${uploadError.message}`);
   }
 
-  const { data, error: insertError } = await sb
+  const { data: updatedDoc, error: updateError } = await sb
     .from("task_documents")
-    .insert([{
-      task_id: taskId,
-      file_name: file.name,
-      file_path: filePath,
-      file_size: file.size,
-      mime_type: file.type,
+    .update({
+      file_name: newFile.name,
+      file_path: newFilePath,
+      file_size: newFile.size,
+      mime_type: newFile.type,
       uploaded_by: currentUserId
-    }])
+    })
+    .eq("id", documentId)
     .select()
     .single();
 
-  if (insertError) {
-    await sb.storage.from("task-documents").remove([filePath]).catch(() => {});
-    throw new Error(`Enregistrement du document refusé : ${insertError.message}`);
+  if (updateError) {
+    await sb.storage.from("task-documents").remove([newFilePath]).catch(() => {});
+    throw new Error(`Remplacement refusé : ${updateError.message}`);
   }
 
-  return data;
+  await sb.storage.from("task-documents").remove([existingDoc.file_path]).catch(() => {});
+
+  return {
+    oldDocument: existingDoc,
+    newDocument: updatedDoc
+  };
 }
-  async function getTaskDocumentSignedUrl(filePath) {
+    async function getTaskDocumentSignedUrl(filePath) {
     const sb = getSb();
 
     const { data, error } = await sb.storage
@@ -449,7 +522,17 @@
     if (error) throw error;
     return data?.signedUrl || "";
   }
+async function countTaskDocuments(taskId) {
+  const sb = getSb();
 
+  const { count, error } = await sb
+    .from("task_documents")
+    .select("*", { count: "exact", head: true })
+    .eq("task_id", taskId);
+
+  if (error) throw error;
+  return count || 0;
+}
   async function deleteTaskDocument(documentId, filePath) {
     const sb = getSb();
 
@@ -518,7 +601,9 @@
     reloadAndRerender,
     requireSession,
     updateTaskWithFallbackStatus,
-    uploadTaskDocument,
-    waitForSupabaseClient
+    waitForSupabaseClient,
+    countTaskDocuments,
+    replaceTaskDocument,
+    uploadTaskDocuments
   };
 })();
