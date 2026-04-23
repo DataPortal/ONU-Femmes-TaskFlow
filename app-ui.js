@@ -496,7 +496,28 @@
       endDate: byId("endDateFilter")?.value || ""
     });
   }
+async function resetAndRefreshDashboard() {
+  const searchInput = byId("searchInput");
+  const pillarFilter = byId("pillarFilter");
+  const supervisorFilter = byId("supervisorFilter");
+  const assignedToFilter = byId("assignedToFilter");
+  const activityFilter = byId("activityFilter");
+  const statusFilter = byId("statusFilter");
+  const startDateFilter = byId("startDateFilter");
+  const endDateFilter = byId("endDateFilter");
 
+  if (searchInput) searchInput.value = "";
+  if (pillarFilter) pillarFilter.value = "";
+  if (supervisorFilter) supervisorFilter.value = "";
+  if (assignedToFilter) assignedToFilter.value = "";
+  if (activityFilter) activityFilter.value = "";
+  if (statusFilter) statusFilter.value = "";
+  if (startDateFilter) startDateFilter.value = "";
+  if (endDateFilter) endDateFilter.value = "";
+
+  await Services.loadReferenceData();
+  renderDashboardPage();
+}
   function renderDashboardPage() {
     const tbody = byId("tasksTbody");
     if (!tbody) return;
