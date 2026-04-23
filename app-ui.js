@@ -37,6 +37,18 @@
     scoreToPercent
   } = Core;
 
+  function getUserRole(user) {
+    return String(user?.role || user?.user_type || "staff").trim().toLowerCase();
+  }
+
+  function getUserDisplayName(user) {
+    return user?.name || user?.full_name || "Utilisateur";
+  }
+
+  function getUserPillarLabel(user) {
+    return user?.pillar || user?.pillar_name || "Sans pilier";
+  }
+
   function showGlobalError(message) {
     const debugBox = byId("pageDebugMessage");
 
@@ -125,7 +137,7 @@
     if (selector && currentUser) {
       selector.innerHTML = `
         <option value="${escapeHtml(currentUser.id)}">
-          ${escapeHtml(currentUser.name)} — ${escapeHtml(currentUser.user_type)}
+          ${escapeHtml(getUserDisplayName(currentUser))} — ${escapeHtml(getUserRole(currentUser))}
         </option>
       `;
       selector.disabled = true;
@@ -137,12 +149,12 @@
       );
 
       label.innerHTML = `
-        <strong>${escapeHtml(currentUser.name)}</strong><br>
+        <strong>${escapeHtml(getUserDisplayName(currentUser))}</strong><br>
         <span class="muted">
-          ${escapeHtml(currentUser.user_type)} | ${escapeHtml(currentUser.pillar || "Sans pilier")}
+          ${escapeHtml(getUserRole(currentUser))} | ${escapeHtml(getUserPillarLabel(currentUser))}
         </span><br>
         <span class="muted">
-          Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Aucun")}
+          Superviseur : ${escapeHtml(supervisor ? getUserDisplayName(supervisor) : "Aucun")}
         </span>
       `;
     }
@@ -215,14 +227,16 @@
     const userPillar = byId("userPillar");
     const userSupervisor = byId("userSupervisor");
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
-    let supervisors = AppState.users.filter(user =>
-      user.user_type === "supervisor" || user.user_type === "admin"
-    );
+    let supervisors = AppState.users.filter(user => {
+      const role = getUserRole(user);
+      return role === "supervisor" || role === "admin";
+    });
 
     let visiblePillars = AppState.pillars;
 
-    if (currentUser && currentUser.user_type !== "admin") {
+    if (currentUser && currentRole !== "admin") {
       supervisors = supervisors.filter(user =>
         String(user.pillar_id) === String(currentUser.pillar_id)
       );
@@ -238,7 +252,7 @@
         supervisors
           .map(user => `
             <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)}
+              ${escapeHtml(getUserDisplayName(user))}
             </option>
           `)
           .join("");
@@ -262,7 +276,7 @@
         supervisors
           .map(user => `
             <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)}
+              ${escapeHtml(getUserDisplayName(user))}
             </option>
           `)
           .join("");
@@ -310,6 +324,7 @@
   async function createOrAssignUserFromRegisterPage() {
     const sb = getSb();
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!sb || !currentUser) return;
 
@@ -330,7 +345,7 @@
       return;
     }
 
-    if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
+    if (currentRole !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
       setMessage("userMessage", "Vous ne pouvez gérer que des membres de votre pilier.", "error");
       return;
     }
@@ -373,12 +388,13 @@
   function populateActivityManagementDropdown() {
     const activityPillar = byId("activityPillar");
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!activityPillar || !currentUser) return;
 
     let visiblePillars = AppState.pillars;
 
-    if (currentUser.user_type !== "admin") {
+    if (currentRole !== "admin") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -402,12 +418,13 @@
   function renderMainActivitiesList() {
     const list = byId("mainActivitiesList");
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!list || !currentUser) return;
 
     let visibleActivities = AppState.mainActivities;
 
-    if (currentUser.user_type !== "admin") {
+    if (currentRole !== "admin") {
       visibleActivities = AppState.mainActivities.filter(activity =>
         String(activity.pillar_id) === String(currentUser.pillar_id)
       );
@@ -441,6 +458,7 @@
   async function createMainActivity() {
     const sb = getSb();
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!sb || !currentUser) return;
 
@@ -463,7 +481,7 @@
       return;
     }
 
-    if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
+    if (currentRole !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
       setMessage("activityMessage", "Vous ne pouvez ajouter des activités que pour votre pilier.", "error");
       return;
     }
@@ -494,6 +512,7 @@
   async function disableMainActivity(activityId) {
     const sb = getSb();
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!sb || !currentUser) return;
 
@@ -506,7 +525,7 @@
       return;
     }
 
-    if (currentUser.user_type !== "admin" && String(activity.pillar_id) !== String(currentUser.pillar_id)) {
+    if (currentRole !== "admin" && String(activity.pillar_id) !== String(currentUser.pillar_id)) {
       alert("Vous ne pouvez désactiver que les activités de votre pilier.");
       return;
     }
@@ -553,11 +572,12 @@
     const taskPillar = byId("taskPillar");
     const taskAssignedTo = byId("taskAssignedTo");
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     let visiblePillars = AppState.pillars;
     let eligibleUsers = AppState.users;
 
-    if (currentUser && currentUser.user_type !== "admin") {
+    if (currentUser && currentRole !== "admin") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -585,7 +605,7 @@
         eligibleUsers
           .map(user => `
             <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)} — ${escapeHtml(user.pillar || "Sans pilier")}
+              ${escapeHtml(getUserDisplayName(user))} — ${escapeHtml(getUserPillarLabel(user))}
             </option>
           `)
           .join("");
@@ -666,6 +686,7 @@
 
   async function createNewTask() {
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!currentUser) return;
 
@@ -694,7 +715,7 @@
       return;
     }
 
-    if (currentUser.user_type !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
+    if (currentRole !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
       setMessage("taskCreateMessage", "Vous ne pouvez créer une tâche que dans votre pilier.", "error");
       return;
     }
@@ -751,6 +772,7 @@
 
   async function saveTaskUpdate() {
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!currentUser) return;
 
@@ -764,9 +786,9 @@
 
     const isAssignedUser = String(currentUser.id) === String(task.assigned_to_id);
     const isSupervisorOnPillar =
-      currentUser.user_type === "supervisor" &&
+      currentRole === "supervisor" &&
       String(task.pillar_id) === String(currentUser.pillar_id);
-    const isAdminUser = currentUser.user_type === "admin";
+    const isAdminUser = currentRole === "admin";
 
     const status = normalizeStatusToDatabase(computeAutomaticStatus({
       ...task,
@@ -782,14 +804,14 @@
     if (isAssignedUser || isAdminUser) {
       payload.progress_score = progressScore;
       payload.progress = scoreToPercent(progressScore);
-      payload.staff_comment = appendComment(task.staff_comment, currentUser.name, newStaffComment);
+      payload.staff_comment = appendComment(task.staff_comment, getUserDisplayName(currentUser), newStaffComment);
     }
 
     if (isSupervisorOnPillar || isAdminUser) {
       payload.supervisor_score = supervisorScore;
       payload.supervisor_progress = scoreToPercent(supervisorScore);
       payload.supervisor_status = supervisorStatus;
-      payload.supervisor_comment = appendComment(task.supervisor_comment, currentUser.name, newSupervisorComment);
+      payload.supervisor_comment = appendComment(task.supervisor_comment, getUserDisplayName(currentUser), newSupervisorComment);
     }
 
     try {
@@ -1027,19 +1049,21 @@
     if (!tbody) return;
 
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
     const pillarFilter = byId("pillarFilter");
     const supervisorFilter = byId("supervisorFilter");
     const assignedToFilter = byId("assignedToFilter");
     const activityFilter = byId("activityFilter");
 
     let visiblePillars = AppState.pillars;
-    let visibleSupervisors = AppState.users.filter(user =>
-      user.user_type === "supervisor" || user.user_type === "admin"
-    );
+    let visibleSupervisors = AppState.users.filter(user => {
+      const role = getUserRole(user);
+      return role === "supervisor" || role === "admin";
+    });
     let visibleAssignees = AppState.users;
     let visibleActivities = AppState.mainActivities;
 
-    if (currentUser && currentUser.user_type !== "admin") {
+    if (currentUser && currentRole !== "admin") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -1083,7 +1107,7 @@
         visibleSupervisors
           .map(user => `
             <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)}
+              ${escapeHtml(getUserDisplayName(user))}
             </option>
           `)
           .join("");
@@ -1101,7 +1125,7 @@
         visibleAssignees
           .map(user => `
             <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)}
+              ${escapeHtml(getUserDisplayName(user))}
             </option>
           `)
           .join("");
@@ -1153,7 +1177,7 @@
 
     if (assignedToFilter) {
       const currentValue = assignedToFilter.value || "";
-      const assignees = myTasks.length ? [{ id: currentUser.id, name: currentUser.name }] : [];
+      const assignees = myTasks.length ? [{ id: currentUser.id, name: getUserDisplayName(currentUser) }] : [];
 
       assignedToFilter.innerHTML =
         `<option value="">Tous les assignés</option>` +
@@ -1195,7 +1219,7 @@
 
     const filteredTasks = getFilteredMyTasks(myTasks);
 
-    title.textContent = `Mes tâches — ${currentUser.name}`;
+    title.textContent = `Mes tâches — ${getUserDisplayName(currentUser)}`;
     renderKPIs("myTasksKpis", filteredTasks);
 
     tbody.innerHTML = filteredTasks.length
@@ -1216,7 +1240,7 @@
         teamMembers
           .map(member => `
             <option value="${escapeHtml(member.id)}">
-              ${escapeHtml(member.name)}
+              ${escapeHtml(getUserDisplayName(member))}
             </option>
           `)
           .join("");
@@ -1228,16 +1252,17 @@
 
     if (supervisorFilter) {
       const currentValue = supervisorFilter.value || "";
-      const supervisors = AppState.users.filter(user =>
-        user.user_type === "supervisor" || user.user_type === "admin"
-      );
+      const supervisors = AppState.users.filter(user => {
+        const role = getUserRole(user);
+        return role === "supervisor" || role === "admin";
+      });
 
       supervisorFilter.innerHTML =
         `<option value="">Tous les superviseurs</option>` +
         supervisors
           .map(user => `
             <option value="${escapeHtml(user.id)}">
-              ${escapeHtml(user.name)}
+              ${escapeHtml(getUserDisplayName(user))}
             </option>
           `)
           .join("");
@@ -1273,6 +1298,7 @@
 
   function renderMyTeamPage() {
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
     const membersBox = byId("teamMembersList");
     const tbody = byId("teamTasksTbody");
     const title = byId("myTeamTitle");
@@ -1282,7 +1308,7 @@
     let teamMembers = [];
     let teamTasks = [];
 
-    if (currentUser.user_type === "admin") {
+    if (currentRole === "admin") {
       teamMembers = AppState.users;
       teamTasks = AppState.tasks;
     } else {
@@ -1297,16 +1323,16 @@
 
     const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
 
-    title.textContent = `Mon équipe — ${currentUser.name}`;
+    title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
     renderKPIs("myTeamKpis", filteredTeamTasks);
 
     membersBox.innerHTML = teamMembers.length
       ? teamMembers
           .map(member => `
             <div class="member-card">
-              <h4>${escapeHtml(member.name)}</h4>
+              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
               <div class="muted">
-                ${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}
+                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
               </div>
               <div class="kpi-inline">
                 <span>
@@ -1332,13 +1358,14 @@
     const pillarsList = byId("pillarsList");
     const membersList = byId("registeredMembersList");
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
 
     if (!pillarsList || !membersList) return;
 
     let visiblePillars = AppState.pillars;
     let visibleMembers = AppState.users;
 
-    if (currentUser && currentUser.user_type !== "admin") {
+    if (currentUser && currentRole !== "admin") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -1363,7 +1390,7 @@
               <div class="member-card">
                 <h4>${escapeHtml(pillar.name)}</h4>
                 <div class="muted">
-                  Superviseur : ${escapeHtml(supervisor ? supervisor.name : "Non défini")}
+                  Superviseur : ${escapeHtml(supervisor ? getUserDisplayName(supervisor) : "Non défini")}
                 </div>
                 <div class="muted">
                   Activités principales :
@@ -1379,9 +1406,9 @@
       ? visibleMembers
           .map(member => `
             <div class="member-card">
-              <h4>${escapeHtml(member.name)}</h4>
+              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
               <div class="muted">
-                ${escapeHtml(member.user_type)} | ${escapeHtml(member.pillar || "Sans pilier")}
+                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
               </div>
               <div class="muted">${escapeHtml(member.email || "")}</div>
             </div>
@@ -1455,10 +1482,10 @@
 
     if (openBtn) {
       if (canCreateTask()) {
+        openBtn.classList.remove("is-role-hidden");
         openBtn.addEventListener("click", openCreateTaskModal);
-        openBtn.style.display = "";
       } else {
-        openBtn.style.display = "none";
+        openBtn.classList.add("is-role-hidden");
       }
     }
 
@@ -1508,10 +1535,10 @@
 
     if (exportBtn) {
       if (canExportDashboard()) {
-        exportBtn.style.display = "";
+        exportBtn.classList.remove("is-role-hidden");
         exportBtn.addEventListener("click", exportCurrentViewToXlsx);
       } else {
-        exportBtn.style.display = "none";
+        exportBtn.classList.add("is-role-hidden");
       }
     }
 
