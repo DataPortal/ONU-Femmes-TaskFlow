@@ -1514,6 +1514,7 @@ async function resetAndRefreshDashboard() {
 
   function initExportAndPrint() {
     const page = document.body.dataset.page;
+    const resetBtn = byId("resetDashboardBtn");
     if (page !== "dashboard") return;
 
     const exportBtn = byId("exportXlsxBtn");
@@ -1563,7 +1564,10 @@ async function resetAndRefreshDashboard() {
       }
     });
   }
-
+if (resetBtn && !resetBtn.dataset.boundClick) {
+  resetBtn.addEventListener("click", resetAndRefreshDashboard);
+  resetBtn.dataset.boundClick = "true";
+}
   function initMyTasksFilters() {
     const page = document.body.dataset.page;
     if (page !== "my-tasks") return;
