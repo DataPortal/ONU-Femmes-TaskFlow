@@ -749,7 +749,47 @@ async function resetAndRefreshDashboard() {
           .join("");
     }
   }
+async function renderTaskDocuments(taskId) {
+  const list = byId("taskDocumentsList");
+  if (!list) return;
 
+  try {
+    const docs = await Services.loadTaskDocuments(taskId);
+
+    if (!docs.length) {
+      list.innerHTML = `<div class="empty">Aucun document lié à cette tâche.</div>`;
+      return;
+    }
+
+    const rows = await Promise.all(
+      docs.map(async doc => {
+        const url = await Services.getTaskDocumentSignedUrl(doc.file_path);
+        return `
+          <div class="member-card">
+            <h4>${escapeHtml(doc.file_name)}</h4>
+            <div class="muted">${escapeHtml(doc.mime_type || "Fichier")}</div>
+            <div class="muted">${Number(doc.file_size || 0).toLocaleString()} octets</div>
+            <div class="card-actions" style="margin-top:12px;">
+              <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
+              <button
+                class="action-btn secondary-danger js-delete-task-document"
+                type="button"
+                data-document-id="${Number(doc.id)}"
+                data-file-path="${escapeHtml(doc.file_path)}"
+              >
+                Supprimer
+              </button>
+            </div>
+          </div>
+        `;
+      })
+    );
+
+    list.innerHTML = rows.join("");
+  } catch (error) {
+    list.innerHTML = `<div class="error-box">Erreur chargement documents : ${escapeHtml(error.message || error)}</div>`;
+  }
+}
   async function createNewPillar() {
     const sb = getSb();
     if (!sb) return;
@@ -1263,14 +1303,32 @@ async function resetAndRefreshDashboard() {
     if (byId("editSupervisorScore")) byId("editSupervisorScore").value = task.supervisor_score ?? 0;
     if (byId("editSupervisorStatus")) byId("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
     if (byId("editSupervisorComment")) byId("editSupervisorComment").value = "";
-
+    renderTaskDocuments(task.id);
     openModal("taskModal");
   }
 
   function closeTaskModal() {
     closeModal("taskModal");
   }
+  async function uploadDocumentForCurrentTask() {
+  const currentUser = getCurrentUser();
+  const taskId = Number(byId("editTaskId")?.value);
+  const fileInput = byId("taskDocumentFile");
+  const file = fileInput?.files?.[0];
 
+  if (!currentUser || !taskId || !file) {
+    alert("Veuillez sélectionner un fichier.");
+    return;
+  }
+
+  try {
+    await Services.uploadTaskDocument(taskId, file, currentUser.id);
+    if (fileInput) fileInput.value = "";
+    await renderTaskDocuments(taskId);
+  } catch (error) {
+    alert(`Erreur upload document : ${error.message || error}`);
+  }
+}
   async function saveTaskUpdate() {
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
@@ -1352,7 +1410,11 @@ async function resetAndRefreshDashboard() {
     const closeTopBtn = byId("closeTaskModalBtn");
     const closeBottomBtn = byId("closeTaskModalBtnFooter");
     const saveBtn = byId("saveTaskBtn");
-
+    const uploadBtn = byId("uploadTaskDocumentBtn");
+  if (uploadBtn && !uploadBtn.dataset.boundClick) {
+  uploadBtn.addEventListener("click", uploadDocumentForCurrentTask);
+  uploadBtn.dataset.boundClick = "true";
+}
     if (closeTopBtn && !closeTopBtn.dataset.boundClick) {
       closeTopBtn.addEventListener("click", closeTaskModal);
       closeTopBtn.dataset.boundClick = "true";
@@ -1370,6 +1432,19 @@ async function resetAndRefreshDashboard() {
 
     document.addEventListener("click", event => {
       const openBtn = event.target.closest(".js-open-task-modal");
+      const deleteDocBtn = event.target.closest(".js-delete-task-document");
+if (deleteDocBtn) {
+  Services.deleteTaskDocument(
+    deleteDocBtn.dataset.documentId,
+    deleteDocBtn.dataset.filePath
+  ).then(() => {
+    const taskId = Number(byId("editTaskId")?.value);
+    renderTaskDocuments(taskId);
+  }).catch(error => {
+    alert(`Erreur suppression document : ${error.message || error}`);
+  });
+  return;
+}
       if (openBtn) {
         openTaskModal(openBtn.dataset.taskId);
         return;
