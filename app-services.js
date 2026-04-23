@@ -30,6 +30,24 @@
       },
       updateTaskWithFallbackStatus: async () => {
         throw new Error("AppCore indisponible.");
+      },
+      loadTaskDocuments: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      uploadTaskDocument: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      getTaskDocumentSignedUrl: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      deleteTaskDocument: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      logTaskActivity: async () => {
+        throw new Error("AppCore indisponible.");
+      },
+      loadTaskActivityLogs: async () => {
+        throw new Error("AppCore indisponible.");
       }
     };
     return;
@@ -112,111 +130,7 @@
       created_at: safeTask.created_at || null
     };
   }
-  async function loadTaskDocuments(taskId) {
-  const sb = getSb();
 
-  const { data, error } = await sb
-    .from("task_documents")
-    .select("*")
-    .eq("task_id", taskId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-}
-async function logTaskActivity({
-  taskId,
-  actionType,
-  actionLabel,
-  actorId,
-  actorName,
-  oldValue = null,
-  newValue = null
-}) {
-  const sb = getSb();
-
-  const { error } = await sb.from("task_activity_logs").insert([{
-    task_id: taskId,
-    action_type: actionType,
-    action_label: actionLabel,
-    actor_id: actorId,
-    actor_name: actorName,
-    old_value: oldValue,
-    new_value: newValue
-  }]);
-
-  if (error) throw error;
-}
-
-async function loadTaskActivityLogs(taskId) {
-  const sb = getSb();
-
-  const { data, error } = await sb
-    .from("task_activity_logs")
-    .select("*")
-    .eq("task_id", taskId)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-}
-async function uploadTaskDocument(taskId, file, currentUserId) {
-  const sb = getSb();
-
-  const safeName = `${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-  const filePath = `task-${taskId}/${safeName}`;
-
-  const { error: uploadError } = await sb.storage
-    .from("task-documents")
-    .upload(filePath, file, { upsert: false });
-
-  if (uploadError) throw uploadError;
-
-  const { data, error: insertError } = await sb
-    .from("task_documents")
-    .insert([{
-      task_id: taskId,
-      file_name: file.name,
-      file_path: filePath,
-      file_size: file.size,
-      mime_type: file.type,
-      uploaded_by: currentUserId
-    }])
-    .select()
-    .single();
-
-  if (insertError) throw insertError;
-
-  return data;
-}
-
-async function getTaskDocumentSignedUrl(filePath) {
-  const sb = getSb();
-
-  const { data, error } = await sb.storage
-    .from("task-documents")
-    .createSignedUrl(filePath, 3600);
-
-  if (error) throw error;
-  return data?.signedUrl || "";
-}
-
-async function deleteTaskDocument(documentId, filePath) {
-  const sb = getSb();
-
-  const { error: dbError } = await sb
-    .from("task_documents")
-    .delete()
-    .eq("id", documentId);
-
-  if (dbError) throw dbError;
-
-  const { error: storageError } = await sb.storage
-    .from("task-documents")
-    .remove([filePath]);
-
-  if (storageError) throw storageError;
-}
   function normalizeTaskRecordFromRaw(task, users, pillars, activities) {
     const safeTask = task || {};
 
@@ -445,10 +359,17 @@ async function deleteTaskDocument(documentId, filePath) {
         : (payload.status || "En bonne voie")
     };
 
-    const { data, error } = await sb.from("tasks").insert([safePayload]).select().single();
-      if (error) throw error;
-      return data;
+    const { data, error } = await sb
+      .from("tasks")
+      .insert([safePayload])
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
     }
+
+    return data;
   }
 
   async function updateTaskWithFallbackStatus(taskId, payload) {
@@ -471,13 +392,129 @@ async function deleteTaskDocument(documentId, filePath) {
     }
   }
 
+  async function loadTaskDocuments(taskId) {
+    const sb = getSb();
+
+    const { data, error } = await sb
+      .from("task_documents")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async function uploadTaskDocument(taskId, file, currentUserId) {
+    const sb = getSb();
+
+    const safeName = `${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+    const filePath = `task-${taskId}/${safeName}`;
+
+    const { error: uploadError } = await sb.storage
+      .from("task-documents")
+      .upload(filePath, file, { upsert: false });
+
+    if (uploadError) throw uploadError;
+
+    const { data, error: insertError } = await sb
+      .from("task_documents")
+      .insert([{
+        task_id: taskId,
+        file_name: file.name,
+        file_path: filePath,
+        file_size: file.size,
+        mime_type: file.type,
+        uploaded_by: currentUserId
+      }])
+      .select()
+      .single();
+
+    if (insertError) throw insertError;
+
+    return data;
+  }
+
+  async function getTaskDocumentSignedUrl(filePath) {
+    const sb = getSb();
+
+    const { data, error } = await sb.storage
+      .from("task-documents")
+      .createSignedUrl(filePath, 3600);
+
+    if (error) throw error;
+    return data?.signedUrl || "";
+  }
+
+  async function deleteTaskDocument(documentId, filePath) {
+    const sb = getSb();
+
+    const { error: dbError } = await sb
+      .from("task_documents")
+      .delete()
+      .eq("id", documentId);
+
+    if (dbError) throw dbError;
+
+    const { error: storageError } = await sb.storage
+      .from("task-documents")
+      .remove([filePath]);
+
+    if (storageError) throw storageError;
+  }
+
+  async function logTaskActivity({
+    taskId,
+    actionType,
+    actionLabel,
+    actorId,
+    actorName,
+    oldValue = null,
+    newValue = null
+  }) {
+    const sb = getSb();
+
+    const { error } = await sb
+      .from("task_activity_logs")
+      .insert([{
+        task_id: taskId,
+        action_type: actionType,
+        action_label: actionLabel,
+        actor_id: actorId,
+        actor_name: actorName,
+        old_value: oldValue,
+        new_value: newValue
+      }]);
+
+    if (error) throw error;
+  }
+
+  async function loadTaskActivityLogs(taskId) {
+    const sb = getSb();
+
+    const { data, error } = await sb
+      .from("task_activity_logs")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
   window.AppServices = {
     createTaskWithFallbackStatus,
+    deleteTaskDocument,
+    getTaskDocumentSignedUrl,
     loadCurrentUser,
     loadReferenceData,
+    loadTaskActivityLogs,
+    loadTaskDocuments,
+    logTaskActivity,
     reloadAndRerender,
     requireSession,
     updateTaskWithFallbackStatus,
+    uploadTaskDocument,
     waitForSupabaseClient
   };
 })();
