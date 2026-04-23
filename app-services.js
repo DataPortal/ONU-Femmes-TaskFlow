@@ -112,7 +112,76 @@
       created_at: safeTask.created_at || null
     };
   }
+  async function loadTaskDocuments(taskId) {
+  const sb = getSb();
 
+  const { data, error } = await sb
+    .from("task_documents")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+async function uploadTaskDocument(taskId, file, currentUserId) {
+  const sb = getSb();
+
+  const safeName = `${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+  const filePath = `task-${taskId}/${safeName}`;
+
+  const { error: uploadError } = await sb.storage
+    .from("task-documents")
+    .upload(filePath, file, { upsert: false });
+
+  if (uploadError) throw uploadError;
+
+  const { data, error: insertError } = await sb
+    .from("task_documents")
+    .insert([{
+      task_id: taskId,
+      file_name: file.name,
+      file_path: filePath,
+      file_size: file.size,
+      mime_type: file.type,
+      uploaded_by: currentUserId
+    }])
+    .select()
+    .single();
+
+  if (insertError) throw insertError;
+
+  return data;
+}
+
+async function getTaskDocumentSignedUrl(filePath) {
+  const sb = getSb();
+
+  const { data, error } = await sb.storage
+    .from("task-documents")
+    .createSignedUrl(filePath, 3600);
+
+  if (error) throw error;
+  return data?.signedUrl || "";
+}
+
+async function deleteTaskDocument(documentId, filePath) {
+  const sb = getSb();
+
+  const { error: dbError } = await sb
+    .from("task_documents")
+    .delete()
+    .eq("id", documentId);
+
+  if (dbError) throw dbError;
+
+  const { error: storageError } = await sb.storage
+    .from("task-documents")
+    .remove([filePath]);
+
+  if (storageError) throw storageError;
+}
   function normalizeTaskRecordFromRaw(task, users, pillars, activities) {
     const safeTask = task || {};
 
