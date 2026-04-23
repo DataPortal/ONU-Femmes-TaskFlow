@@ -124,7 +124,42 @@
   if (error) throw error;
   return data || [];
 }
+async function logTaskActivity({
+  taskId,
+  actionType,
+  actionLabel,
+  actorId,
+  actorName,
+  oldValue = null,
+  newValue = null
+}) {
+  const sb = getSb();
 
+  const { error } = await sb.from("task_activity_logs").insert([{
+    task_id: taskId,
+    action_type: actionType,
+    action_label: actionLabel,
+    actor_id: actorId,
+    actor_name: actorName,
+    old_value: oldValue,
+    new_value: newValue
+  }]);
+
+  if (error) throw error;
+}
+
+async function loadTaskActivityLogs(taskId) {
+  const sb = getSb();
+
+  const { data, error } = await sb
+    .from("task_activity_logs")
+    .select("*")
+    .eq("task_id", taskId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
 async function uploadTaskDocument(taskId, file, currentUserId) {
   const sb = getSb();
 
