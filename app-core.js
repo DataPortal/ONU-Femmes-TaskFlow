@@ -230,6 +230,11 @@
     return !!u && u.user_type === "supervisor";
   }
 
+  function isStaff() {
+    const u = getCurrentUser();
+    return !!u && u.user_type === "staff";
+  }
+
   function isSupervisorOrAdmin() {
     return isSupervisor() || isAdmin();
   }
@@ -255,7 +260,10 @@
   }
 
   function canCreateTask() {
-    return isSupervisorOrAdmin();
+    const currentUser = getCurrentUser();
+    if (!currentUser) return false;
+
+    return ["admin", "supervisor", "staff"].includes(currentUser.user_type);
   }
 
   function canCreatePillar() {
@@ -274,7 +282,7 @@
     const currentUser = getCurrentUser();
     if (!currentUser) return false;
 
-    return ["admin", "supervisor"].includes(currentUser.user_type);
+    return ["admin", "supervisor", "staff"].includes(currentUser.user_type);
   }
 
   function canDeleteTask(task) {
@@ -366,6 +374,7 @@
     isAdmin,
     isDueSoon,
     isLate,
+    isStaff,
     isStatusConstraintError,
     isSupervisor,
     isSupervisorOrAdmin,
