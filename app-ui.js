@@ -824,7 +824,29 @@ async function renderTaskDocuments(taskId) {
     if (byId("pillarName")) byId("pillarName").value = "";
     await Services.reloadAndRerender();
   }
+async function renderTaskActivityLogs(taskId) {
+  const list = byId("taskActivityLogsList");
+  if (!list) return;
 
+  try {
+    const logs = await Services.loadTaskActivityLogs(taskId);
+
+    if (!logs.length) {
+      list.innerHTML = `<div class="empty">Aucune action enregistrée.</div>`;
+      return;
+    }
+
+    list.innerHTML = logs.map(log => `
+      <div class="member-card">
+        <h4>${escapeHtml(log.action_label)}</h4>
+        <div class="muted">Par : ${escapeHtml(log.actor_name || "Utilisateur")}</div>
+        <div class="muted">Date : ${escapeHtml(log.created_at || "")}</div>
+      </div>
+    `).join("");
+  } catch (error) {
+    list.innerHTML = `<div class="error-box">Erreur chargement historique : ${escapeHtml(error.message || error)}</div>`;
+  }
+}
   async function createOrAssignUserFromRegisterPage() {
     const sb = getSb();
     const currentUser = getCurrentUser();
@@ -1285,6 +1307,7 @@ async function renderTaskDocuments(taskId) {
     try {
       await Services.createTaskWithFallbackStatus(payload);
       setMessage("taskCreateMessage", "Tâche créée avec succès.", "success");
+      const createdTask = AppState.tasks[AppState.tasks.length - 1];
       await Services.reloadAndRerender();
       closeCreateTaskModal();
     } catch (error) {
@@ -1304,6 +1327,7 @@ async function renderTaskDocuments(taskId) {
     if (byId("editSupervisorStatus")) byId("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
     if (byId("editSupervisorComment")) byId("editSupervisorComment").value = "";
     renderTaskDocuments(task.id);
+    renderTaskActivityLogs(task.id);
     openModal("taskModal");
   }
 
