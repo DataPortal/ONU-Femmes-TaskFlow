@@ -1359,21 +1359,21 @@
   function closeTaskModal() {
     closeModal("taskModal");
   }
+async function uploadDocumentForCurrentTask() {
+  const currentUser = getCurrentUser();
+  const taskId = Number(byId("editTaskId")?.value);
+  const fileInput = byId("taskDocumentFile");
+  const files = Array.from(fileInput?.files || []);
 
-  async function uploadDocumentForCurrentTask() {
-    const currentUser = getCurrentUser();
-    const taskId = Number(byId("editTaskId")?.value);
-    const fileInput = byId("taskDocumentFile");
-    const file = fileInput?.files?.[0];
+  if (!currentUser || !taskId || !files.length) {
+    alert("Veuillez sélectionner au moins un fichier.");
+    return;
+  }
 
-    if (!currentUser || !taskId || !file) {
-      alert("Veuillez sélectionner un fichier.");
-      return;
-    }
+  try {
+    const uploadedDocs = await Services.uploadTaskDocuments(taskId, files, currentUser.id);
 
-    try {
-      await Services.uploadTaskDocument(taskId, file, currentUser.id);
-
+    for (const doc of uploadedDocs) {
       await Services.logTaskActivity({
         taskId,
         actionType: "document_upload",
@@ -1381,18 +1381,21 @@
         actorId: currentUser.id,
         actorName: getUserDisplayName(currentUser),
         oldValue: null,
-        newValue: { file_name: file.name }
+        newValue: {
+          file_name: doc.file_name,
+          file_path: doc.file_path
+        }
       });
-
-      if (fileInput) fileInput.value = "";
-      await renderTaskDocuments(taskId);
-      await renderTaskActivityLogs(taskId);
-    } catch (error) {
-      alert(`Erreur upload document : ${error.message || error}`);
     }
-  }
 
-  async function saveTaskUpdate() {
+    if (fileInput) fileInput.value = "";
+    await renderTaskDocuments(taskId);
+    await renderTaskActivityLogs(taskId);
+  } catch (error) {
+    alert(`Erreur upload document : ${error.message || error}`);
+  }
+}
+    async function saveTaskUpdate() {
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
 
