@@ -10,7 +10,6 @@
   const normalizeStatusToDatabase = Core.normalizeStatusToDatabase || ((v) => v || "");
   const computeAutomaticStatus = Core.computeAutomaticStatus || ((task) => task.status || "");
   const clamp = Core.clamp || ((v, min, max) => Math.max(min, Math.min(max, Number(v) || 0)));
-  const canExportDashboard = Core.canExportDashboard || (() => false);
 
   const STATUS = Core.STATUS || {
     ON_TRACK: "En bonne voie",
@@ -24,6 +23,15 @@
     logs: [],
     filteredTasks: []
   };
+
+  function escapeHtml(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
 
   function getUserRole(user) {
     return String(user?.role || user?.user_type || "staff").trim().toLowerCase();
@@ -54,15 +62,41 @@
     return Math.floor((a.getTime() - b.getTime()) / (1000 * 60 * 60 * 24));
   }
 
-  function formatPercent(value) {
-    return `${Math.round(Number(value || 0))}%`;
-  }
-
   function safeDate(dateValue) {
     if (!dateValue) return "";
     const d = new Date(dateValue);
     if (Number.isNaN(d.getTime())) return "";
     return d.toISOString().slice(0, 10);
+  }
+
+  function getBadgeLevel(value, warningThreshold, dangerThreshold, reverse = false) {
+    if (!reverse) {
+      if (value >= dangerThreshold) return { label: "Élevé", className: "badge-red" };
+      if (value >= warningThreshold) return { label: "Modéré", className: "badge-orange" };
+      return { label: "Stable", className: "badge-green" };
+    }
+    if (value <= dangerThreshold) return { label: "Faible", className: "badge-red" };
+    if (value <= warningThreshold) return { label: "Moyen", className: "badge-orange" };
+    return { label: "Bon", className: "badge-green" };
+  }
+
+  function getPriorityAlert(task) {
+    if (task.priority === "Critique" && task.computed_status === STATUS.LATE) {
+      return { label: "Critique", className: "badge-red" };
+    }
+    if (task.computed_status === STATUS.LATE) {
+      return { label: "Retard", className: "badge-red" };
+    }
+    if (task.computed_status === STATUS.DUE_SOON) {
+      return { label: "Imminente", className: "badge-orange" };
+    }
+    return { label: "Suivi", className: "badge-blue" };
+  }
+
+  function getStaleSignal(days) {
+    if (days >= 14) return { label: "Fort signal", className: "badge-red" };
+    if (days >= 7) return { label: "Vigilance", className: "badge-orange" };
+    return { label: "À jour", className: "badge-green" };
   }
 
   function getLastActivityDate(taskId, task) {
@@ -153,15 +187,6 @@
     }
   }
 
-  function escapeHtml(value) {
-    return String(value ?? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
   function renderExecutiveKpis(tasks) {
     const el = byId("managementExecutiveKpis");
     if (!el) return;
@@ -178,17 +203,27 @@
       : 0;
     const completionRate = total ? Math.round((completed / total) * 100) : 0;
 
-    el.innerHTML = `
-      <div class="card"><h3>Total tâches</h3><div class="value">${total}</div></div>
-      <div class="card"><h3>Achevées</h3><div class="value">${completed}</div></div>
-      <div class="card"><h3>En bonne voie</h3><div class="value">${onTrack}</div></div>
-      <div class="card"><h3>Échéance imminente</h3><div class="value">${dueSoon}</div></div>
-      <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
-      <div class="card"><h3>Taux d’achèvement</h3><div class="value">${completionRate}%</div></div>
-      <div class="card"><h3>Progression moyenne</h3><div class="value">${avgProgress}%</div></div>
-      <div class="card"><h3>Tâches critiques</h3><div class="value">${critical}</div></div>
-      <div class="card"><h3>Tâches avec documents</h3><div class="value">${withDocs}</div></div>
-    `;
+    const items = [
+      { title: "Total tâches", value: total, accent: "blue", icon: "◼" },
+      { title: "Achevées", value: completed, accent: "green", icon: "✓" },
+      { title: "En bonne voie", value: onTrack, accent: "blue", icon: "↗" },
+      { title: "Imminentes", value: dueSoon, accent: "orange", icon: "!" },
+      { title: "En retard", value: late, accent: "red", icon: "⚠" },
+      { title: "Taux d’achèvement", value: `${completionRate}%`, accent: "green", icon: "%" },
+      { title: "Progression moyenne", value: `${avgProgress}%`, accent: "blue", icon: "◔" },
+      { title: "Tâches critiques", value: critical, accent: "red", icon: "◆" },
+      { title: "Avec documents", value: withDocs, accent: "orange", icon: "▣" }
+    ];
+
+    el.innerHTML = items.map(item => `
+      <div class="management-kpi-card management-kpi-${item.accent}">
+        <div class="management-kpi-top">
+          <span class="management-kpi-icon">${item.icon}</span>
+          <span class="management-kpi-label">${escapeHtml(item.title)}</span>
+        </div>
+        <div class="management-kpi-value">${escapeHtml(item.value)}</div>
+      </div>
+    `).join("");
   }
 
   function getPillarAggregates(tasks) {
@@ -231,6 +266,50 @@
     })).sort((a, b) => a.pillar.localeCompare(b.pillar));
   }
 
+  function renderGauge(targetId, percent, label, accentClass = "") {
+    const el = byId(targetId);
+    if (!el) return;
+
+    const safePercent = clamp(percent, 0, 100);
+
+    el.innerHTML = `
+      <div class="management-gauge ${accentClass}">
+        <div class="management-gauge-ring" style="--gauge:${safePercent};">
+          <div class="management-gauge-center">
+            <div class="management-gauge-value">${safePercent}%</div>
+            <div class="management-gauge-label">${escapeHtml(label)}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderExecutiveSummary(tasks) {
+    const el = byId("managementExecutiveSummary");
+    if (!el) return;
+
+    const total = tasks.length;
+    const late = tasks.filter(t => t.computed_status === STATUS.LATE).length;
+    const dueSoon = tasks.filter(t => t.computed_status === STATUS.DUE_SOON).length;
+    const critical = tasks.filter(t => t.priority === "Critique").length;
+    const withDocs = tasks.filter(t => getDocCountForTask(t.id) > 0).length;
+    const completed = tasks.filter(t => t.computed_status === STATUS.DONE).length;
+
+    const bullets = [
+      `Le portefeuille compte ${total} tâche(s), dont ${completed} achevée(s).`,
+      `${late} tâche(s) sont actuellement en retard et ${dueSoon} à échéance imminente.`,
+      `${critical} tâche(s) critiques requièrent une attention particulière.`,
+      `${withDocs} tâche(s) disposent déjà d’une traçabilité documentaire.`
+    ];
+
+    el.innerHTML = bullets.map(item => `
+      <div class="management-summary-item">
+        <span class="management-summary-dot"></span>
+        <span>${escapeHtml(item)}</span>
+      </div>
+    `).join("");
+  }
+
   function renderBarChart(targetId, items, valueKey, barClass = "") {
     const el = byId(targetId);
     if (!el) return;
@@ -241,7 +320,7 @@
     }
 
     el.innerHTML = items.map(item => `
-      <div class="management-bar-row">
+      <div class="management-bar-row premium-row">
         <div class="management-bar-label">${escapeHtml(item.pillar)}</div>
         <div class="management-bar-track">
           <div class="management-bar-fill ${barClass}" style="width:${clamp(item[valueKey], 0, 100)}%"></div>
@@ -256,20 +335,24 @@
     if (!tbody) return;
 
     tbody.innerHTML = aggregates.length
-      ? aggregates.map(item => `
-          <tr>
-            <td>${escapeHtml(item.pillar)}</td>
-            <td>${item.total}</td>
-            <td>${item.completed}</td>
-            <td>${item.late}</td>
-            <td>${item.dueSoon}</td>
-            <td>${item.completionRate}%</td>
-            <td>${item.avgProgress}%</td>
-            <td>${item.withDocs}</td>
-            <td>${item.withoutDocs}</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="9"><span class="muted">Aucune donnée à afficher.</span></td></tr>`;
+      ? aggregates.map(item => {
+          const health = getBadgeLevel(item.completionRate, 55, 35, true);
+          return `
+            <tr>
+              <td>${escapeHtml(item.pillar)}</td>
+              <td>${item.total}</td>
+              <td>${item.completed}</td>
+              <td>${item.late}</td>
+              <td>${item.dueSoon}</td>
+              <td>${item.completionRate}%</td>
+              <td>${item.avgProgress}%</td>
+              <td>${item.withDocs}</td>
+              <td>${item.withoutDocs}</td>
+              <td><span class="badge ${health.className}">${health.label}</span></td>
+            </tr>
+          `;
+        }).join("")
+      : `<tr><td colspan="10"><span class="muted">Aucune donnée à afficher.</span></td></tr>`;
   }
 
   function renderAlerts(tasks) {
@@ -292,17 +375,21 @@
       .slice(0, 10);
 
     tbody.innerHTML = ranked.length
-      ? ranked.map(task => `
-          <tr>
-            <td>${escapeHtml(task.title)}</td>
-            <td>${escapeHtml(task.pillar || "")}</td>
-            <td>${escapeHtml(task.assigned_to_name || "")}</td>
-            <td>${escapeHtml(task.priority || "")}</td>
-            <td>${escapeHtml(task.computed_status || "")}</td>
-            <td>${escapeHtml(safeDate(task.due_date) || "—")}</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="6"><span class="muted">Aucune alerte prioritaire.</span></td></tr>`;
+      ? ranked.map(task => {
+          const signal = getPriorityAlert(task);
+          return `
+            <tr>
+              <td>${escapeHtml(task.title)}</td>
+              <td>${escapeHtml(task.pillar || "")}</td>
+              <td>${escapeHtml(task.assigned_to_name || "")}</td>
+              <td>${escapeHtml(task.priority || "")}</td>
+              <td>${escapeHtml(task.computed_status || "")}</td>
+              <td>${escapeHtml(safeDate(task.due_date) || "—")}</td>
+              <td><span class="badge ${signal.className}">${signal.label}</span></td>
+            </tr>
+          `;
+        }).join("")
+      : `<tr><td colspan="7"><span class="muted">Aucune alerte prioritaire.</span></td></tr>`;
   }
 
   function renderStaleTasks(tasks) {
@@ -326,16 +413,20 @@
       .slice(0, 10);
 
     tbody.innerHTML = staleRows.length
-      ? staleRows.map(task => `
-          <tr>
-            <td>${escapeHtml(task.title)}</td>
-            <td>${escapeHtml(task.pillar || "")}</td>
-            <td>${escapeHtml(task.assigned_to_name || "")}</td>
-            <td>${escapeHtml(safeDate(task.lastActivity) || "—")}</td>
-            <td>${task.staleDays ?? "—"}</td>
-          </tr>
-        `).join("")
-      : `<tr><td colspan="5"><span class="muted">Aucune tâche sans activité récente.</span></td></tr>`;
+      ? staleRows.map(task => {
+          const signal = getStaleSignal(task.staleDays || 0);
+          return `
+            <tr>
+              <td>${escapeHtml(task.title)}</td>
+              <td>${escapeHtml(task.pillar || "")}</td>
+              <td>${escapeHtml(task.assigned_to_name || "")}</td>
+              <td>${escapeHtml(safeDate(task.lastActivity) || "—")}</td>
+              <td>${task.staleDays ?? "—"}</td>
+              <td><span class="badge ${signal.className}">${signal.label}</span></td>
+            </tr>
+          `;
+        }).join("")
+      : `<tr><td colspan="6"><span class="muted">Aucune tâche sans activité récente.</span></td></tr>`;
   }
 
   function renderDocumentationKpis(tasks) {
@@ -349,33 +440,21 @@
     const completedWithoutDocs = tasks.filter(t => t.computed_status === STATUS.DONE && getDocCountForTask(t.id) === 0).length;
     const criticalWithoutDocs = tasks.filter(t => t.priority === "Critique" && getDocCountForTask(t.id) === 0).length;
 
-    el.innerHTML = `
-      <div class="management-doc-card">
-        <span class="section-kicker">Documents</span>
-        <h4>Total documents</h4>
-        <div class="management-doc-value">${totalDocs}</div>
+    const items = [
+      { kicker: "Documents", title: "Total documents", value: totalDocs, accent: "blue" },
+      { kicker: "Traçabilité", title: "Tâches avec documents", value: withDocs, accent: "green" },
+      { kicker: "Vigilance", title: "Tâches sans documents", value: withoutDocs, accent: "orange" },
+      { kicker: "Redevabilité", title: "Achevées sans justificatif", value: completedWithoutDocs, accent: "red" },
+      { kicker: "Critiques", title: "Critiques sans document", value: criticalWithoutDocs, accent: "red" }
+    ];
+
+    el.innerHTML = items.map(item => `
+      <div class="management-doc-card premium-doc-card ${item.accent}">
+        <span class="section-kicker">${escapeHtml(item.kicker)}</span>
+        <h4>${escapeHtml(item.title)}</h4>
+        <div class="management-doc-value">${escapeHtml(item.value)}</div>
       </div>
-      <div class="management-doc-card">
-        <span class="section-kicker">Traçabilité</span>
-        <h4>Tâches avec documents</h4>
-        <div class="management-doc-value">${withDocs}</div>
-      </div>
-      <div class="management-doc-card">
-        <span class="section-kicker">Vigilance</span>
-        <h4>Tâches sans documents</h4>
-        <div class="management-doc-value">${withoutDocs}</div>
-      </div>
-      <div class="management-doc-card">
-        <span class="section-kicker">Redevabilité</span>
-        <h4>Achevées sans justificatif</h4>
-        <div class="management-doc-value">${completedWithoutDocs}</div>
-      </div>
-      <div class="management-doc-card">
-        <span class="section-kicker">Critiques</span>
-        <h4>Critiques sans document</h4>
-        <div class="management-doc-value">${criticalWithoutDocs}</div>
-      </div>
-    `;
+    `).join("");
   }
 
   async function loadManagementSideData() {
@@ -387,34 +466,36 @@
       sb.from("task_activity_logs").select("id, task_id, created_at, action_type, action_label")
     ]);
 
-    if (docsRes.error) {
-      console.warn("Lecture task_documents impossible :", docsRes.error.message);
-      ManagementState.documents = [];
-    } else {
-      ManagementState.documents = docsRes.data || [];
-    }
-
-    if (logsRes.error) {
-      console.warn("Lecture task_activity_logs impossible :", logsRes.error.message);
-      ManagementState.logs = [];
-    } else {
-      ManagementState.logs = logsRes.data || [];
-    }
+    ManagementState.documents = docsRes.error ? [] : (docsRes.data || []);
+    ManagementState.logs = logsRes.error ? [] : (logsRes.data || []);
   }
 
   function renderAll() {
     const tasks = getFilteredTasks();
     ManagementState.filteredTasks = tasks;
 
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.computed_status === STATUS.DONE).length;
+    const completionRate = total ? Math.round((completed / total) * 100) : 0;
+    const avgProgress = total ? Math.round(tasks.reduce((sum, t) => sum + Number(t.progress || 0), 0) / total) : 0;
+
     renderExecutiveKpis(tasks);
+    renderGauge("completionGauge", completionRate, "Achèvement", "is-completion");
+    renderGauge("progressGauge", avgProgress, "Progression", "is-progress");
+    renderExecutiveSummary(tasks);
 
     const aggregates = getPillarAggregates(tasks);
     renderBarChart("pillarCompletionChart", aggregates, "completionRate");
     renderBarChart("pillarDelayChart", aggregates, "delayRate", "is-danger");
-    renderBarChart("pillarVolumeChart", aggregates.map(item => ({
-      pillar: item.pillar,
-      totalPercent: tasks.length ? Math.round((item.total / tasks.length) * 100) : 0
-    })), "totalPercent", "is-orange");
+    renderBarChart(
+      "pillarVolumeChart",
+      aggregates.map(item => ({
+        pillar: item.pillar,
+        totalPercent: tasks.length ? Math.round((item.total / tasks.length) * 100) : 0
+      })),
+      "totalPercent",
+      "is-orange"
+    );
 
     renderPillarSummaryTable(aggregates);
     renderAlerts(tasks);
@@ -464,7 +545,7 @@
 
     window.XLSX.utils.book_append_sheet(wb, tasksSheet, "Management_Taches");
     window.XLSX.utils.book_append_sheet(wb, pillarsSheet, "Synthese_Piliers");
-    window.XLSX.writeFile(wb, "UNW_Management_Dashboard.xlsx");
+    window.XLSX.writeFile(wb, "UNW_Management_Dashboard_V2.xlsx");
   }
 
   function bindEvents() {
@@ -538,6 +619,34 @@
     });
   }
 
+  function populateFilters(tasks) {
+    const pillarFilter = byId("managementPillarFilter");
+    const supervisorFilter = byId("managementSupervisorFilter");
+
+    const pillars = [...new Set(tasks.map(t => t.pillar).filter(Boolean))].sort();
+    const supervisors = [...new Map(
+      tasks
+        .filter(t => t.supervisor_id)
+        .map(t => [String(t.supervisor_id), { id: t.supervisor_id, name: t.supervisor_name || "Non défini" }])
+    ).values()];
+
+    if (pillarFilter) {
+      const current = pillarFilter.value || "";
+      pillarFilter.innerHTML =
+        `<option value="">Tous les piliers</option>` +
+        pillars.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
+      pillarFilter.value = pillars.includes(current) ? current : "";
+    }
+
+    if (supervisorFilter) {
+      const current = supervisorFilter.value || "";
+      supervisorFilter.innerHTML =
+        `<option value="">Tous les superviseurs</option>` +
+        supervisors.map(s => `<option value="${escapeHtml(String(s.id))}">${escapeHtml(s.name)}</option>`).join("");
+      supervisorFilter.value = supervisors.some(s => String(s.id) === String(current)) ? current : "";
+    }
+  }
+
   function initHeader() {
     const currentUser = getCurrentUser();
     const select = byId("currentUserSelect");
@@ -595,8 +704,8 @@
     try {
       await bootstrap();
     } catch (error) {
-      console.error(error);
-      showMessage(`Une erreur empêche le chargement du dashboard management : ${error.message || error}`, "error");
+        console.error(error);
+        showMessage(`Une erreur empêche le chargement du dashboard management : ${error.message || error}`, "error");
     }
   });
 })();
