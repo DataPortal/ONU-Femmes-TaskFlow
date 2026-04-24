@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONU Femmes — Dashboard global management</title>
+  <meta
+    name="description"
+    content="Dashboard global management pour le pilotage stratégique des tâches à ONU Femmes RDC."
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body data-page="management-dashboard">
+  <header class="site-header fixed-header">
+    <div class="header-inner container">
+      <div class="brand-block">
+        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+        <div class="brand-text">
+          <span class="eyebrow">TaskFlow Management Portal</span>
+          <h1>ONU Femmes RDC — Dashboard global management</h1>
+          <p>Vue synthétique de pilotage stratégique, alertes et performance par pilier</p>
+        </div>
+      </div>
+
+      <div class="top-tools no-print" aria-label="Outils utilisateur">
+        <div class="user-switcher">
+          <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
+          <select id="currentUserSelect" aria-label="Utilisateur courant"></select>
+        </div>
+
+        <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
+
+        <button id="logoutBtn" class="btn btn-secondary" type="button">
+          Déconnexion
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html">Mon équipe</a>
+      <a href="inscription.html">Inscription</a>
+      <a href="profile.html">Mon profil</a>
+      <a href="management-dashboard.html" class="active" aria-current="page">Management</a>
+    </div>
+  </nav>
+
+  <main class="container main-content">
+    <div id="managementPageMessage" class="page-message" aria-live="polite"></div>
+
+    <section class="dashboard-control-panel no-print" aria-label="Filtres management">
+      <div class="dashboard-command-bar">
+        <div class="dashboard-command-title">
+          <span class="section-kicker">Pilotage exécutif</span>
+          <h3>Vue globale bureau</h3>
+          <p>Filtrez la période, le pilier, le superviseur, la priorité ou le statut pour lire les tendances clés.</p>
+        </div>
+
+        <div class="dashboard-command-actions">
+          <button id="managementRefreshBtn" class="btn btn-secondary" type="button">
+            Réinitialiser / Actualiser
+          </button>
+
+          <button id="managementExportBtn" class="btn btn-outline" type="button">
+            Exporter Excel
+          </button>
+
+          <button id="managementPrintBtn" class="btn btn-secondary" type="button">
+            Imprimer
+          </button>
+        </div>
+      </div>
+
+      <div class="dashboard-filter-chips">
+        <div class="dashboard-search-chip">
+          <label for="managementSearchInput" class="sr-only">Recherche</label>
+          <input
+            id="managementSearchInput"
+            type="text"
+            placeholder="Rechercher une tâche, un pilier, un staff ou un superviseur..."
+          />
+          <button id="managementSearchBtn" class="btn btn-primary" type="button">
+            Rechercher
+          </button>
+        </div>
+
+        <details class="filter-menu">
+          <summary>Pilier</summary>
+          <div class="filter-popover">
+            <label for="managementPillarFilter">Pilier</label>
+            <select id="managementPillarFilter">
+              <option value="">Tous les piliers</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu">
+          <summary>Superviseur</summary>
+          <div class="filter-popover">
+            <label for="managementSupervisorFilter">Superviseur</label>
+            <select id="managementSupervisorFilter">
+              <option value="">Tous les superviseurs</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu">
+          <summary>Priorité</summary>
+          <div class="filter-popover">
+            <label for="managementPriorityFilter">Priorité</label>
+            <select id="managementPriorityFilter">
+              <option value="">Toutes les priorités</option>
+              <option value="Basse">Basse</option>
+              <option value="Moyenne">Moyenne</option>
+              <option value="Haute">Haute</option>
+              <option value="Critique">Critique</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu">
+          <summary>Statut</summary>
+          <div class="filter-popover">
+            <label for="managementStatusFilter">Statut</label>
+            <select id="managementStatusFilter">
+              <option value="">Tous les statuts</option>
+              <option value="En bonne voie">En bonne voie</option>
+              <option value="Échéance imminente">Échéance imminente</option>
+              <option value="En retard">En retard</option>
+              <option value="Achevé">Achevé</option>
+            </select>
+          </div>
+        </details>
+
+        <details class="filter-menu filter-menu-wide">
+          <summary>Dates</summary>
+          <div class="filter-popover date-popover">
+            <div class="field">
+              <label for="managementStartDate">Date de début</label>
+              <input id="managementStartDate" type="date" />
+            </div>
+
+            <div class="field">
+              <label for="managementEndDate">Date de fin</label>
+              <input id="managementEndDate" type="date" />
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section id="managementExecutiveKpis" class="dashboard-kpis"></section>
+
+    <section class="management-grid">
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Taux d’achèvement par pilier</h3>
+          <p>Comparaison synthétique de la performance des piliers</p>
+        </div>
+        <div id="pillarCompletionChart" class="management-chart-block"></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Taux de retard par pilier</h3>
+          <p>Lecture rapide des zones sous pression</p>
+        </div>
+        <div id="pillarDelayChart" class="management-chart-block"></div>
+      </div>
+    </section>
+
+    <section class="table-card">
+      <div class="table-card-header">
+        <h3>Synthèse par pilier</h3>
+        <p>Volume, avancement, retards, progression moyenne et documentation</p>
+      </div>
+
+      <div class="table-wrap">
+        <table id="managementPillarTable" class="tasks-table management-table">
+          <colgroup>
+            <col style="width:180px;">
+            <col style="width:110px;">
+            <col style="width:110px;">
+            <col style="width:110px;">
+            <col style="width:130px;">
+            <col style="width:150px;">
+            <col style="width:150px;">
+            <col style="width:130px;">
+            <col style="width:130px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Pilier</th>
+              <th>Total</th>
+              <th>Achevées</th>
+              <th>En retard</th>
+              <th>Imminentes</th>
+              <th>Taux d’achèvement</th>
+              <th>Progression moyenne</th>
+              <th>Avec documents</th>
+              <th>Sans documents</th>
+            </tr>
+          </thead>
+          <tbody id="managementPillarTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="management-grid">
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Alertes management</h3>
+          <p>Tâches critiques en retard ou proches de l’échéance</p>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tasks-table management-table">
+            <colgroup>
+              <col style="width:220px;">
+              <col style="width:150px;">
+              <col style="width:150px;">
+              <col style="width:95px;">
+              <col style="width:120px;">
+              <col style="width:110px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Tâche</th>
+                <th>Pilier</th>
+                <th>Assigné à</th>
+                <th>Priorité</th>
+                <th>Statut</th>
+                <th>Échéance</th>
+              </tr>
+            </thead>
+            <tbody id="managementAlertsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Tâches sans mise à jour récente</h3>
+          <p>Base de vigilance pour les arbitrages de management</p>
+        </div>
+
+        <div class="table-wrap">
+          <table class="tasks-table management-table">
+            <colgroup>
+              <col style="width:220px;">
+              <col style="width:150px;">
+              <col style="width:150px;">
+              <col style="width:160px;">
+              <col style="width:140px;">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Tâche</th>
+                <th>Pilier</th>
+                <th>Assigné à</th>
+                <th>Dernière activité</th>
+                <th>Jours sans activité</th>
+              </tr>
+            </thead>
+            <tbody id="managementStaleTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="management-grid">
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Charge de travail par pilier</h3>
+          <p>Répartition des volumes de tâches</p>
+        </div>
+        <div id="pillarVolumeChart" class="management-chart-block"></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <h3>Qualité du suivi documentaire</h3>
+          <p>Traçabilité, justificatifs et couverture documentaire</p>
+        </div>
+        <div id="managementDocumentationKpis" class="management-doc-kpis"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth-utils.js"></script>
+  <script src="app-core.js"></script>
+  <script src="app-services.js"></script>
+  <script src="app-ui.js"></script>
+  <script src="management-dashboard.js"></script>
+</body>
+</html>
