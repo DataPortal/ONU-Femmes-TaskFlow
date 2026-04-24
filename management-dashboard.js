@@ -619,34 +619,6 @@
     });
   }
 
-  function populateFilters(tasks) {
-    const pillarFilter = byId("managementPillarFilter");
-    const supervisorFilter = byId("managementSupervisorFilter");
-
-    const pillars = [...new Set(tasks.map(t => t.pillar).filter(Boolean))].sort();
-    const supervisors = [...new Map(
-      tasks
-        .filter(t => t.supervisor_id)
-        .map(t => [String(t.supervisor_id), { id: t.supervisor_id, name: t.supervisor_name || "Non défini" }])
-    ).values()];
-
-    if (pillarFilter) {
-      const current = pillarFilter.value || "";
-      pillarFilter.innerHTML =
-        `<option value="">Tous les piliers</option>` +
-        pillars.map(p => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
-      pillarFilter.value = pillars.includes(current) ? current : "";
-    }
-
-    if (supervisorFilter) {
-      const current = supervisorFilter.value || "";
-      supervisorFilter.innerHTML =
-        `<option value="">Tous les superviseurs</option>` +
-        supervisors.map(s => `<option value="${escapeHtml(String(s.id))}">${escapeHtml(s.name)}</option>`).join("");
-      supervisorFilter.value = supervisors.some(s => String(s.id) === String(current)) ? current : "";
-    }
-  }
-
   function initHeader() {
     const currentUser = getCurrentUser();
     const select = byId("currentUserSelect");
@@ -704,8 +676,8 @@
     try {
       await bootstrap();
     } catch (error) {
-        console.error(error);
-        showMessage(`Une erreur empêche le chargement du dashboard management : ${error.message || error}`, "error");
+      console.error(error);
+      showMessage(`Une erreur empêche le chargement du dashboard management : ${error.message || error}`, "error");
     }
   });
 })();
