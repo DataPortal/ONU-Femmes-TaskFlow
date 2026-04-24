@@ -545,74 +545,57 @@
     });
   }
 
- function renderMyTeamPage() {
-  const currentUser = getCurrentUser();
-  const currentRole = getUserRole(currentUser);
-  const membersBox = byId("teamMembersList");
-  const title = byId("myTeamTitle");
+  function renderMyTasksPage() {
+    const currentUser = getCurrentUser();
+    const tbody = byId("myTasksTbody");
+    const title = byId("myTasksTitle");
+    const assignedToFilter = byId("myTasksAssignedToFilter");
+    const activityFilter = byId("myTasksActivityFilter");
 
-  if (!currentUser || !membersBox || !title) return;
+    if (!currentUser || !tbody || !title) return;
 
-  let teamMembers = [];
-  let teamTasks = [];
-
-  if (currentRole === "admin") {
-    teamMembers = AppState.users || [];
-    teamTasks = AppState.tasks || [];
-  } else {
-    teamMembers = (AppState.users || []).filter(user =>
-      String(user.pillar_id) === String(currentUser.pillar_id)
+    const myTasks = getVisibleTasks().filter(task =>
+      String(task.assigned_to_id) === String(currentUser.id)
     );
 
-    teamTasks = getVisibleTasks();
+    if (assignedToFilter) {
+      const currentValue = assignedToFilter.value || "";
+      const assignees = myTasks.length ? [{ id: currentUser.id, name: getUserDisplayName(currentUser) }] : [];
+
+      assignedToFilter.innerHTML =
+        `<option value="">Tous les assignés</option>` +
+        assignees
+          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
+          .join("");
+
+      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+    }
+
+    if (activityFilter) {
+      const currentValue = activityFilter.value || "";
+      const activityIds = [...new Set(myTasks.map(task => task.activity_id).filter(Boolean))];
+      const activities = AppState.mainActivities.filter(activity =>
+        activityIds.some(id => String(id) === String(activity.id))
+      );
+
+      activityFilter.innerHTML =
+        `<option value="">Toutes les activités</option>` +
+        activities
+          .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
+          .join("");
+
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
+    }
+
+    const filteredTasks = getFilteredMyTasks(myTasks);
+
+    title.textContent = `Mes tâches — ${getUserDisplayName(currentUser)}`;
+    renderKPIs("myTasksKpis", filteredTasks);
+
+    tbody.innerHTML = filteredTasks.length
+      ? renderTaskRows(filteredTasks, { showDescription: true })
+      : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
   }
-
-  // Les filtres restent utiles pour calculer les KPI et les compteurs par membre
-  populateTeamFilters(teamTasks, teamMembers);
-
-  const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
-
-  title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
-  renderKPIs("myTeamKpis", filteredTeamTasks);
-
-  membersBox.innerHTML = teamMembers.length
-    ? teamMembers
-        .map(member => {
-          const memberTasks = filteredTeamTasks.filter(task =>
-            String(task.assigned_to_id) === String(member.id)
-          );
-
-          const completed = memberTasks.filter(task =>
-            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE
-          ).length;
-
-          const late = memberTasks.filter(task =>
-            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE
-          ).length;
-
-          const dueSoon = memberTasks.filter(task =>
-            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON
-          ).length;
-
-          return `
-            <div class="member-card">
-              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
-              <div class="muted">
-                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
-              </div>
-
-              <div class="kpi-inline" style="margin-top:10px;">
-                <span><strong>${memberTasks.length}</strong> tâche(s)</span>
-                <span><strong>${completed}</strong> achevée(s)</span>
-                <span><strong>${dueSoon}</strong> imminente(s)</span>
-                <span><strong>${late}</strong> en retard</span>
-              </div>
-            </div>
-          `;
-        })
-        .join("")
-    : `<div class="empty">Aucun membre rattaché.</div>`;
-}
 
   function getFilteredTeamTasks(tasks) {
     return applyTaskFilters(tasks, {
@@ -638,12 +621,14 @@
         teamMembers
           .map(member => `<option value="${escapeHtml(member.id)}">${escapeHtml(getUserDisplayName(member))}</option>`)
           .join("");
-      assignedToFilter.value = teamMembers.some(member => String(member.id) === String(currentValue)) ? currentValue : "";
+      assignedToFilter.value = teamMembers.some(member => String(member.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (supervisorFilter) {
       const currentValue = supervisorFilter.value || "";
-      const supervisors = AppState.users.filter(user => {
+      const supervisors = (AppState.users || []).filter(user => {
         const role = getUserRole(user);
         return role === "supervisor" || role === "admin";
       });
@@ -653,13 +638,16 @@
         supervisors
           .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(getUserDisplayName(user))}</option>`)
           .join("");
-      supervisorFilter.value = supervisors.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
+
+      supervisorFilter.value = supervisors.some(user => String(user.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
 
     if (activityFilter) {
       const currentValue = activityFilter.value || "";
       const activityIds = [...new Set(teamTasks.map(task => task.activity_id).filter(Boolean))];
-      const activities = AppState.mainActivities.filter(activity =>
+      const activities = (AppState.mainActivities || []).filter(activity =>
         activityIds.some(id => String(id) === String(activity.id))
       );
 
@@ -668,7 +656,10 @@
         activities
           .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
           .join("");
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
+
+      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue))
+        ? currentValue
+        : "";
     }
   }
 
@@ -676,46 +667,75 @@
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
     const membersBox = byId("teamMembersList");
-    const tbody = byId("teamTasksTbody");
     const title = byId("myTeamTitle");
 
-    if (!currentUser || !membersBox || !tbody || !title) return;
+    if (!currentUser || !membersBox || !title) return;
 
     let teamMembers = [];
     let teamTasks = [];
 
     if (currentRole === "admin") {
-      teamMembers = AppState.users;
-      teamTasks = AppState.tasks;
+      teamMembers = AppState.users || [];
+      teamTasks = AppState.tasks || [];
     } else {
-      teamMembers = AppState.users.filter(user =>
+      teamMembers = (AppState.users || []).filter(user =>
         String(user.pillar_id) === String(currentUser.pillar_id)
       );
+
       teamTasks = getVisibleTasks();
     }
 
     populateTeamFilters(teamTasks, teamMembers);
 
-   const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
+    const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
 
-title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
-renderKPIs("myTeamKpis", filteredTeamTasks);
+    title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
+    renderKPIs("myTeamKpis", filteredTeamTasks);
 
-membersBox.innerHTML = teamMembers.length
-  ? teamMembers
-      .map(member => `
-        <div class="member-card">
-          <h4>${escapeHtml(getUserDisplayName(member))}</h4>
-          <div class="muted">
-            ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
-          </div>
-          <div class="kpi-inline">
-            <span>${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length} tâche(s)</span>
-          </div>
-        </div>
-      `)
-      .join("")
-  : `<div class="empty">Aucun membre rattaché.</div>`; 
+    membersBox.innerHTML = teamMembers.length
+      ? teamMembers
+          .map(member => {
+            const memberTasks = filteredTeamTasks.filter(task =>
+              String(task.assigned_to_id) === String(member.id)
+            );
+
+            const completed = memberTasks.filter(task =>
+              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE
+            ).length;
+
+            const late = memberTasks.filter(task =>
+              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE
+            ).length;
+
+            const dueSoon = memberTasks.filter(task =>
+              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON
+            ).length;
+
+            const onTrack = memberTasks.filter(task =>
+              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.ON_TRACK
+            ).length;
+
+            return `
+              <div class="member-card">
+                <h4>${escapeHtml(getUserDisplayName(member))}</h4>
+                <div class="muted">
+                  ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
+                </div>
+
+                <div class="kpi-inline" style="margin-top:10px;">
+                  <span><strong>${memberTasks.length}</strong> tâche(s)</span>
+                  <span><strong>${completed}</strong> achevée(s)</span>
+                  <span><strong>${onTrack}</strong> en bonne voie</span>
+                  <span><strong>${dueSoon}</strong> imminente(s)</span>
+                  <span><strong>${late}</strong> en retard</span>
+                </div>
+              </div>
+            `;
+          })
+          .join("")
+      : `<div class="empty">Aucun membre rattaché.</div>`;
+  }
+
   function populateRegisterDropdowns() {
     const pillarSupervisor = byId("pillarSupervisor");
     const userPillar = byId("userPillar");
@@ -786,26 +806,26 @@ membersBox.innerHTML = teamMembers.length
               <div class="muted">${escapeHtml(doc.mime_type || "Fichier")}</div>
               <div class="muted">${Number(doc.file_size || 0).toLocaleString()} octets</div>
               <div class="card-actions" style="margin-top:12px;">
-  <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
+                <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
 
-  <button
-    class="action-btn js-replace-task-document"
-    type="button"
-    data-document-id="${Number(doc.id)}"
-  >
-    Remplacer
-  </button>
+                <button
+                  class="action-btn js-replace-task-document"
+                  type="button"
+                  data-document-id="${Number(doc.id)}"
+                >
+                  Remplacer
+                </button>
 
-  <button
-    class="action-btn secondary-danger js-delete-task-document"
-    type="button"
-    data-document-id="${Number(doc.id)}"
-    data-file-path="${escapeHtml(doc.file_path)}"
-  >
-    Supprimer
-  </button>
-</div>
+                <button
+                  class="action-btn secondary-danger js-delete-task-document"
+                  type="button"
+                  data-document-id="${Number(doc.id)}"
+                  data-file-path="${escapeHtml(doc.file_path)}"
+                >
+                  Supprimer
+                </button>
               </div>
+            </div>
           `;
         })
       );
@@ -815,47 +835,49 @@ membersBox.innerHTML = teamMembers.length
       list.innerHTML = `<div class="error-box">Erreur chargement documents : ${escapeHtml(error.message || error)}</div>`;
     }
   }
-async function replaceCurrentTaskDocument(documentId) {
-  const currentUser = getCurrentUser();
-  const taskId = Number(byId("editTaskId")?.value);
 
-  if (!currentUser || !taskId || !documentId) return;
+  async function replaceCurrentTaskDocument(documentId) {
+    const currentUser = getCurrentUser();
+    const taskId = Number(byId("editTaskId")?.value);
 
-  const tempInput = document.createElement("input");
-  tempInput.type = "file";
+    if (!currentUser || !taskId || !documentId) return;
 
-  tempInput.onchange = async () => {
-    const newFile = tempInput.files?.[0];
-    if (!newFile) return;
+    const tempInput = document.createElement("input");
+    tempInput.type = "file";
 
-    try {
-      const result = await Services.replaceTaskDocument(documentId, newFile, currentUser.id);
+    tempInput.onchange = async () => {
+      const newFile = tempInput.files?.[0];
+      if (!newFile) return;
 
-      await Services.logTaskActivity({
-        taskId,
-        actionType: "document_replace",
-        actionLabel: "Document remplacé",
-        actorId: currentUser.id,
-        actorName: getUserDisplayName(currentUser),
-        oldValue: {
-          file_name: result.oldDocument.file_name,
-          file_path: result.oldDocument.file_path
-        },
-        newValue: {
-          file_name: result.newDocument.file_name,
-          file_path: result.newDocument.file_path
-        }
-      });
+      try {
+        const result = await Services.replaceTaskDocument(documentId, newFile, currentUser.id);
 
-      await renderTaskDocuments(taskId);
-      await renderTaskActivityLogs(taskId);
-    } catch (error) {
-      alert(`Erreur remplacement document : ${error.message || error}`);
-    }
-  };
+        await Services.logTaskActivity({
+          taskId,
+          actionType: "document_replace",
+          actionLabel: "Document remplacé",
+          actorId: currentUser.id,
+          actorName: getUserDisplayName(currentUser),
+          oldValue: {
+            file_name: result.oldDocument.file_name,
+            file_path: result.oldDocument.file_path
+          },
+          newValue: {
+            file_name: result.newDocument.file_name,
+            file_path: result.newDocument.file_path
+          }
+        });
 
-  tempInput.click();
-}
+        await renderTaskDocuments(taskId);
+        await renderTaskActivityLogs(taskId);
+      } catch (error) {
+        alert(`Erreur remplacement document : ${error.message || error}`);
+      }
+    };
+
+    tempInput.click();
+  }
+
   async function renderTaskActivityLogs(taskId) {
     const list = byId("taskActivityLogsList");
     if (!list) return;
@@ -1421,43 +1443,45 @@ async function replaceCurrentTaskDocument(documentId) {
   function closeTaskModal() {
     closeModal("taskModal");
   }
-async function uploadDocumentForCurrentTask() {
-  const currentUser = getCurrentUser();
-  const taskId = Number(byId("editTaskId")?.value);
-  const fileInput = byId("taskDocumentFile");
-  const files = Array.from(fileInput?.files || []);
 
-  if (!currentUser || !taskId || !files.length) {
-    alert("Veuillez sélectionner au moins un fichier.");
-    return;
-  }
+  async function uploadDocumentForCurrentTask() {
+    const currentUser = getCurrentUser();
+    const taskId = Number(byId("editTaskId")?.value);
+    const fileInput = byId("taskDocumentFile");
+    const files = Array.from(fileInput?.files || []);
 
-  try {
-    const uploadedDocs = await Services.uploadTaskDocuments(taskId, files, currentUser.id);
-
-    for (const doc of uploadedDocs) {
-      await Services.logTaskActivity({
-        taskId,
-        actionType: "document_upload",
-        actionLabel: "Document ajouté",
-        actorId: currentUser.id,
-        actorName: getUserDisplayName(currentUser),
-        oldValue: null,
-        newValue: {
-          file_name: doc.file_name,
-          file_path: doc.file_path
-        }
-      });
+    if (!currentUser || !taskId || !files.length) {
+      alert("Veuillez sélectionner au moins un fichier.");
+      return;
     }
 
-    if (fileInput) fileInput.value = "";
-    await renderTaskDocuments(taskId);
-    await renderTaskActivityLogs(taskId);
-  } catch (error) {
-    alert(`Erreur upload document : ${error.message || error}`);
+    try {
+      const uploadedDocs = await Services.uploadTaskDocuments(taskId, files, currentUser.id);
+
+      for (const doc of uploadedDocs) {
+        await Services.logTaskActivity({
+          taskId,
+          actionType: "document_upload",
+          actionLabel: "Document ajouté",
+          actorId: currentUser.id,
+          actorName: getUserDisplayName(currentUser),
+          oldValue: null,
+          newValue: {
+            file_name: doc.file_name,
+            file_path: doc.file_path
+          }
+        });
+      }
+
+      if (fileInput) fileInput.value = "";
+      await renderTaskDocuments(taskId);
+      await renderTaskActivityLogs(taskId);
+    } catch (error) {
+      alert(`Erreur upload document : ${error.message || error}`);
+    }
   }
-}
-    async function saveTaskUpdate() {
+
+  async function saveTaskUpdate() {
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
 
@@ -1606,10 +1630,11 @@ async function uploadDocumentForCurrentTask() {
 
     document.addEventListener("click", event => {
       const replaceDocBtn = event.target.closest(".js-replace-task-document");
-if (replaceDocBtn) {
-  replaceCurrentTaskDocument(replaceDocBtn.dataset.documentId);
-  return;
-}
+      if (replaceDocBtn) {
+        replaceCurrentTaskDocument(replaceDocBtn.dataset.documentId);
+        return;
+      }
+
       const deleteDocBtn = event.target.closest(".js-delete-task-document");
       if (deleteDocBtn) {
         const taskId = Number(byId("editTaskId")?.value);
