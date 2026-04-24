@@ -2248,3 +2248,370 @@ tbody tr:hover td{
     grid-template-columns:1fr;
   }
 }
+/* =====================================================
+   MANAGEMENT DASHBOARD V2 PREMIUM
+   ===================================================== */
+
+.management-hero-card{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:20px;
+  padding:22px;
+  margin-bottom:22px;
+  border-radius:24px;
+  background:
+    linear-gradient(135deg, rgba(47,110,165,.98), rgba(68,139,202,.96));
+  color:#fff;
+  box-shadow:var(--shadow-lg);
+}
+
+.management-hero-title{
+  margin:0;
+  font-size:30px;
+  line-height:1.15;
+  font-weight:800;
+}
+
+.management-hero-subtitle{
+  margin:10px 0 0;
+  max-width:760px;
+  line-height:1.65;
+  color:rgba(255,255,255,.92);
+}
+
+.management-hero-actions{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.management-kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:16px;
+  margin-bottom:22px;
+}
+
+.management-kpi-card{
+  border-radius:20px;
+  padding:18px;
+  background:#fff;
+  border:1px solid rgba(229,231,235,.95);
+  box-shadow:var(--shadow-md);
+  position:relative;
+  overflow:hidden;
+}
+
+.management-kpi-card::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:5px;
+}
+
+.management-kpi-blue::before{ background:linear-gradient(180deg, #2f6ea5, #448BCA); }
+.management-kpi-green::before{ background:linear-gradient(180deg, #059669, #10b981); }
+.management-kpi-orange::before{ background:linear-gradient(180deg, #de6f12, #F58220); }
+.management-kpi-red::before{ background:linear-gradient(180deg, #b91c1c, #ef4444); }
+
+.management-kpi-top{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+}
+
+.management-kpi-icon{
+  width:34px;
+  height:34px;
+  border-radius:10px;
+  display:grid;
+  place-items:center;
+  background:#f8fafc;
+  color:#334155;
+  font-weight:800;
+}
+
+.management-kpi-label{
+  font-size:13px;
+  font-weight:700;
+  color:var(--muted);
+}
+
+.management-kpi-value{
+  font-size:32px;
+  font-weight:800;
+  letter-spacing:-.02em;
+  color:var(--text);
+}
+
+.management-executive-band{
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:18px;
+  margin-bottom:22px;
+}
+
+.management-gauge-card,
+.management-summary-card{
+  background:#fff;
+  border-radius:22px;
+  padding:20px;
+  border:1px solid rgba(229,231,235,.95);
+  box-shadow:var(--shadow-md);
+}
+
+.management-gauge-header h3,
+.management-summary-card h3{
+  margin:0;
+  font-size:20px;
+}
+
+.management-gauge-wrap{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:8px 0 0;
+}
+
+.management-gauge{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.management-gauge-ring{
+  --gauge:0;
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  background:
+    conic-gradient(
+      var(--gauge-color, var(--uw-blue)) calc(var(--gauge) * 1%),
+      #e5e7eb 0
+    );
+  display:grid;
+  place-items:center;
+  position:relative;
+}
+
+.management-gauge-ring::after{
+  content:"";
+  width:128px;
+  height:128px;
+  border-radius:50%;
+  background:#fff;
+  position:absolute;
+}
+
+.management-gauge-center{
+  position:relative;
+  z-index:2;
+  text-align:center;
+}
+
+.management-gauge-value{
+  font-size:32px;
+  font-weight:800;
+  color:var(--text);
+  line-height:1;
+}
+
+.management-gauge-label{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+  font-weight:700;
+}
+
+.management-gauge.is-completion .management-gauge-ring{
+  --gauge-color:#10b981;
+}
+
+.management-gauge.is-progress .management-gauge-ring{
+  --gauge-color:#448BCA;
+}
+
+.management-summary-list{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  margin-top:12px;
+}
+
+.management-summary-item{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  color:#374151;
+  line-height:1.55;
+}
+
+.management-summary-dot{
+  width:10px;
+  height:10px;
+  border-radius:50%;
+  background:var(--uw-orange);
+  margin-top:6px;
+  flex-shrink:0;
+}
+
+.management-grid-premium{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-bottom:22px;
+}
+
+.premium-chart{
+  padding-top:6px;
+}
+
+.management-chart-block{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+.management-bar-row{
+  display:grid;
+  grid-template-columns:170px 1fr 56px;
+  gap:12px;
+  align-items:center;
+}
+
+.management-bar-label{
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  overflow-wrap:anywhere;
+}
+
+.management-bar-track{
+  width:100%;
+  height:12px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.management-bar-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg, var(--uw-blue-dark), var(--uw-blue));
+}
+
+.management-bar-fill.is-danger{
+  background:linear-gradient(90deg, #b91c1c, #ef4444);
+}
+
+.management-bar-fill.is-orange{
+  background:linear-gradient(90deg, var(--uw-orange-dark), var(--uw-orange));
+}
+
+.management-bar-value{
+  text-align:right;
+  font-size:12px;
+  font-weight:800;
+  color:#374151;
+}
+
+.management-doc-kpis{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:14px;
+}
+
+.premium-doc-grid{
+  padding-top:6px;
+}
+
+.management-doc-card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  border:1px solid rgba(229,231,235,.9);
+  box-shadow:var(--shadow-sm);
+}
+
+.premium-doc-card.blue{
+  border-left:4px solid var(--uw-blue);
+}
+
+.premium-doc-card.green{
+  border-left:4px solid #10b981;
+}
+
+.premium-doc-card.orange{
+  border-left:4px solid var(--uw-orange);
+}
+
+.premium-doc-card.red{
+  border-left:4px solid #ef4444;
+}
+
+.management-doc-card h4{
+  margin:0 0 8px;
+  font-size:15px;
+  line-height:1.35;
+}
+
+.management-doc-value{
+  font-size:28px;
+  font-weight:800;
+  color:var(--uw-blue-dark);
+}
+
+.management-table{
+  min-width:1050px !important;
+}
+
+.alert-card{
+  border-top:4px solid #ef4444;
+}
+
+@media (max-width: 1100px){
+  .management-kpi-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  .management-executive-band{
+    grid-template-columns:1fr;
+  }
+
+  .management-grid-premium{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width: 760px){
+  .management-hero-card{
+    flex-direction:column;
+  }
+
+  .management-hero-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .management-kpi-grid{
+    grid-template-columns:1fr;
+  }
+
+  .management-bar-row{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .management-bar-value{
+    text-align:left;
+  }
+
+  .management-doc-kpis{
+    grid-template-columns:1fr;
+  }
+}
