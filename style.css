@@ -1770,3 +1770,114 @@ tbody tr:hover td{
 .is-role-hidden{
   display:none !important;
 }
+/* =====================================================
+   MANAGEMENT DASHBOARD
+   ===================================================== */
+
+.management-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px;
+  margin-bottom:22px;
+}
+
+.management-chart-block{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  padding:8px 0 2px;
+}
+
+.management-bar-row{
+  display:grid;
+  grid-template-columns:160px 1fr 56px;
+  gap:12px;
+  align-items:center;
+}
+
+.management-bar-label{
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  overflow-wrap:anywhere;
+}
+
+.management-bar-track{
+  width:100%;
+  height:12px;
+  background:#e5e7eb;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.management-bar-fill{
+  height:100%;
+  border-radius:999px;
+  background:linear-gradient(90deg, var(--uw-blue-dark), var(--uw-blue));
+}
+
+.management-bar-fill.is-danger{
+  background:linear-gradient(90deg, #b91c1c, #ef4444);
+}
+
+.management-bar-fill.is-orange{
+  background:linear-gradient(90deg, var(--uw-orange-dark), var(--uw-orange));
+}
+
+.management-bar-value{
+  text-align:right;
+  font-size:12px;
+  font-weight:800;
+  color:#374151;
+}
+
+.management-doc-kpis{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:14px;
+}
+
+.management-doc-card{
+  background:#fff;
+  border-radius:16px;
+  padding:16px;
+  border:1px solid rgba(229,231,235,.9);
+  box-shadow:var(--shadow-sm);
+}
+
+.management-doc-card h4{
+  margin:0 0 8px;
+  font-size:15px;
+  line-height:1.35;
+}
+
+.management-doc-value{
+  font-size:28px;
+  font-weight:800;
+  color:var(--uw-blue-dark);
+}
+
+.management-table{
+  min-width:1000px !important;
+}
+
+@media (max-width: 1000px){
+  .management-grid{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width: 680px){
+  .management-bar-row{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .management-bar-value{
+    text-align:left;
+  }
+
+  .management-doc-kpis{
+    grid-template-columns:1fr;
+  }
+}
