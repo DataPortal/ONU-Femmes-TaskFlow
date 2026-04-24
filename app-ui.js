@@ -553,48 +553,66 @@
 
   if (!currentUser || !membersBox || !title) return;
 
-    const myTasks = getVisibleTasks().filter(task =>
-      String(task.assigned_to_id) === String(currentUser.id)
+  let teamMembers = [];
+  let teamTasks = [];
+
+  if (currentRole === "admin") {
+    teamMembers = AppState.users || [];
+    teamTasks = AppState.tasks || [];
+  } else {
+    teamMembers = (AppState.users || []).filter(user =>
+      String(user.pillar_id) === String(currentUser.pillar_id)
     );
 
-    if (assignedToFilter) {
-      const currentValue = assignedToFilter.value || "";
-      const assignees = myTasks.length ? [{ id: currentUser.id, name: getUserDisplayName(currentUser) }] : [];
-
-      assignedToFilter.innerHTML =
-        `<option value="">Tous les assignés</option>` +
-        assignees
-          .map(user => `<option value="${escapeHtml(user.id)}">${escapeHtml(user.name)}</option>`)
-          .join("");
-
-      assignedToFilter.value = assignees.some(user => String(user.id) === String(currentValue)) ? currentValue : "";
-    }
-
-    if (activityFilter) {
-      const currentValue = activityFilter.value || "";
-      const activityIds = [...new Set(myTasks.map(task => task.activity_id).filter(Boolean))];
-      const activities = AppState.mainActivities.filter(activity =>
-        activityIds.some(id => String(id) === String(activity.id))
-      );
-
-      activityFilter.innerHTML =
-        `<option value="">Toutes les activités</option>` +
-        activities
-          .map(activity => `<option value="${escapeHtml(activity.id)}">${escapeHtml(activity.name)}</option>`)
-          .join("");
-
-      activityFilter.value = activities.some(activity => String(activity.id) === String(currentValue)) ? currentValue : "";
-    }
-
-    const filteredTasks = getFilteredMyTasks(myTasks);
-
-    title.textContent = `Mes tâches — ${getUserDisplayName(currentUser)}`;
-    renderKPIs("myTasksKpis", filteredTasks);
-
-    tbody.innerHTML = filteredTasks.length
-      ? renderTaskRows(filteredTasks, { showDescription: true })
-      : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
+    teamTasks = getVisibleTasks();
   }
+
+  // Les filtres restent utiles pour calculer les KPI et les compteurs par membre
+  populateTeamFilters(teamTasks, teamMembers);
+
+  const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
+
+  title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
+  renderKPIs("myTeamKpis", filteredTeamTasks);
+
+  membersBox.innerHTML = teamMembers.length
+    ? teamMembers
+        .map(member => {
+          const memberTasks = filteredTeamTasks.filter(task =>
+            String(task.assigned_to_id) === String(member.id)
+          );
+
+          const completed = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE
+          ).length;
+
+          const late = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE
+          ).length;
+
+          const dueSoon = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON
+          ).length;
+
+          return `
+            <div class="member-card">
+              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
+              <div class="muted">
+                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
+              </div>
+
+              <div class="kpi-inline" style="margin-top:10px;">
+                <span><strong>${memberTasks.length}</strong> tâche(s)</span>
+                <span><strong>${completed}</strong> achevée(s)</span>
+                <span><strong>${dueSoon}</strong> imminente(s)</span>
+                <span><strong>${late}</strong> en retard</span>
+              </div>
+            </div>
+          `;
+        })
+        .join("")
+    : `<div class="empty">Aucun membre rattaché.</div>`;
+}
 
   function getFilteredTeamTasks(tasks) {
     return applyTaskFilters(tasks, {
