@@ -6,7 +6,7 @@
   <title>ONU Femmes — Dashboard global management</title>
   <meta
     name="description"
-    content="Dashboard global management pour le pilotage stratégique des tâches à ONU Femmes RDC."
+    content="Dashboard global management premium pour le pilotage stratégique des tâches à ONU Femmes RDC."
   />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -19,7 +19,7 @@
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Dashboard global management</h1>
-          <p>Vue synthétique de pilotage stratégique, alertes et performance par pilier</p>
+          <p>Pilotage stratégique, alertes et performance consolidée</p>
         </div>
       </div>
 
@@ -52,29 +52,30 @@
   <main class="container main-content">
     <div id="managementPageMessage" class="page-message" aria-live="polite"></div>
 
-    <section class="dashboard-control-panel no-print" aria-label="Filtres management">
-      <div class="dashboard-command-bar">
-        <div class="dashboard-command-title">
-          <span class="section-kicker">Pilotage exécutif</span>
-          <h3>Vue globale bureau</h3>
-          <p>Filtrez la période, le pilier, le superviseur, la priorité ou le statut pour lire les tendances clés.</p>
-        </div>
-
-        <div class="dashboard-command-actions">
-          <button id="managementRefreshBtn" class="btn btn-secondary" type="button">
-            Réinitialiser / Actualiser
-          </button>
-
-          <button id="managementExportBtn" class="btn btn-outline" type="button">
-            Exporter Excel
-          </button>
-
-          <button id="managementPrintBtn" class="btn btn-secondary" type="button">
-            Imprimer
-          </button>
-        </div>
+    <section class="management-hero-card no-print">
+      <div class="management-hero-left">
+        <span class="section-kicker">Executive view</span>
+        <h2 class="management-hero-title">Vue consolidée du bureau</h2>
+        <p class="management-hero-subtitle">
+          Un espace synthétique pour suivre l’avancement global, identifier les alertes, comparer les piliers
+          et appuyer les arbitrages de management.
+        </p>
       </div>
 
+      <div class="management-hero-actions">
+        <button id="managementRefreshBtn" class="btn btn-secondary" type="button">
+          Réinitialiser / Actualiser
+        </button>
+        <button id="managementExportBtn" class="btn btn-outline" type="button">
+          Exporter Excel
+        </button>
+        <button id="managementPrintBtn" class="btn btn-secondary" type="button">
+          Imprimer
+        </button>
+      </div>
+    </section>
+
+    <section class="dashboard-control-panel no-print" aria-label="Filtres management">
       <div class="dashboard-filter-chips">
         <div class="dashboard-search-chip">
           <label for="managementSearchInput" class="sr-only">Recherche</label>
@@ -153,30 +154,54 @@
       </div>
     </section>
 
-    <section id="managementExecutiveKpis" class="dashboard-kpis"></section>
+    <section id="managementExecutiveKpis" class="management-kpi-grid"></section>
 
-    <section class="management-grid">
+    <section class="management-executive-band">
+      <div class="management-gauge-card">
+        <div class="management-gauge-header">
+          <span class="section-kicker">Performance globale</span>
+          <h3>Taux d’achèvement</h3>
+        </div>
+        <div id="completionGauge" class="management-gauge-wrap"></div>
+      </div>
+
+      <div class="management-gauge-card">
+        <div class="management-gauge-header">
+          <span class="section-kicker">Progression moyenne</span>
+          <h3>Avancement global</h3>
+        </div>
+        <div id="progressGauge" class="management-gauge-wrap"></div>
+      </div>
+
+      <div class="management-summary-card">
+        <span class="section-kicker">Lecture rapide</span>
+        <h3>Executive summary</h3>
+        <div id="managementExecutiveSummary" class="management-summary-list"></div>
+      </div>
+    </section>
+
+    <section class="management-grid-premium">
       <div class="table-card">
         <div class="table-card-header">
           <h3>Taux d’achèvement par pilier</h3>
-          <p>Comparaison synthétique de la performance des piliers</p>
+          <p>Comparaison visuelle des performances</p>
         </div>
-        <div id="pillarCompletionChart" class="management-chart-block"></div>
+        <div id="pillarCompletionChart" class="management-chart-block premium-chart"></div>
       </div>
 
       <div class="table-card">
         <div class="table-card-header">
           <h3>Taux de retard par pilier</h3>
-          <p>Lecture rapide des zones sous pression</p>
+          <p>Lecture des zones sous pression</p>
         </div>
-        <div id="pillarDelayChart" class="management-chart-block"></div>
+        <div id="pillarDelayChart" class="management-chart-block premium-chart"></div>
       </div>
     </section>
 
     <section class="table-card">
       <div class="table-card-header">
         <h3>Synthèse par pilier</h3>
-        <p>Volume, avancement, retards, progression moyenne et documentation</p>
+        <p>Vue consolidée du volume, de l’avancement, des retards et de la traçabilité documentaire</p>
       </div>
 
       <div class="table-wrap">
@@ -191,6 +216,7 @@
             <col style="width:150px;">
             <col style="width:130px;">
             <col style="width:130px;">
+            <col style="width:120px;">
           </colgroup>
           <thead>
             <tr>
@@ -203,6 +229,7 @@
               <th>Progression moyenne</th>
               <th>Avec documents</th>
               <th>Sans documents</th>
+              <th>Niveau</th>
             </tr>
           </thead>
           <tbody id="managementPillarTbody"></tbody>
@@ -210,8 +237,8 @@
       </div>
     </section>
 
-    <section class="management-grid">
-      <div class="table-card">
+    <section class="management-grid-premium">
+      <div class="table-card alert-card">
         <div class="table-card-header">
           <h3>Alertes management</h3>
           <p>Tâches critiques en retard ou proches de l’échéance</p>
@@ -226,6 +253,7 @@
               <col style="width:95px;">
               <col style="width:120px;">
               <col style="width:110px;">
+              <col style="width:110px;">
             </colgroup>
             <thead>
               <tr>
@@ -235,6 +263,7 @@
                 <th>Priorité</th>
                 <th>Statut</th>
                 <th>Échéance</th>
+                <th>Alerte</th>
               </tr>
             </thead>
             <tbody id="managementAlertsTbody"></tbody>
@@ -256,6 +285,7 @@
               <col style="width:150px;">
               <col style="width:160px;">
               <col style="width:140px;">
+              <col style="width:120px;">
             </colgroup>
             <thead>
               <tr>
@@ -264,6 +294,7 @@
                 <th>Assigné à</th>
                 <th>Dernière activité</th>
                 <th>Jours sans activité</th>
+                <th>Signal</th>
               </tr>
             </thead>
             <tbody id="managementStaleTbody"></tbody>
@@ -272,13 +303,13 @@
       </div>
     </section>
 
-    <section class="management-grid">
+    <section class="management-grid-premium">
       <div class="table-card">
         <div class="table-card-header">
-          <h3>Charge de travail par pilier</h3>
-          <p>Répartition des volumes de tâches</p>
+          <h3>Volume de tâches par pilier</h3>
+          <p>Lecture de la charge de travail globale</p>
         </div>
-        <div id="pillarVolumeChart" class="management-chart-block"></div>
+        <div id="pillarVolumeChart" class="management-chart-block premium-chart"></div>
       </div>
 
       <div class="table-card">
@@ -286,7 +317,7 @@
           <h3>Qualité du suivi documentaire</h3>
           <p>Traçabilité, justificatifs et couverture documentaire</p>
         </div>
-        <div id="managementDocumentationKpis" class="management-doc-kpis"></div>
+        <div id="managementDocumentationKpis" class="management-doc-kpis premium-doc-grid"></div>
       </div>
     </section>
   </main>
