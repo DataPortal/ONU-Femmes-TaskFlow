@@ -678,30 +678,26 @@
 
     populateTeamFilters(teamTasks, teamMembers);
 
-    const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
+   const filteredTeamTasks = getFilteredTeamTasks(teamTasks);
 
-    title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
-    renderKPIs("myTeamKpis", filteredTeamTasks);
+title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
+renderKPIs("myTeamKpis", filteredTeamTasks);
 
-    membersBox.innerHTML = teamMembers.length
-      ? teamMembers
-          .map(member => `
-            <div class="member-card">
-              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
-              <div class="muted">${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}</div>
-              <div class="kpi-inline">
-                <span>${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length} tâche(s)</span>
-              </div>
-            </div>
-          `)
-          .join("")
-      : `<div class="empty">Aucun membre rattaché.</div>`;
-
-    tbody.innerHTML = filteredTeamTasks.length
-      ? renderTaskRows(filteredTeamTasks)
-      : `<tr><td colspan="13"><span class="muted">Aucune tâche d'équipe correspondant aux filtres.</span></td></tr>`;
-  }
-
+membersBox.innerHTML = teamMembers.length
+  ? teamMembers
+      .map(member => `
+        <div class="member-card">
+          <h4>${escapeHtml(getUserDisplayName(member))}</h4>
+          <div class="muted">
+            ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
+          </div>
+          <div class="kpi-inline">
+            <span>${filteredTeamTasks.filter(task => String(task.assigned_to_id) === String(member.id)).length} tâche(s)</span>
+          </div>
+        </div>
+      `)
+      .join("")
+  : `<div class="empty">Aucun membre rattaché.</div>`; 
   function populateRegisterDropdowns() {
     const pillarSupervisor = byId("pillarSupervisor");
     const userPillar = byId("userPillar");
