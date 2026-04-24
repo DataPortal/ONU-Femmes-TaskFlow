@@ -545,14 +545,13 @@
     });
   }
 
-  function renderMyTasksPage() {
-    const currentUser = getCurrentUser();
-    const tbody = byId("myTasksTbody");
-    const title = byId("myTasksTitle");
-    const assignedToFilter = byId("myTasksAssignedToFilter");
-    const activityFilter = byId("myTasksActivityFilter");
+ function renderMyTeamPage() {
+  const currentUser = getCurrentUser();
+  const currentRole = getUserRole(currentUser);
+  const membersBox = byId("teamMembersList");
+  const title = byId("myTeamTitle");
 
-    if (!currentUser || !tbody || !title) return;
+  if (!currentUser || !membersBox || !title) return;
 
     const myTasks = getVisibleTasks().filter(task =>
       String(task.assigned_to_id) === String(currentUser.id)
