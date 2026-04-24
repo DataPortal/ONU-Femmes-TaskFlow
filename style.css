@@ -2615,3 +2615,94 @@ tbody tr:hover td{
     grid-template-columns:1fr;
   }
 }
+/* =====================================================
+   HOW TO USE PAGE
+   ===================================================== */
+
+.guide-hero-card{
+  margin-bottom:22px;
+}
+
+.guide-grid{
+  margin-bottom:22px;
+}
+
+.guide-list{
+  margin:12px 0 0;
+  padding-left:20px;
+  color:#374151;
+  line-height:1.7;
+}
+
+.guide-list li + li{
+  margin-top:8px;
+}
+
+.guide-steps{
+  margin:12px 0 0;
+  padding-left:22px;
+  color:#374151;
+  line-height:1.7;
+}
+
+.guide-steps li + li{
+  margin-top:10px;
+}
+
+.guide-step-block{
+  margin-top:10px;
+}
+
+.guide-feature-grid{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:14px;
+  margin-top:14px;
+}
+
+.guide-feature-card{
+  background:#fff;
+  border:1px solid rgba(229,231,235,.95);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:var(--shadow-sm);
+}
+
+.guide-feature-card h4{
+  margin:0 0 8px;
+  font-size:16px;
+  color:var(--text);
+}
+
+.guide-feature-card p{
+  margin:0;
+  color:#4b5563;
+  line-height:1.65;
+}
+
+.guide-callout{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:14px;
+  background:var(--uw-blue-soft);
+  color:var(--uw-blue-dark);
+  border:1px solid rgba(68,139,202,.18);
+  line-height:1.6;
+  font-weight:600;
+}
+
+.guide-warning-box{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:14px;
+  background:#fff7ed;
+  color:#9a3412;
+  border:1px solid #fed7aa;
+  line-height:1.6;
+}
+
+@media (max-width: 900px){
+  .guide-feature-grid{
+    grid-template-columns:1fr;
+  }
+}
