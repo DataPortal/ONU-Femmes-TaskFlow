@@ -271,3 +271,19 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+const redirectTo = "https://dataportal.github.io/ONU-Femmes-TaskFlow/confirm.html";
+
+const { data, error } = await sb.auth.signUp({
+  email: emailValue,
+  password: passwordValue,
+  options: {
+    emailRedirectTo: redirectTo,
+    data: {
+      full_name: fullNameValue,
+      office: officeValue,
+      pillar_id: pillarIdValue,
+      supervisor_id: supervisorIdValue,
+      role: "staff"
+    }
+  }
+});
