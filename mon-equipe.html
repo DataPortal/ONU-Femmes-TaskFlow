@@ -6,7 +6,7 @@
 
   <meta
     name="description"
-    content="Page de suivi des membres supervisés et des tâches d’équipe du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Page de suivi des membres supervisés du TaskFlow Management Portal - ONU Femmes RDC."
   />
 
   <title>ONU Femmes — Mon équipe</title>
@@ -22,13 +22,14 @@
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Mon équipe</h1>
-          <p>Suivi des membres supervisés et de leurs tâches</p>
+          <p>Suivi des membres supervisés et de leurs indicateurs clés</p>
         </div>
       </div>
 
       <div class="top-tools no-print" aria-label="Outils utilisateur">
         <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
         <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
+
         <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
 
         <button id="logoutBtn" class="btn btn-secondary" type="button">
@@ -38,15 +39,17 @@
     </div>
   </header>
 
-<div class="container nav-links">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="mes-taches.html">Mes tâches</a>
-  <a href="mon-equipe.html">Mon équipe</a>
-  <a href="inscription.html">Inscription</a>
-  <a href="profile.html">Mon profil</a>
-  <a href="management-dashboard.html">Management</a>
-  <a href="how-to-use.html">Guide d’utilisation</a>
-</div>
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html" class="active" aria-current="page">Mon équipe</a>
+      <a href="inscription.html">Inscription</a>
+      <a href="profile.html">Mon profil</a>
+      <a href="management-dashboard.html">Management</a>
+      <a href="how-to-use.html">Guide d’utilisation</a>
+    </div>
+  </nav>
 
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
@@ -56,91 +59,8 @@
         <span class="section-kicker">Pilotage d’équipe</span>
         <h2 id="myTeamTitle" class="section-title">Mon équipe</h2>
         <p class="section-subtitle">
-          Consultez les membres rattachés à votre périmètre, suivez leurs tâches et mettez à jour les évaluations si nécessaire.
+          Consultez les membres rattachés à votre périmètre, ainsi qu’une lecture synthétique de leur charge et de leur suivi.
         </p>
-      </div>
-    </section>
-
-    <section class="dashboard-control-panel no-print" aria-label="Filtres de l’équipe">
-      <div class="dashboard-command-bar">
-        <div class="dashboard-command-title">
-          <span class="section-kicker">Filtres</span>
-          <h3>Suivi de l’équipe</h3>
-          <p>Filtrez les tâches par membre, activité, statut, superviseur ou échéance.</p>
-        </div>
-      </div>
-
-      <div class="dashboard-filter-chips" aria-label="Filtres des tâches de l’équipe">
-        <div class="dashboard-search-chip">
-          <label for="teamSearchInput" class="sr-only">Recherche</label>
-          <input
-            type="text"
-            id="teamSearchInput"
-            placeholder="Rechercher une tâche, activité, staff ou commentaire..."
-          />
-          <button id="teamSearchBtn" class="btn btn-primary" type="button">
-            Rechercher
-          </button>
-        </div>
-
-        <details class="filter-menu">
-          <summary>Assigné à</summary>
-          <div class="filter-popover">
-            <label for="teamAssignedToFilter">Assigné à</label>
-            <select id="teamAssignedToFilter">
-              <option value="">Tous les membres</option>
-            </select>
-          </div>
-        </details>
-
-        <details class="filter-menu">
-          <summary>Activité</summary>
-          <div class="filter-popover">
-            <label for="teamActivityFilter">Activité principale</label>
-            <select id="teamActivityFilter">
-              <option value="">Toutes les activités</option>
-            </select>
-          </div>
-        </details>
-
-        <details class="filter-menu">
-          <summary>Statut</summary>
-          <div class="filter-popover">
-            <label for="teamStatusFilter">Statut</label>
-            <select id="teamStatusFilter">
-              <option value="">Tous les statuts</option>
-              <option value="En bonne voie">En bonne voie</option>
-              <option value="Échéance imminente">Échéance imminente</option>
-              <option value="En retard">En retard</option>
-              <option value="Achevé">Achevé</option>
-            </select>
-          </div>
-        </details>
-
-        <details class="filter-menu">
-          <summary>Superviseur</summary>
-          <div class="filter-popover">
-            <label for="teamSupervisorFilter">Superviseur</label>
-            <select id="teamSupervisorFilter">
-              <option value="">Tous les superviseurs</option>
-            </select>
-          </div>
-        </details>
-
-        <details class="filter-menu filter-menu-wide">
-          <summary>Dates</summary>
-          <div class="filter-popover date-popover">
-            <div class="field">
-              <label for="teamStartDateFilter">Date de début</label>
-              <input type="date" id="teamStartDateFilter" />
-            </div>
-
-            <div class="field">
-              <label for="teamEndDateFilter">Date de fin</label>
-              <input type="date" id="teamEndDateFilter" />
-            </div>
-          </div>
-        </details>
       </div>
     </section>
 
@@ -167,37 +87,22 @@
         </div>
 
         <div class="info-box">
-          Cette page affiche les membres et les tâches visibles dans votre périmètre de pilier.
-          Elle permet un suivi rapide de l’exécution, des commentaires staff et des appréciations superviseur.
+          Cette page affiche les membres visibles dans votre périmètre ainsi qu’une synthèse de leurs tâches.
+          Elle permet une lecture simple de la charge, des tâches achevées, des échéances imminentes et des retards,
+          sans afficher le tableau détaillé des tâches.
         </div>
       </article>
     </section>
-
-           <thead>
-            <tr>
-              <th>ID</th>
-              <th>Tâche</th>
-              <th>Activité principale</th>
-              <th>Assigné à</th>
-              <th>Superviseur</th>
-              <th>Priorité</th>
-              <th>Statut</th>
-              <th>Progression staff</th>
-              <th>Commentaire staff</th>
-              <th>Évaluation superviseur</th>
-              <th>Commentaire superviseur</th>
-              <th>Échéance</th>
-              <th class="no-print">Action</th>
-            </tr>
-          </thead>
-
-          <tbody id="teamTasksTbody"></tbody>
-        </table>
-      </div>
-    </section>
   </main>
 
-  <div id="taskModal" class="modal no-print" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
+  <div
+    id="taskModal"
+    class="modal no-print"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="taskModalTitle"
+    aria-hidden="true"
+  >
     <div class="modal-overlay"></div>
 
     <div class="modal-content modal-lg">
