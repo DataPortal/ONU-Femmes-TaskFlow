@@ -1,289 +1,233 @@
-window.addEventListener("DOMContentLoaded", async () => {
+console.log("register.js chargé");
+
+window.addEventListener("DOMContentLoaded", async function () {
+  const form = document.getElementById("registerForm");
+  const btn = document.getElementById("registerBtn");
+  const message = document.getElementById("registerMessage");
+
+  const fullName = document.getElementById("registerFullName");
+  const email = document.getElementById("registerEmail");
+  const office = document.getElementById("registerOffice");
+  const role = document.getElementById("registerRole");
+  const pillar = document.getElementById("registerPillar");
+  const supervisor = document.getElementById("registerSupervisor");
+  const password = document.getElementById("registerPassword");
+  const passwordConfirm = document.getElementById("registerPasswordConfirm");
+
   const authUI = window.AuthUI;
   const sb = await authUI?.waitForClient();
 
-  const els = {
-    form: document.getElementById("registerForm"),
-    btn: document.getElementById("registerBtn"),
-    message: document.getElementById("registerMessage"),
-    fullName: document.getElementById("registerFullName"),
-    email: document.getElementById("registerEmail"),
-    office: document.getElementById("registerOffice"),
-    role: document.getElementById("registerRole"),
-    pillar: document.getElementById("registerPillar"),
-    supervisor: document.getElementById("registerSupervisor"),
-    password: document.getElementById("registerPassword"),
-    passwordConfirm: document.getElementById("registerPasswordConfirm")
-  };
+  if (!authUI || !sb) {
+    authUI?.showMessage(message, "Client Supabase introuvable.", "error");
+    return;
+  }
 
-  let cachedPillars = [];
-  let cachedSupervisors = [];
+  if (
+    !form || !btn || !message ||
+    !fullName || !email || !office || !role ||
+    !pillar || !supervisor || !password || !passwordConfirm
+  ) {
+    console.error("Un ou plusieurs éléments du formulaire sont introuvables.");
+    authUI.showMessage(
+      message,
+      "Le formulaire d’inscription est incomplet ou certains champs sont introuvables.",
+      "error"
+    );
+    return;
+  }
+
+  const APP_BASE_URL = "https://dataportal.github.io/ONU-Femmes-TaskFlow/";
+  const CONFIRM_URL = `${APP_BASE_URL}confirm.html`;
+
+  let allPillars = [];
+  let allSupervisors = [];
 
   function showMessage(text, type = "info") {
-    authUI?.showMessage(els.message, text, type);
+    authUI.showMessage(message, text, type);
   }
 
-  function setSelectLoading(select, label = "Chargement...") {
-    if (!select) return;
-    select.innerHTML = `<option value="">${label}</option>`;
-    select.disabled = true;
+  function resetSupervisorSelect(placeholder = "Sélectionner d’abord un pilier") {
+    supervisor.innerHTML = `<option value="">${placeholder}</option>`;
+    supervisor.disabled = true;
   }
 
-  function setSelectEmpty(select, label) {
-    if (!select) return;
-    select.innerHTML = `<option value="">${label}</option>`;
-    select.disabled = true;
-  }
-
-  function enableSelect(select) {
-    if (!select) return;
-    select.disabled = false;
-  }
-
-  function getPublicRole() {
-    return "staff";
-  }
-
-  function renderPillarOptions() {
-    if (!els.pillar) return;
-
-    if (!cachedPillars.length) {
-      setSelectEmpty(els.pillar, "Aucun pilier disponible");
+  function populatePillars() {
+    if (!Array.isArray(allPillars) || !allPillars.length) {
+      pillar.innerHTML = `<option value="">Aucun pilier disponible</option>`;
+      pillar.disabled = true;
+      resetSupervisorSelect("Aucun superviseur disponible");
       return;
     }
 
-    els.pillar.innerHTML =
+    pillar.innerHTML =
       `<option value="">Sélectionner un pilier</option>` +
-      cachedPillars
-        .map(pillar => `
-          <option value="${authUI.escapeHtml(pillar.id)}">
-            ${authUI.escapeHtml(pillar.name)}
-          </option>
-        `)
+      allPillars
+        .map(item => `<option value="${String(item.id)}">${authUI.escapeHtml(item.name)}</option>`)
         .join("");
 
-    enableSelect(els.pillar);
+    pillar.disabled = false;
+    resetSupervisorSelect();
   }
 
-  function renderSupervisorOptions(selectedPillarId = "") {
-    if (!els.supervisor) return;
-
-    if (!selectedPillarId) {
-      els.supervisor.innerHTML = `<option value="">Sélectionner d’abord un pilier</option>`;
-      els.supervisor.disabled = true;
+  function populateSupervisorsForPillar(pillarId) {
+    if (!pillarId) {
+      resetSupervisorSelect();
       return;
     }
 
-    const filteredSupervisors = cachedSupervisors.filter(supervisor =>
-      String(supervisor.pillar_id) === String(selectedPillarId)
+    const supervisorsForPillar = allSupervisors.filter(user =>
+      String(user.pillar_id || "") === String(pillarId)
     );
 
-    if (!filteredSupervisors.length) {
-      setSelectEmpty(els.supervisor, "Aucun superviseur pour ce pilier");
+    if (!supervisorsForPillar.length) {
+      resetSupervisorSelect("Aucun superviseur trouvé pour ce pilier");
       return;
     }
 
-    els.supervisor.innerHTML =
+    supervisor.innerHTML =
       `<option value="">Sélectionner un superviseur</option>` +
-      filteredSupervisors
-        .map(supervisor => `
-          <option value="${authUI.escapeHtml(supervisor.id)}">
-            ${authUI.escapeHtml(supervisor.full_name || "Superviseur sans nom")}
-          </option>
-        `)
+      supervisorsForPillar
+        .map(user => {
+          const name = user.full_name || user.name || user.email || "Superviseur";
+          return `<option value="${String(user.id)}">${authUI.escapeHtml(name)}</option>`;
+        })
         .join("");
 
-    enableSelect(els.supervisor);
+    supervisor.disabled = false;
   }
 
   async function loadReferenceData() {
-    setSelectLoading(els.pillar, "Chargement des piliers...");
-    setSelectLoading(els.supervisor, "Chargement des superviseurs...");
+    try {
+      pillar.disabled = true;
+      pillar.innerHTML = `<option value="">Chargement des piliers...</option>`;
+      resetSupervisorSelect("Chargement des superviseurs...");
 
-    const [pillarsRes, supervisorsRes] = await Promise.all([
-      sb
-        .from("pillars")
-        .select("id, name")
-        .order("name", { ascending: true }),
+      const [
+        pillarsRes,
+        profilesRes
+      ] = await Promise.all([
+        sb
+          .from("pillars")
+          .select("id, name")
+          .order("name", { ascending: true }),
+        sb
+          .from("profiles")
+          .select("id, full_name, email, role, pillar_id, is_active")
+          .in("role", ["admin", "supervisor"])
+          .eq("is_active", true)
+          .order("full_name", { ascending: true })
+      ]);
 
-      sb
-        .from("profiles")
-        .select("id, full_name, role, pillar_id, is_active")
-        .in("role", ["supervisor", "admin"])
-        .eq("is_active", true)
-        .order("full_name", { ascending: true })
-    ]);
+      if (pillarsRes.error) {
+        throw new Error(`Chargement des piliers impossible : ${pillarsRes.error.message}`);
+      }
 
-    if (pillarsRes.error) {
-      throw new Error(`Erreur chargement piliers : ${pillarsRes.error.message}`);
-    }
+      if (profilesRes.error) {
+        throw new Error(`Chargement des superviseurs impossible : ${profilesRes.error.message}`);
+      }
 
-    if (supervisorsRes.error) {
-      throw new Error(`Erreur chargement superviseurs : ${supervisorsRes.error.message}`);
-    }
+      allPillars = Array.isArray(pillarsRes.data) ? pillarsRes.data : [];
+      allSupervisors = Array.isArray(profilesRes.data) ? profilesRes.data : [];
 
-    cachedPillars = pillarsRes.data || [];
-    cachedSupervisors = supervisorsRes.data || [];
+      populatePillars();
 
-    renderPillarOptions();
-    renderSupervisorOptions("");
-
-    if (!cachedPillars.length) {
       showMessage(
-        "Aucun pilier n’est disponible. Veuillez demander à un administrateur de créer les piliers.",
-        "error"
+        "Formulaire prêt. Sélectionnez votre pilier puis votre superviseur.",
+        "info"
       );
-      return;
+    } catch (error) {
+      console.error("Erreur chargement références :", error);
+      pillar.innerHTML = `<option value="">Erreur de chargement</option>`;
+      pillar.disabled = true;
+      resetSupervisorSelect("Erreur de chargement");
+      showMessage(error.message || "Erreur lors du chargement des références.", "error");
     }
-
-    if (!cachedSupervisors.length) {
-      showMessage(
-        "Aucun superviseur actif n’est disponible. Vérifiez les profils supervisor/admin.",
-        "error"
-      );
-      return;
-    }
-
-    showMessage("Formulaire prêt. Sélectionnez votre pilier puis votre superviseur.", "info");
   }
 
-  if (!authUI || !sb) {
-    showMessage("Client Supabase introuvable.", "error");
-    return;
-  }
-
-  if (!els.form) {
-    showMessage("Formulaire d’inscription introuvable.", "error");
-    return;
-  }
-
-  if (els.role) {
-    els.role.value = "staff";
-  }
-
-  try {
-    await loadReferenceData();
-  } catch (error) {
-    console.error("Erreur chargement données inscription :", error);
-    showMessage(error.message || String(error), "error");
-    return;
-  }
-
-  els.pillar?.addEventListener("change", () => {
-    renderSupervisorOptions(els.pillar.value);
+  pillar.addEventListener("change", function () {
+    populateSupervisorsForPillar(pillar.value);
   });
 
-  els.form.addEventListener("submit", async event => {
-    event.preventDefault();
+  role.value = "staff";
+  role.disabled = true;
 
-    authUI.clearMessage(els.message);
+  async function doRegister() {
+    const fullNameValue = authUI.safeTrim(fullName.value);
+    const emailValue = authUI.normalizeEmail(email.value);
+    const officeValue = authUI.safeTrim(office.value);
+    const roleValue = "staff";
+    const pillarIdValue = pillar.value;
+    const supervisorIdValue = supervisor.value;
+    const passwordValue = password.value;
+    const passwordConfirmValue = passwordConfirm.value;
 
-    const vFullName = authUI.safeTrim(els.fullName?.value);
-    const vEmail = authUI.normalizeEmail(els.email?.value);
-    const vOffice = authUI.safeTrim(els.office?.value);
-    const vRole = getPublicRole();
-    const vPillar = els.pillar?.value || "";
-    const vSupervisor = els.supervisor?.value || "";
-    const vPassword = els.password?.value || "";
-    const vPasswordConfirm = els.passwordConfirm?.value || "";
-
-    if (!vFullName) {
-      showMessage("Le nom complet est obligatoire.", "error");
-      els.fullName?.focus();
+    if (!fullNameValue || !emailValue || !officeValue || !pillarIdValue || !supervisorIdValue) {
+      showMessage(
+        "Veuillez renseigner le nom complet, l’email, le bureau/unité, le pilier et le superviseur.",
+        "error"
+      );
       return;
     }
 
-    if (!vEmail) {
-      showMessage("L’adresse email est obligatoire.", "error");
-      els.email?.focus();
-      return;
-    }
-
-    if (!authUI.isValidEmail(vEmail)) {
+    if (!authUI.isValidEmail(emailValue)) {
       showMessage("Veuillez saisir une adresse email valide.", "error");
-      els.email?.focus();
       return;
     }
 
-    if (!vPillar) {
-      showMessage("Veuillez sélectionner un pilier.", "error");
-      els.pillar?.focus();
-      return;
-    }
-
-    if (!vSupervisor) {
-      showMessage("Veuillez sélectionner un superviseur.", "error");
-      els.supervisor?.focus();
-      return;
-    }
-
-    const passwordError = authUI.validatePasswordPair(vPassword, vPasswordConfirm);
-
+    const passwordError = authUI.validatePasswordPair(passwordValue, passwordConfirmValue);
     if (passwordError) {
       showMessage(passwordError, "error");
-      els.password?.focus();
       return;
     }
 
-    authUI.setButtonLoading(els.btn, true, "Création...", "Créer mon compte");
+    authUI.setButtonLoading(btn, true, "Création du compte...");
+    showMessage("Création du compte en cours...", "info");
 
     try {
-      const { error } = await sb.auth.signUp({
-        email: vEmail,
-        password: vPassword,
+      const { data, error } = await sb.auth.signUp({
+        email: emailValue,
+        password: passwordValue,
         options: {
+          emailRedirectTo: CONFIRM_URL,
           data: {
-            full_name: vFullName,
-            office: vOffice,
-            pillar_id: vPillar,
-            supervisor_id: vSupervisor,
-            role: vRole
+            full_name: fullNameValue,
+            office: officeValue,
+            pillar_id: pillarIdValue,
+            supervisor_id: supervisorIdValue,
+            role: roleValue
           }
         }
       });
 
       if (error) {
-        showMessage(`Inscription impossible : ${error.message}`, "error");
-        return;
+        throw new Error(error.message);
+      }
+
+      if (!data?.user) {
+        throw new Error("Le compte n’a pas pu être créé correctement.");
       }
 
       showMessage(
-        "Compte créé avec succès. Vous pouvez maintenant vous connecter.",
+        "Compte créé. Vérifiez votre email pour confirmer votre inscription avant de vous connecter.",
         "success"
       );
 
-      els.form.reset();
-
-      if (els.role) {
-        els.role.value = "staff";
-      }
-
-      renderSupervisorOptions("");
-
-      setTimeout(() => {
-        window.location.href = "./login.html";
-      }, 1800);
+      form.reset();
+      role.value = "staff";
+      role.disabled = true;
+      populatePillars();
     } catch (error) {
       console.error("Erreur inscription :", error);
-      showMessage(`Erreur technique : ${error.message || error}`, "error");
+      showMessage(`Création impossible : ${error.message || error}`, "error");
     } finally {
-      authUI.setButtonLoading(els.btn, false, "Création...", "Créer mon compte");
-    }
-  });
-});
-const redirectTo = "https://dataportal.github.io/ONU-Femmes-TaskFlow/confirm.html";
-
-const { data, error } = await sb.auth.signUp({
-  email: emailValue,
-  password: passwordValue,
-  options: {
-    emailRedirectTo: redirectTo,
-    data: {
-      full_name: fullNameValue,
-      office: officeValue,
-      pillar_id: pillarIdValue,
-      supervisor_id: supervisorIdValue,
-      role: "staff"
+      authUI.setButtonLoading(btn, false);
     }
   }
+
+  form.addEventListener("submit", async function (event) {
+    event.preventDefault();
+    await doRegister();
+  });
+
+  await loadReferenceData();
 });
