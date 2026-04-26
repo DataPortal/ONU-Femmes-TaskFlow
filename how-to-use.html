@@ -4,36 +4,46 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>ONU Femmes — Guide d’utilisation</title>
+  <title>ONU Femmes RDC — Guide d’utilisation | TaskFlow Management Portal</title>
 
   <meta
     name="description"
-    content="Guide détaillé d’utilisation du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Guide d’utilisation du TaskFlow Management Portal d’ONU Femmes RDC : suivi des tâches, coordination interne, supervision, reporting et pilotage managérial."
   />
 
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body data-page="how-to-use">
-  <header class="site-header fixed-header">
-    <div class="header-inner container">
+  <!-- =====================================================
+       HEADER
+  ====================================================== -->
+  <header class="site-header fixed-header no-print">
+    <div class="container header-inner">
       <div class="brand-block">
-        <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
+        <img
+          src="assets/img/logunw.jpg"
+          alt="Logo ONU Femmes"
+          class="logo"
+        />
+
         <div class="brand-text">
-          <span class="eyebrow">TaskFlow Management Portal</span>
-          <h1>ONU Femmes RDC — Guide d’utilisation</h1>
-          <p>Comprendre, utiliser et exploiter efficacement l’application</p>
+          <h1>TaskFlow Management Portal</h1>
+          <p>ONU Femmes RDC — Guide d’utilisation</p>
         </div>
       </div>
 
-      <div class="top-tools no-print" aria-label="Outils utilisateur">
-        <button onclick="window.print()" class="btn btn-secondary" type="button">
+      <div class="top-tools">
+        <button type="button" class="btn btn-secondary" onclick="window.print()">
           Imprimer
         </button>
       </div>
     </div>
   </header>
 
+  <!-- =====================================================
+       NAVIGATION
+  ====================================================== -->
   <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
     <div class="container nav-links">
       <a href="dashboard.html">Dashboard</a>
@@ -41,294 +51,722 @@
       <a href="mon-equipe.html">Mon équipe</a>
       <a href="inscription.html">Inscription</a>
       <a href="profile.html">Mon profil</a>
-      <a href="management-dashboard.html">Management</a>
+      <a href="management.html">Management</a>
       <a href="how-to-use.html" class="active" aria-current="page">Guide d’utilisation</a>
     </div>
   </nav>
 
-  <main class="container main-content">
-    <section class="card guide-hero-card">
-      <span class="section-kicker">Vue générale</span>
-      <h2 class="section-title">À quoi sert cette application ?</h2>
-      <p class="section-subtitle">
-        Le <strong>TaskFlow Management Portal</strong> est un outil interne de gestion, de suivi et de pilotage
-        des tâches. Il permet d’organiser les activités par pilier, de suivre la progression des membres du personnel,
-        de renforcer la redevabilité, de documenter les livrables et de soutenir la prise de décision à travers des
-        vues opérationnelles et managériales.
-      </p>
-    </section>
+  <!-- =====================================================
+       MAIN CONTENT
+  ====================================================== -->
+  <main class="main-content">
+    <div class="container">
 
-    <section class="grid-2 guide-grid">
-      <div class="card">
-        <span class="section-kicker">Objectifs</span>
+      <!-- HERO -->
+      <section class="card guide-hero-card">
+        <span class="eyebrow">Vue générale</span>
+        <h2 class="section-title">À quoi sert cette application ?</h2>
+
+        <p class="section-subtitle">
+          Le <strong>TaskFlow Management Portal</strong> est un outil interne de gestion,
+          de suivi et de pilotage des tâches. Il permet d’organiser les activités par pilier,
+          de suivre la progression des membres du personnel, de renforcer la redevabilité,
+          de documenter les livrables et de soutenir la prise de décision à travers des vues
+          opérationnelles et managériales.
+        </p>
+
+        <div class="guide-callout">
+          L’application aide le bureau à passer d’un suivi dispersé entre emails, fichiers Excel,
+          messages et réunions vers un espace unique, structuré et exploitable pour le suivi
+          quotidien et le pilotage stratégique.
+        </div>
+      </section>
+
+      <!-- OBJECTIFS -->
+      <section class="card">
+        <span class="eyebrow">Objectifs</span>
         <h3>Finalités principales</h3>
+
         <ul class="guide-list">
           <li>Centraliser les tâches du bureau dans un espace unique.</li>
           <li>Assurer un suivi structuré par pilier, superviseur et staff.</li>
           <li>Suivre la progression, les échéances et les retards.</li>
           <li>Renforcer la traçabilité grâce aux commentaires et aux documents joints.</li>
           <li>Faciliter le pilotage global à travers un dashboard management.</li>
+          <li>Améliorer la coordination interne et la visibilité sur les priorités du bureau.</li>
+          <li>Appuyer la préparation des réunions, rapports internes et revues de performance.</li>
         </ul>
-      </div>
+      </section>
 
-      <div class="card">
-        <span class="section-kicker">Utilisateurs</span>
+      <!-- UTILISATEURS -->
+      <section class="card">
+        <span class="eyebrow">Utilisateurs</span>
         <h3>Profils concernés</h3>
-        <ul class="guide-list">
-          <li><strong>Admin</strong> : accès global à l’ensemble de l’application.</li>
-          <li><strong>Supervisor</strong> : supervision des membres et des tâches du pilier concerné.</li>
-          <li><strong>Staff</strong> : consultation, mise à jour et suivi de ses tâches.</li>
-        </ul>
-      </div>
-    </section>
 
-    <section class="card">
-      <span class="section-kicker">Étape 1</span>
-      <h3>Connexion à l’application</h3>
-      <div class="guide-step-block">
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Admin</h4>
+            <p>
+              Dispose d’un accès global à l’application. Il peut gérer la structure,
+              les profils, les piliers, les activités principales et les données consolidées.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Supervisor</h4>
+            <p>
+              Supervise les membres et les tâches liées à son périmètre.
+              Il peut suivre l’avancement, commenter les tâches et appuyer les arbitrages.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Staff</h4>
+            <p>
+              Consulte les tâches qui lui sont assignées, met à jour sa progression,
+              ajoute des commentaires et joint les documents utiles.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Management</h4>
+            <p>
+              Exploite les vues consolidées pour suivre les priorités, les performances,
+              les retards critiques et la qualité documentaire.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPE 1 -->
+      <section class="card">
+        <span class="eyebrow">Étape 1</span>
+        <h3>Connexion à l’application</h3>
+
         <ol class="guide-steps">
           <li>Ouvrir la page de connexion.</li>
           <li>Saisir l’adresse email et le mot de passe associés au compte.</li>
           <li>Cliquer sur <strong>Connexion</strong>.</li>
           <li>Après authentification, l’utilisateur est redirigé vers son espace de travail.</li>
         </ol>
-      </div>
 
-      <div class="info-box" style="margin-top:14px;">
-        En cas d’oubli du mot de passe, utiliser le lien <strong>Mot de passe oublié</strong> pour recevoir un lien
-        de réinitialisation.
-      </div>
-    </section>
+        <div class="guide-callout">
+          En cas d’oubli du mot de passe, utiliser le lien <strong>Mot de passe oublié</strong>
+          pour recevoir un lien de réinitialisation.
+        </div>
+      </section>
 
-    <section class="card">
-      <span class="section-kicker">Étape 2</span>
-      <h3>Comprendre les principales pages</h3>
+      <!-- ETAPE 2 -->
+      <section class="card">
+        <span class="eyebrow">Étape 2</span>
+        <h3>Comprendre les principales pages</h3>
 
-      <div class="guide-feature-grid">
-        <div class="guide-feature-card">
-          <h4>Dashboard</h4>
-          <p>Vue opérationnelle consolidée des tâches avec filtres, recherche, création, export et impression.</p>
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Dashboard</h4>
+            <p>
+              Vue opérationnelle consolidée des tâches avec filtres, recherche,
+              création, export et impression.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Mes tâches</h4>
+            <p>
+              Vue centrée sur les tâches directement assignées à l’utilisateur connecté.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Mon équipe</h4>
+            <p>
+              Vue synthétique des membres de l’équipe, avec leurs indicateurs de suivi
+              et leur charge de travail.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Inscription</h4>
+            <p>
+              Espace de gestion des piliers, des membres et des activités principales,
+              selon les permissions accordées.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Mon profil</h4>
+            <p>
+              Consultation des informations personnelles liées au compte utilisateur.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Management</h4>
+            <p>
+              Vue globale, analytique et stratégique destinée au pilotage managérial.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPE 3 -->
+      <section class="card">
+        <span class="eyebrow">Étape 3</span>
+        <h3>Créer une nouvelle tâche</h3>
+
+        <ol class="guide-steps">
+          <li>Depuis le <strong>Dashboard</strong>, cliquer sur <strong>+ Nouvelle tâche</strong>.</li>
+          <li>Renseigner le titre de la tâche.</li>
+          <li>Sélectionner le pilier concerné.</li>
+          <li>Choisir le membre à qui la tâche est assignée.</li>
+          <li>Définir la priorité.</li>
+          <li>Sélectionner l’activité principale liée à la tâche.</li>
+          <li>Renseigner l’échéance.</li>
+          <li>Ajouter une description claire du livrable ou du travail attendu.</li>
+          <li>Cliquer sur <strong>Créer la tâche</strong>.</li>
+        </ol>
+
+        <div class="guide-callout">
+          Le statut initial est déterminé automatiquement selon les paramètres de la tâche
+          et sera mis à jour au fil du suivi.
+        </div>
+      </section>
+
+      <!-- ETAPE 4 -->
+      <section class="card">
+        <span class="eyebrow">Étape 4</span>
+        <h3>Mettre à jour une tâche</h3>
+
+        <p class="section-subtitle">
+          La mise à jour d’une tâche se fait via la modale <strong>Mettre à jour</strong>
+          accessible depuis la colonne <strong>Action</strong>.
+        </p>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Progression staff</h4>
+            <p>
+              Le staff renseigne son niveau d’avancement via un score de 0 à 10,
+              correspondant à un pourcentage.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Commentaire staff</h4>
+            <p>
+              Le staff peut ajouter un commentaire pour expliquer l’état d’avancement,
+              les blocages ou les réalisations.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Évaluation superviseur</h4>
+            <p>
+              Le superviseur peut apprécier la qualité ou le niveau d’avancement à travers
+              un score et une appréciation.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Commentaire superviseur</h4>
+            <p>
+              Le superviseur peut ajouter un retour, une orientation ou une demande de réajustement.
+            </p>
+          </div>
         </div>
 
-        <div class="guide-feature-card">
-          <h4>Mes tâches</h4>
-          <p>Vue centrée sur les tâches directement assignées à l’utilisateur connecté.</p>
+        <div class="guide-callout">
+          Le statut de la tâche est calculé automatiquement à partir de la progression
+          et de l’échéance.
+        </div>
+      </section>
+
+      <!-- ETAPE 5 -->
+      <section class="card">
+        <span class="eyebrow">Étape 5</span>
+        <h3>Utiliser les filtres et la recherche</h3>
+
+        <p class="section-subtitle">
+          Les filtres permettent d’affiner l’analyse et de retrouver rapidement une information spécifique.
+        </p>
+
+        <ul class="guide-list">
+          <li>Recherche par mot-clé.</li>
+          <li>Filtre par pilier.</li>
+          <li>Filtre par activité principale.</li>
+          <li>Filtre par statut.</li>
+          <li>Filtre par superviseur.</li>
+          <li>Filtre par personne assignée.</li>
+          <li>Filtre par période.</li>
+        </ul>
+
+        <div class="guide-callout">
+          Bon usage : utilisez le bouton <strong>Réinitialiser / Actualiser</strong>
+          pour revenir rapidement à une vue propre.
+        </div>
+      </section>
+
+      <!-- ETAPE 6 -->
+      <section class="card">
+        <span class="eyebrow">Étape 6</span>
+        <h3>Ajouter, remplacer ou supprimer des documents</h3>
+
+        <ol class="guide-steps">
+          <li>Ouvrir la modale de la tâche concernée.</li>
+          <li>Dans la section <strong>Ajouter un document</strong>, sélectionner un ou plusieurs fichiers.</li>
+          <li>Cliquer sur <strong>Joindre le document</strong>.</li>
+          <li>Les documents apparaissent dans la liste des documents liés à la tâche.</li>
+          <li>Un document existant peut être remplacé si une nouvelle version est disponible.</li>
+          <li>Un document obsolète peut être supprimé.</li>
+        </ol>
+
+        <div class="guide-warning-box">
+          Règle : le nombre maximal de documents par tâche est limité afin de garder une gestion
+          claire et maîtrisée.
+        </div>
+      </section>
+
+      <!-- ETAPE 7 -->
+      <section class="card">
+        <span class="eyebrow">Étape 7</span>
+        <h3>Comprendre les indicateurs et statuts</h3>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>En bonne voie</h4>
+            <p>
+              La tâche progresse normalement et reste compatible avec l’échéance prévue.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Échéance imminente</h4>
+            <p>
+              La tâche approche de sa date limite et nécessite une attention rapprochée.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>En retard</h4>
+            <p>
+              La tâche a dépassé l’échéance prévue ou présente un décalage significatif.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Achevé</h4>
+            <p>
+              La tâche est considérée comme finalisée selon le niveau d’avancement atteint.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ETAPE 8 -->
+      <section class="card">
+        <span class="eyebrow">Étape 8</span>
+        <h3>Exploiter le dashboard management</h3>
+
+        <p class="section-subtitle">
+          Le dashboard management permet une lecture plus stratégique et consolidée
+          de la situation du bureau.
+        </p>
+
+        <ul class="guide-list">
+          <li>Vue globale du volume de tâches.</li>
+          <li>Taux d’achèvement et progression moyenne.</li>
+          <li>Comparaison des performances par pilier.</li>
+          <li>Identification des alertes et retards critiques.</li>
+          <li>Suivi de la qualité documentaire.</li>
+          <li>Appui aux arbitrages et à la prise de décision.</li>
+        </ul>
+      </section>
+
+      <!-- VISION -->
+      <section class="card">
+        <span class="eyebrow">Vision</span>
+        <h2 class="section-title">Vision de l’application</h2>
+
+        <p class="section-subtitle">
+          Le <strong>TaskFlow Management Portal</strong> a été conçu comme un outil interne
+          de digitalisation du suivi des activités du bureau. Il vise à transformer la gestion
+          quotidienne des tâches en un système structuré, traçable et exploitable pour le pilotage
+          opérationnel et managérial.
+        </p>
+
+        <p>
+          L’application permet de passer d’un suivi dispersé entre emails, fichiers Excel,
+          messages et réunions à un espace unique où les tâches, les responsabilités,
+          les échéances, les commentaires, les documents et les niveaux d’avancement sont centralisés.
+        </p>
+
+        <p>
+          Elle contribue ainsi à améliorer la coordination interne, la visibilité sur les priorités,
+          la redevabilité des équipes et la qualité du reporting.
+        </p>
+      </section>
+
+      <!-- PROBLEME -->
+      <section class="card">
+        <span class="eyebrow">Besoin</span>
+        <h2 class="section-title">Problème auquel l’application répond</h2>
+
+        <p class="section-subtitle">
+          Dans un environnement de travail où plusieurs piliers, unités, superviseurs et membres du personnel
+          contribuent simultanément à différentes activités, il devient souvent difficile de suivre clairement :
+        </p>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Responsabilités</h4>
+            <p>
+              Identifier clairement qui fait quoi, sous quelle supervision et pour quel domaine de travail.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Échéances</h4>
+            <p>
+              Suivre les délais, anticiper les retards et identifier les tâches nécessitant une attention urgente.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Avancement</h4>
+            <p>
+              Visualiser le niveau de progression des tâches, les blocages éventuels et les actions réalisées.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Livrables</h4>
+            <p>
+              Documenter les résultats à travers les commentaires, les pièces jointes et les preuves de réalisation.
+            </p>
+          </div>
         </div>
 
-        <div class="guide-feature-card">
-          <h4>Mon équipe</h4>
-          <p>Vue synthétique des membres de l’équipe, avec leurs indicateurs de suivi et leur charge de travail.</p>
+        <div class="guide-callout">
+          Le TaskFlow Management Portal répond à ce besoin en offrant une vue structurée,
+          actualisée et exploitable des tâches du bureau.
         </div>
+      </section>
 
-        <div class="guide-feature-card">
-          <h4>Inscription</h4>
-          <p>Espace de gestion des piliers, des membres et des activités principales, selon les permissions.</p>
+      <!-- VALEUR AJOUTEE -->
+      <section class="card">
+        <span class="eyebrow">Valeur ajoutée</span>
+        <h2 class="section-title">Valeur ajoutée pour le bureau</h2>
+
+        <ul class="guide-list">
+          <li><strong>Organisation interne :</strong> toutes les tâches sont centralisées dans un espace commun.</li>
+          <li><strong>Redevabilité :</strong> chaque tâche est liée à une personne assignée, un superviseur, une échéance et un statut.</li>
+          <li><strong>Traçabilité :</strong> les commentaires et documents permettent de documenter les progrès et les livrables.</li>
+          <li><strong>Pilotage :</strong> les tableaux de bord facilitent l’analyse des priorités, des retards et de la charge de travail.</li>
+          <li><strong>Coordination :</strong> les superviseurs disposent d’une meilleure visibilité sur les équipes.</li>
+          <li><strong>Reporting :</strong> les données peuvent être exportées et utilisées pour les réunions, rapports internes ou revues de performance.</li>
+          <li><strong>Digitalisation :</strong> l’application constitue une base pour moderniser progressivement d’autres processus internes.</li>
+        </ul>
+      </section>
+
+      <!-- LOGIQUE -->
+      <section class="card">
+        <span class="eyebrow">Fonctionnement</span>
+        <h2 class="section-title">Logique de fonctionnement</h2>
+
+        <ol class="guide-steps">
+          <li>Une tâche est créée et liée à un pilier.</li>
+          <li>Elle est associée à une activité principale.</li>
+          <li>Elle est assignée à un membre du personnel.</li>
+          <li>Une échéance et une priorité sont définies.</li>
+          <li>Le staff met à jour sa progression.</li>
+          <li>Le superviseur apporte son appréciation ou son commentaire.</li>
+          <li>Les documents utiles sont joints à la tâche.</li>
+          <li>Le statut est actualisé selon la progression et l’échéance.</li>
+          <li>Les données alimentent les tableaux de bord opérationnels et managériaux.</li>
+        </ol>
+
+        <div class="guide-callout">
+          Cette logique permet de relier le suivi quotidien des tâches à une lecture plus globale
+          de la performance du bureau.
         </div>
+      </section>
 
-        <div class="guide-feature-card">
-          <h4>Mon profil</h4>
-          <p>Consultation des informations personnelles liées au compte utilisateur.</p>
+      <!-- GOUVERNANCE -->
+      <section class="card">
+        <span class="eyebrow">Gouvernance</span>
+        <h2 class="section-title">Principes de gouvernance</h2>
+
+        <ul class="guide-list">
+          <li>Chaque tâche doit avoir un objectif clair.</li>
+          <li>Les tâches doivent être rattachées au bon pilier.</li>
+          <li>L’activité principale doit refléter le domaine réel de contribution.</li>
+          <li>Les échéances doivent être réalistes.</li>
+          <li>Les commentaires doivent être utiles, professionnels et orientés vers l’action.</li>
+          <li>Les documents joints doivent être pertinents et liés à la tâche.</li>
+          <li>Les mises à jour doivent être régulières.</li>
+          <li>Les doublons doivent être évités.</li>
+          <li>Les informations sensibles doivent être partagées avec prudence.</li>
+        </ul>
+      </section>
+
+      <!-- CONFIDENTIALITE -->
+      <section class="card">
+        <span class="eyebrow">Sécurité</span>
+        <h2 class="section-title">Confidentialité et sécurité</h2>
+
+        <p class="section-subtitle">
+          Le TaskFlow Management Portal est destiné à un usage interne. Les accès sont organisés
+          selon les rôles attribués aux utilisateurs.
+        </p>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Staff</h4>
+            <p>
+              Accède principalement à ses propres tâches et met à jour les informations
+              qui relèvent de son suivi.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Supervisor</h4>
+            <p>
+              Suit les tâches des membres relevant de sa supervision et apporte les appréciations nécessaires.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Admin</h4>
+            <p>
+              Dispose d’un accès plus large pour gérer la structure, les profils, les piliers
+              et les activités principales.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Protection des données</h4>
+            <p>
+              Les utilisateurs doivent éviter d’ajouter des informations hautement sensibles,
+              personnelles ou confidentielles non nécessaires au suivi des tâches.
+            </p>
+          </div>
         </div>
+      </section>
 
-        <div class="guide-feature-card">
-          <h4>Management</h4>
-          <p>Vue globale, analytique et stratégique destinée au pilotage managérial.</p>
+      <!-- QUALITE DONNEES -->
+      <section class="card">
+        <span class="eyebrow">Qualité des données</span>
+        <h2 class="section-title">Bonnes pratiques de saisie</h2>
+
+        <ul class="guide-list">
+          <li>Utiliser des titres de tâches courts et explicites.</li>
+          <li>Décrire clairement le livrable attendu.</li>
+          <li>Éviter les abréviations incompréhensibles.</li>
+          <li>Choisir le bon pilier et la bonne activité principale.</li>
+          <li>Mettre à jour la progression dès qu’un changement important intervient.</li>
+          <li>Expliquer les blocages dans le commentaire staff.</li>
+          <li>Utiliser le commentaire superviseur pour donner une orientation claire.</li>
+          <li>Joindre uniquement les documents utiles.</li>
+          <li>Vérifier les informations avant export ou impression.</li>
+        </ul>
+      </section>
+
+      <!-- EXEMPLES -->
+      <section class="card">
+        <span class="eyebrow">Exemples</span>
+        <h2 class="section-title">Exemples de tâches bien formulées</h2>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Finaliser la note de synthèse sur les activités GiHA</h4>
+            <p>
+              <strong>Pilier :</strong> Coordination humanitaire / Genre dans l’action humanitaire<br>
+              <strong>Activité principale :</strong> Appui à l’intégration du genre dans la réponse humanitaire<br>
+              <strong>Description :</strong> Préparer une note de synthèse présentant les principales contributions,
+              défis et recommandations liés à l’intégration du genre dans les mécanismes de coordination humanitaire.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Mettre à jour le tableau de suivi des partenaires WLOs</h4>
+            <p>
+              <strong>Pilier :</strong> Partenariats et coordination<br>
+              <strong>Activité principale :</strong> Cartographie et suivi des organisations de femmes<br>
+              <strong>Description :</strong> Actualiser la liste des partenaires, zones d’intervention,
+              domaines d’activité et contacts clés pour appuyer la planification et la visibilité des interventions.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Préparer les données pour le rapport mensuel</h4>
+            <p>
+              <strong>Pilier :</strong> Suivi, évaluation et reporting<br>
+              <strong>Activité principale :</strong> Consolidation des données programmatiques<br>
+              <strong>Description :</strong> Compiler les données disponibles, vérifier leur cohérence
+              et préparer les tableaux de synthèse nécessaires au rapport mensuel du bureau.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Organiser une réunion de suivi avec les partenaires</h4>
+            <p>
+              <strong>Pilier :</strong> Coordination / Partenariats<br>
+              <strong>Activité principale :</strong> Suivi des engagements et coordination opérationnelle<br>
+              <strong>Description :</strong> Préparer l’agenda, consolider les points de suivi et documenter
+              les décisions issues de la réunion.
+            </p>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section class="card">
-      <span class="section-kicker">Étape 3</span>
-      <h3>Créer une nouvelle tâche</h3>
+      <!-- LIMITES -->
+      <section class="card">
+        <span class="eyebrow">Limites</span>
+        <h2 class="section-title">Ce que l’application ne remplace pas</h2>
 
-      <ol class="guide-steps">
-        <li>Depuis le <strong>Dashboard</strong>, cliquer sur <strong>+ Nouvelle tâche</strong>.</li>
-        <li>Renseigner le titre de la tâche.</li>
-        <li>Sélectionner le pilier concerné.</li>
-        <li>Choisir le membre à qui la tâche est assignée.</li>
-        <li>Définir la priorité.</li>
-        <li>Sélectionner l’activité principale liée à la tâche.</li>
-        <li>Renseigner l’échéance.</li>
-        <li>Ajouter une description claire du livrable ou du travail attendu.</li>
-        <li>Cliquer sur <strong>Créer la tâche</strong>.</li>
-      </ol>
+        <p class="section-subtitle">
+          Le TaskFlow Management Portal vient en appui au suivi quotidien, à la coordination interne
+          et au pilotage opérationnel. Il ne remplace pas les outils et procédures institutionnels existants.
+        </p>
 
-      <div class="success-box" style="margin-top:14px;">
-        Le statut initial est déterminé automatiquement selon les paramètres de la tâche et sera mis à jour au fil du suivi.
-      </div>
-    </section>
+        <ul class="guide-list">
+          <li>Les systèmes institutionnels officiels de gestion des programmes.</li>
+          <li>Les plateformes financières ou administratives.</li>
+          <li>Les outils officiels de ressources humaines.</li>
+          <li>Les espaces formels d’archivage documentaire.</li>
+          <li>Les validations hiérarchiques requises par les procédures internes.</li>
+          <li>Les échanges stratégiques nécessaires entre superviseurs et équipes.</li>
+        </ul>
+      </section>
 
-    <section class="card">
-      <span class="section-kicker">Étape 4</span>
-      <h3>Mettre à jour une tâche</h3>
+      <!-- REUNIONS -->
+      <section class="card">
+        <span class="eyebrow">Réunions</span>
+        <h2 class="section-title">Utilisation en réunion</h2>
 
-      <p class="section-subtitle" style="max-width:none;">
-        La mise à jour d’une tâche se fait via la modale <strong>Mettre à jour</strong> accessible depuis la colonne Action.
-      </p>
+        <p class="section-subtitle">
+          L’application peut être utilisée comme support lors des réunions d’équipe,
+          réunions de suivi hebdomadaire, points bilatéraux superviseur/staff,
+          revues mensuelles des priorités, réunions de coordination par pilier,
+          préparations de rapports internes et discussions sur la charge de travail.
+        </p>
 
-      <div class="guide-feature-grid">
-        <div class="guide-feature-card">
-          <h4>Progression staff</h4>
-          <p>Le staff renseigne son niveau d’avancement via un score de 0 à 10, correspondant à un pourcentage.</p>
+        <div class="guide-callout">
+          Avant une réunion, il est recommandé de filtrer les tâches par pilier, superviseur,
+          statut ou période afin d’avoir une vue directement exploitable.
         </div>
+      </section>
 
-        <div class="guide-feature-card">
-          <h4>Commentaire staff</h4>
-          <p>Le staff peut ajouter un commentaire pour expliquer l’état d’avancement, les blocages ou les réalisations.</p>
+      <!-- EVOLUTION -->
+      <section class="card">
+        <span class="eyebrow">Évolution</span>
+        <h2 class="section-title">Perspectives d’évolution</h2>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>Notifications</h4>
+            <p>
+              Ajouter des rappels automatiques avant échéance et des alertes pour les tâches en retard.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Rapports automatiques</h4>
+            <p>
+              Générer des synthèses hebdomadaires ou mensuelles à partir des données saisies dans l’application.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Historique des modifications</h4>
+            <p>
+              Suivre les changements apportés aux tâches, commentaires, statuts et documents.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Modules complémentaires</h4>
+            <p>
+              Étendre progressivement l’outil vers le suivi des missions, partenaires, WLOs
+              ou plans de travail annuels.
+            </p>
+          </div>
         </div>
+      </section>
 
-        <div class="guide-feature-card">
-          <h4>Évaluation superviseur</h4>
-          <p>Le superviseur peut apprécier la qualité ou le niveau d’avancement à travers un score et une appréciation.</p>
+      <!-- BONNES PRATIQUES -->
+      <section class="card">
+        <span class="eyebrow">Bonnes pratiques</span>
+        <h3>Recommandations d’utilisation</h3>
+
+        <ul class="guide-list">
+          <li>Mettre les tâches à jour régulièrement.</li>
+          <li>Ajouter des commentaires utiles et concis.</li>
+          <li>Joindre les documents importants comme preuve de réalisation.</li>
+          <li>Utiliser les filtres pour les réunions de suivi.</li>
+          <li>Éviter les doublons de tâches.</li>
+          <li>Maintenir les informations cohérentes entre le staff et le superviseur.</li>
+          <li>Vérifier la qualité des informations avant export, impression ou partage.</li>
+        </ul>
+      </section>
+
+      <!-- SUPPORT -->
+      <section class="card">
+        <span class="eyebrow">Support</span>
+        <h3>Que faire en cas de difficulté ?</h3>
+
+        <div class="guide-feature-grid">
+          <div class="guide-feature-card">
+            <h4>La page ne charge pas correctement</h4>
+            <p>
+              Faire un rechargement complet du navigateur avec <strong>Ctrl + F5</strong>.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Un bouton n’apparaît pas</h4>
+            <p>
+              Vérifier le rôle utilisateur et les permissions associées.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Une action est refusée</h4>
+            <p>
+              Contrôler les règles d’accès, les droits liés au pilier et les politiques de sécurité.
+            </p>
+          </div>
+
+          <div class="guide-feature-card">
+            <h4>Un document ne se charge pas</h4>
+            <p>
+              Vérifier le format, le nombre autorisé et les permissions liées au stockage.
+            </p>
+          </div>
         </div>
+      </section>
 
-        <div class="guide-feature-card">
-          <h4>Commentaire superviseur</h4>
-          <p>Le superviseur peut ajouter un retour, une orientation ou une demande de réajustement.</p>
-        </div>
-      </div>
+      <!-- CONCLUSION -->
+      <section class="card">
+        <span class="eyebrow">Conclusion</span>
+        <h2 class="section-title">Valeur stratégique de l’application</h2>
 
-      <div class="info-box" style="margin-top:14px;">
-        Le statut de la tâche est calculé automatiquement à partir de la progression et de l’échéance.
-      </div>
-    </section>
+        <p>
+          Le <strong>TaskFlow Management Portal</strong> est plus qu’un simple outil de suivi des tâches.
+          Il constitue un mécanisme interne de coordination, de redevabilité et de pilotage.
+          En centralisant les tâches, les responsabilités, les échéances, les documents et les commentaires,
+          il permet au bureau de mieux suivre ses priorités, d’anticiper les retards, de valoriser les contributions
+          des équipes et de disposer d’une base structurée pour le reporting et la prise de décision.
+        </p>
 
-    <section class="card">
-      <span class="section-kicker">Étape 5</span>
-      <h3>Utiliser les filtres et la recherche</h3>
+        <p>
+          Utilisé régulièrement et correctement, il peut devenir un outil stratégique pour renforcer l’efficacité
+          collective, améliorer la visibilité du travail réalisé et soutenir la digitalisation progressive
+          des processus internes d’ONU Femmes RDC.
+        </p>
+      </section>
 
-      <p class="section-subtitle" style="max-width:none;">
-        Les filtres permettent d’affiner l’analyse et de retrouver rapidement une information spécifique.
-      </p>
-
-      <ul class="guide-list">
-        <li>Recherche par mot-clé</li>
-        <li>Filtre par pilier</li>
-        <li>Filtre par activité principale</li>
-        <li>Filtre par statut</li>
-        <li>Filtre par superviseur</li>
-        <li>Filtre par personne assignée</li>
-        <li>Filtre par période</li>
-      </ul>
-
-      <div class="guide-callout">
-        <strong>Bon usage :</strong> utilisez le bouton <strong>Réinitialiser / Actualiser</strong> pour revenir rapidement à une vue propre.
-      </div>
-    </section>
-
-    <section class="card">
-      <span class="section-kicker">Étape 6</span>
-      <h3>Ajouter, remplacer ou supprimer des documents</h3>
-
-      <ol class="guide-steps">
-        <li>Ouvrir la modale de la tâche concernée.</li>
-        <li>Dans la section <strong>Ajouter un document</strong>, sélectionner un ou plusieurs fichiers.</li>
-        <li>Cliquer sur <strong>Joindre le document</strong>.</li>
-        <li>Les documents apparaissent dans la liste des documents liés à la tâche.</li>
-        <li>Un document existant peut être <strong>remplacé</strong> si une nouvelle version est disponible.</li>
-        <li>Un document obsolète peut être <strong>supprimé</strong>.</li>
-      </ol>
-
-      <div class="warning-box guide-warning-box">
-        <strong>Règle :</strong> le nombre maximal de documents par tâche est limité afin de garder une gestion claire et maîtrisée.
-      </div>
-    </section>
-
-    <section class="card">
-      <span class="section-kicker">Étape 7</span>
-      <h3>Comprendre les indicateurs et statuts</h3>
-
-      <div class="guide-feature-grid">
-        <div class="guide-feature-card">
-          <h4>En bonne voie</h4>
-          <p>La tâche progresse normalement et reste compatible avec l’échéance prévue.</p>
-        </div>
-
-        <div class="guide-feature-card">
-          <h4>Échéance imminente</h4>
-          <p>La tâche approche de sa date limite et nécessite une attention rapprochée.</p>
-        </div>
-
-        <div class="guide-feature-card">
-          <h4>En retard</h4>
-          <p>La tâche a dépassé l’échéance prévue ou présente un décalage significatif.</p>
-        </div>
-
-        <div class="guide-feature-card">
-          <h4>Achevé</h4>
-          <p>La tâche est considérée comme finalisée selon le niveau d’avancement atteint.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <span class="section-kicker">Étape 8</span>
-      <h3>Exploiter le dashboard management</h3>
-
-      <p class="section-subtitle" style="max-width:none;">
-        Le dashboard management permet une lecture plus stratégique et consolidée de la situation du bureau.
-      </p>
-
-      <ul class="guide-list">
-        <li>Vue globale du volume de tâches</li>
-        <li>Taux d’achèvement et progression moyenne</li>
-        <li>Comparaison des performances par pilier</li>
-        <li>Identification des alertes et retards critiques</li>
-        <li>Suivi de la qualité documentaire</li>
-        <li>Appui aux arbitrages et à la prise de décision</li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <span class="section-kicker">Bonnes pratiques</span>
-      <h3>Recommandations d’utilisation</h3>
-
-      <ul class="guide-list">
-        <li>Mettre les tâches à jour régulièrement.</li>
-        <li>Ajouter des commentaires utiles et concis.</li>
-        <li>Joindre les documents importants comme preuve de réalisation.</li>
-        <li>Utiliser les filtres pour les réunions de suivi.</li>
-        <li>Éviter les doublons de tâches.</li>
-        <li>Maintenir les informations cohérentes entre le staff et le superviseur.</li>
-      </ul>
-    </section>
-
-    <section class="card">
-      <span class="section-kicker">Support</span>
-      <h3>Que faire en cas de difficulté ?</h3>
-
-      <div class="guide-feature-grid">
-        <div class="guide-feature-card">
-          <h4>La page ne charge pas correctement</h4>
-          <p>Faire un rechargement complet du navigateur avec <strong>Ctrl + F5</strong>.</p>
-        </div>
-
-        <div class="guide-feature-card">
-          <h4>Un bouton n’apparaît pas</h4>
-          <p>Vérifier le rôle utilisateur et les permissions associées.</p>
-        </div>
-
-        <div class="guide-feature-card">
-          <h4>Une action est refusée</h4>
-          <p>Contrôler les règles d’accès, les droits liés au pilier et les politiques de sécurité.</p>
-        </div>
-
-        <div class="guide-feature-card">
-          <h4>Un document ne se charge pas</h4>
-          <p>Vérifier le format, le nombre autorisé et les permissions liées au stockage.</p>
-        </div>
-      </div>
-    </section>
-
-    <section class="card">
-      <span class="section-kicker">Conclusion</span>
-      <h3>Valeur ajoutée de l’application</h3>
-      <p class="section-subtitle" style="max-width:none;">
-        Cette application contribue à structurer le suivi des activités, à améliorer la visibilité globale,
-        à renforcer la redevabilité interne et à soutenir un pilotage plus stratégique des priorités du bureau.
-        Elle constitue ainsi une base solide pour la digitalisation progressive d’autres outils internes.
-      </p>
-    </section>
+    </div>
   </main>
 </body>
 </html>
