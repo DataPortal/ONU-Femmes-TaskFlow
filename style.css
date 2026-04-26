@@ -2249,373 +2249,7 @@ tbody tr:hover td{
     grid-template-columns:1fr;
   }
 }
-/* =====================================================
-   MANAGEMENT DASHBOARD V2 PREMIUM
-   ===================================================== */
 
-.management-hero-card{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:20px;
-  padding:22px;
-  margin-bottom:22px;
-  border-radius:24px;
-  background:
-    linear-gradient(135deg, rgba(47,110,165,.98), rgba(68,139,202,.96));
-  color:#fff;
-  box-shadow:var(--shadow-lg);
-}
-
-.management-hero-title{
-  margin:0;
-  font-size:30px;
-  line-height:1.15;
-  font-weight:800;
-}
-
-.management-hero-subtitle{
-  margin:10px 0 0;
-  max-width:760px;
-  line-height:1.65;
-  color:rgba(255,255,255,.92);
-}
-
-.management-hero-actions{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-
-.management-kpi-grid{
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0, 1fr));
-  gap:16px;
-  margin-bottom:22px;
-}
-
-.management-kpi-card{
-  border-radius:20px;
-  padding:18px;
-  background:#fff;
-  border:1px solid rgba(229,231,235,.95);
-  box-shadow:var(--shadow-md);
-  position:relative;
-  overflow:hidden;
-}
-
-.management-kpi-card::before{
-  content:"";
-  position:absolute;
-  left:0;
-  top:0;
-  bottom:0;
-  width:5px;
-}
-
-.management-kpi-blue::before{ background:linear-gradient(180deg, #2f6ea5, #448BCA); }
-.management-kpi-green::before{ background:linear-gradient(180deg, #059669, #10b981); }
-.management-kpi-orange::before{ background:linear-gradient(180deg, #de6f12, #F58220); }
-.management-kpi-red::before{ background:linear-gradient(180deg, #b91c1c, #ef4444); }
-
-.management-kpi-top{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  margin-bottom:10px;
-}
-
-.management-kpi-icon{
-  width:34px;
-  height:34px;
-  border-radius:10px;
-  display:grid;
-  place-items:center;
-  background:#f8fafc;
-  color:#334155;
-  font-weight:800;
-}
-
-.management-kpi-label{
-  font-size:13px;
-  font-weight:700;
-  color:var(--muted);
-}
-
-.management-kpi-value{
-  font-size:32px;
-  font-weight:800;
-  letter-spacing:-.02em;
-  color:var(--text);
-}
-
-.management-executive-band{
-  display:grid;
-  grid-template-columns:repeat(3, minmax(0, 1fr));
-  gap:18px;
-  margin-bottom:22px;
-}
-
-.management-gauge-card,
-.management-summary-card{
-  background:#fff;
-  border-radius:22px;
-  padding:20px;
-  border:1px solid rgba(229,231,235,.95);
-  box-shadow:var(--shadow-md);
-}
-
-.management-gauge-header h3,
-.management-summary-card h3{
-  margin:0;
-  font-size:20px;
-}
-
-.management-gauge-wrap{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:8px 0 0;
-}
-
-.management-gauge{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.management-gauge-ring{
-  --gauge:0;
-  width:180px;
-  height:180px;
-  border-radius:50%;
-  background:
-    conic-gradient(
-      var(--gauge-color, var(--uw-blue)) calc(var(--gauge) * 1%),
-      #e5e7eb 0
-    );
-  display:grid;
-  place-items:center;
-  position:relative;
-}
-
-.management-gauge-ring::after{
-  content:"";
-  width:128px;
-  height:128px;
-  border-radius:50%;
-  background:#fff;
-  position:absolute;
-}
-
-.management-gauge-center{
-  position:relative;
-  z-index:2;
-  text-align:center;
-}
-
-.management-gauge-value{
-  font-size:32px;
-  font-weight:800;
-  color:var(--text);
-  line-height:1;
-}
-
-.management-gauge-label{
-  margin-top:8px;
-  font-size:13px;
-  color:var(--muted);
-  font-weight:700;
-}
-
-.management-gauge.is-completion .management-gauge-ring{
-  --gauge-color:#10b981;
-}
-
-.management-gauge.is-progress .management-gauge-ring{
-  --gauge-color:#448BCA;
-}
-
-.management-summary-list{
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  margin-top:12px;
-}
-
-.management-summary-item{
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  color:#374151;
-  line-height:1.55;
-}
-
-.management-summary-dot{
-  width:10px;
-  height:10px;
-  border-radius:50%;
-  background:var(--uw-orange);
-  margin-top:6px;
-  flex-shrink:0;
-}
-
-.management-grid-premium{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:18px;
-  margin-bottom:22px;
-}
-
-.premium-chart{
-  padding-top:6px;
-}
-
-.management-chart-block{
-  display:flex;
-  flex-direction:column;
-  gap:14px;
-}
-
-.management-bar-row{
-  display:grid;
-  grid-template-columns:170px 1fr 56px;
-  gap:12px;
-  align-items:center;
-}
-
-.management-bar-label{
-  font-size:13px;
-  font-weight:700;
-  color:var(--text);
-  overflow-wrap:anywhere;
-}
-
-.management-bar-track{
-  width:100%;
-  height:12px;
-  background:#e5e7eb;
-  border-radius:999px;
-  overflow:hidden;
-}
-
-.management-bar-fill{
-  height:100%;
-  border-radius:999px;
-  background:linear-gradient(90deg, var(--uw-blue-dark), var(--uw-blue));
-}
-
-.management-bar-fill.is-danger{
-  background:linear-gradient(90deg, #b91c1c, #ef4444);
-}
-
-.management-bar-fill.is-orange{
-  background:linear-gradient(90deg, var(--uw-orange-dark), var(--uw-orange));
-}
-
-.management-bar-value{
-  text-align:right;
-  font-size:12px;
-  font-weight:800;
-  color:#374151;
-}
-
-.management-doc-kpis{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0, 1fr));
-  gap:14px;
-}
-
-.premium-doc-grid{
-  padding-top:6px;
-}
-
-.management-doc-card{
-  background:#fff;
-  border-radius:16px;
-  padding:16px;
-  border:1px solid rgba(229,231,235,.9);
-  box-shadow:var(--shadow-sm);
-}
-
-.premium-doc-card.blue{
-  border-left:4px solid var(--uw-blue);
-}
-
-.premium-doc-card.green{
-  border-left:4px solid #10b981;
-}
-
-.premium-doc-card.orange{
-  border-left:4px solid var(--uw-orange);
-}
-
-.premium-doc-card.red{
-  border-left:4px solid #ef4444;
-}
-
-.management-doc-card h4{
-  margin:0 0 8px;
-  font-size:15px;
-  line-height:1.35;
-}
-
-.management-doc-value{
-  font-size:28px;
-  font-weight:800;
-  color:var(--uw-blue-dark);
-}
-
-.management-table{
-  min-width:1050px !important;
-}
-
-.alert-card{
-  border-top:4px solid #ef4444;
-}
-
-@media (max-width: 1100px){
-  .management-kpi-grid{
-    grid-template-columns:repeat(2, minmax(0, 1fr));
-  }
-
-  .management-executive-band{
-    grid-template-columns:1fr;
-  }
-
-  .management-grid-premium{
-    grid-template-columns:1fr;
-  }
-}
-
-@media (max-width: 760px){
-  .management-hero-card{
-    flex-direction:column;
-  }
-
-  .management-hero-actions{
-    width:100%;
-    justify-content:flex-start;
-  }
-
-  .management-kpi-grid{
-    grid-template-columns:1fr;
-  }
-
-  .management-bar-row{
-    grid-template-columns:1fr;
-    gap:8px;
-  }
-
-  .management-bar-value{
-    text-align:left;
-  }
-
-  .management-doc-kpis{
-    grid-template-columns:1fr;
-  }
-}
 /* =====================================================
    HOW TO USE PAGE
    ===================================================== */
@@ -2707,37 +2341,584 @@ tbody tr:hover td{
     grid-template-columns:1fr;
   }
 }
-/* =========================================================
-   RESPONSIVE BASE - TASKFLOW
-   À ajouter à la fin du fichier style.css
-========================================================= */
 
-* {
-  box-sizing: border-box;
+/* =====================================================
+   RESPONSIVE HARMONISÉ - TASKFLOW
+   ===================================================== */
+
+/* Base responsive sécurisée */
+html,
+body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
 }
 
-html {
-  width: 100%;
-  overflow-x: hidden;
-}
-
-body {
-  width: 100%;
-  min-width: 0;
-  overflow-x: hidden;
+*,
+*::before,
+*::after{
+  box-sizing:border-box;
 }
 
 img,
 svg,
 canvas,
-video {
-  max-width: 100%;
-  height: auto;
+video{
+  max-width:100%;
+  height:auto;
 }
 
 button,
 input,
 select,
-textarea {
-  max-width: 100%;
+textarea{
+  max-width:100%;
 }
+
+/* Conteneurs : conserve le comportement existant */
+.page-container,
+.dashboard-container,
+.main-container,
+.content{
+  width:100%;
+  max-width:var(--container);
+  margin-left:auto;
+  margin-right:auto;
+}
+
+/* Sécurité anti-débordement */
+.card,
+.admin-card,
+.info-card,
+.table-card,
+.filters-card,
+.login-card,
+.auth-card,
+.profile-card,
+.management-hero-card,
+.management-kpi-card,
+.management-gauge-card,
+.management-summary-card,
+.management-doc-card{
+  max-width:100%;
+}
+
+/* Tableaux : scroll horizontal contrôlé */
+.table-wrap,
+.table-wrapper,
+.table-responsive,
+.tasks-table-wrapper{
+  width:100%;
+  max-width:100%;
+  overflow-x:auto;
+  overflow-y:visible;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* Ne pas imposer nowrap globalement à toutes les tables */
+.tasks-table th,
+#teamTasksTable th,
+.management-table th{
+  white-space:normal;
+}
+
+.tasks-table td,
+#teamTasksTable td,
+.management-table td{
+  white-space:normal;
+}
+
+/* Colonnes sensibles : garder une bonne lisibilité */
+.col-id,
+.col-priority,
+.col-status,
+.col-progress,
+.col-deadline,
+.col-action{
+  white-space:nowrap;
+}
+
+/* Boutons et actions */
+.dashboard-command-actions,
+.management-hero-actions,
+.card-actions,
+.modal-actions,
+.login-actions,
+.action-buttons,
+.actions-row,
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+}
+
+/* Filtres */
+.dashboard-filter-chips{
+  width:100%;
+}
+
+.filter-menu{
+  min-width:0;
+}
+
+.filter-popover{
+  max-width:calc(100vw - 32px);
+}
+
+/* =====================================================
+   RESPONSIVE LARGE TABLETTE
+   ===================================================== */
+
+@media (max-width:1200px){
+  .dashboard,
+  .dashboard-kpis{
+    grid-template-columns:repeat(3, minmax(0, 1fr));
+  }
+
+  .management-kpi-grid{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  .management-executive-band,
+  .management-grid,
+  .management-grid-premium,
+  .split-layout{
+    grid-template-columns:1fr;
+  }
+
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1500px;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE TABLETTE
+   ===================================================== */
+
+@media (max-width:900px){
+  :root{
+    --header-height:104px;
+  }
+
+  .container{
+    width:min(100% - 28px, var(--container));
+  }
+
+  .dashboard,
+  .dashboard-kpis{
+    grid-template-columns:repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-2,
+  .two-columns{
+    grid-template-columns:1fr;
+  }
+
+  .header-inner{
+    align-items:flex-start;
+  }
+
+  .top-tools{
+    width:100%;
+  }
+
+  .current-user-label,
+  #currentUserLabel{
+    width:100%;
+    min-width:unset;
+  }
+
+  .dashboard-command-bar{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .dashboard-command-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .dashboard-command-actions .btn{
+    flex:1 1 180px;
+  }
+
+  .dashboard-search-chip{
+    flex:1 1 100%;
+  }
+
+  .management-hero-card{
+    flex-direction:column;
+  }
+
+  .management-hero-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1350px;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE MOBILE
+   ===================================================== */
+
+@media (max-width:760px){
+  :root{
+    --header-height:0px;
+  }
+
+  .fixed-header{
+    position:relative;
+  }
+
+  .fixed-nav{
+    position:sticky;
+    top:0;
+  }
+
+  .container{
+    width:min(100% - 20px, var(--container));
+  }
+
+  .main-content{
+    padding-top:20px;
+    padding-bottom:32px;
+  }
+
+  .site-header,
+  header{
+    padding:14px 0;
+  }
+
+  .header-inner{
+    flex-direction:column;
+    align-items:stretch;
+    gap:14px;
+  }
+
+  .brand-block,
+  .brand{
+    align-items:flex-start;
+  }
+
+  .logo{
+    height:52px;
+    border-radius:12px;
+  }
+
+  .brand-text h1,
+  .brand h1{
+    font-size:21px;
+    line-height:1.18;
+  }
+
+  .brand-text p,
+  .brand p{
+    font-size:13px;
+  }
+
+  .top-tools{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .top-tools .btn,
+  .top-tools button{
+    width:100%;
+  }
+
+  .nav-links,
+  nav{
+    flex-direction:column;
+    gap:6px;
+    padding:10px 0;
+  }
+
+  .nav-links a,
+  nav a{
+    width:100%;
+    padding:10px 12px;
+    border-radius:12px;
+    background:#fff;
+    text-align:left;
+  }
+
+  .nav-links a.active::after,
+  .nav-links a[aria-current="page"]::after,
+  nav a.active::after{
+    display:none;
+  }
+
+  .nav-links a.active,
+  .nav-links a[aria-current="page"],
+  nav a.active{
+    background:var(--uw-orange-soft);
+    color:var(--uw-orange-dark);
+  }
+
+  .section-title{
+    font-size:22px;
+  }
+
+  .section-subtitle{
+    font-size:13.5px;
+  }
+
+  .dashboard-control-panel{
+    padding:16px;
+    border-radius:20px;
+  }
+
+  .dashboard-command-title h3{
+    font-size:19px;
+  }
+
+  .dashboard-command-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .dashboard-command-actions .btn{
+    width:100%;
+    min-width:unset;
+  }
+
+  .dashboard-filter-chips{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .dashboard-search-chip{
+    flex-direction:column;
+    align-items:stretch;
+    min-width:0;
+    width:100%;
+  }
+
+  .dashboard-search-chip .btn{
+    width:100%;
+  }
+
+  .filter-menu{
+    width:100%;
+    flex:1 1 100%;
+  }
+
+  .filter-menu summary{
+    width:100%;
+    text-align:center;
+  }
+
+  .filter-popover{
+    position:static;
+    width:100%;
+    min-width:0;
+    margin-top:10px;
+    box-shadow:var(--shadow-md);
+  }
+
+  .filter-menu-wide .filter-popover{
+    width:100%;
+  }
+
+  .date-popover{
+    grid-template-columns:1fr;
+  }
+
+  .dashboard,
+  .dashboard-kpis,
+  .management-kpi-grid,
+  .management-doc-kpis,
+  .guide-feature-grid{
+    grid-template-columns:1fr;
+  }
+
+  .card,
+  .admin-card,
+  .info-card,
+  .table-card,
+  .filters-card,
+  .profile-card{
+    padding:16px;
+    border-radius:18px;
+  }
+
+  .login-card,
+  .auth-card{
+    padding:22px;
+    border-radius:18px;
+  }
+
+  .management-hero-card{
+    padding:18px;
+    border-radius:20px;
+  }
+
+  .management-hero-title{
+    font-size:24px;
+  }
+
+  .management-hero-subtitle{
+    font-size:14px;
+  }
+
+  .management-hero-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .management-hero-actions .btn{
+    width:100%;
+  }
+
+  .management-bar-row{
+    grid-template-columns:1fr;
+    gap:8px;
+  }
+
+  .management-bar-value{
+    text-align:left;
+  }
+
+  .form-grid,
+  .modal-row{
+    grid-template-columns:1fr;
+  }
+
+  .card-actions,
+  .auth-links,
+  .login-actions{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .card-actions .btn,
+  .auth-links .btn,
+  .login-actions .btn,
+  .btn-block{
+    width:100%;
+  }
+
+  .modal{
+    padding:10px;
+  }
+
+  .modal-content,
+  .modal-lg,
+  .modal-xl{
+    width:100%;
+    max-height:calc(100vh - 20px);
+    border-radius:18px;
+  }
+
+  .modal-header{
+    padding:16px;
+  }
+
+  .modal-body{
+    padding:16px;
+  }
+
+  .modal-actions{
+    padding:12px 16px 16px;
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .modal-actions .btn{
+    width:100%;
+    min-width:unset;
+  }
+
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1200px;
+  }
+
+  .management-table{
+    min-width:900px !important;
+  }
+}
+
+/* =====================================================
+   RESPONSIVE PETIT MOBILE
+   ===================================================== */
+
+@media (max-width:480px){
+  body{
+    font-size:14px;
+  }
+
+  .container{
+    width:min(100% - 16px, var(--container));
+  }
+
+  .main-content{
+    padding-top:16px;
+  }
+
+  .section-title{
+    font-size:20px;
+  }
+
+  .brand-text h1,
+  .brand h1{
+    font-size:19px;
+  }
+
+  .dashboard-control-panel,
+  .card,
+  .admin-card,
+  .info-card,
+  .table-card,
+  .filters-card,
+  .profile-card,
+  .management-kpi-card,
+  .management-gauge-card,
+  .management-summary-card{
+    padding:14px;
+    border-radius:16px;
+  }
+
+  .dashboard .card .value,
+  .dashboard-kpis .card .value,
+  .management-kpi-value{
+    font-size:26px;
+  }
+
+  .management-gauge-ring{
+    width:150px;
+    height:150px;
+  }
+
+  .management-gauge-ring::after{
+    width:106px;
+    height:106px;
+  }
+
+  .management-gauge-value{
+    font-size:27px;
+  }
+
+  input,
+  select,
+  textarea,
+  button,
+  .btn{
+    font-size:14px;
+  }
+
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1100px;
+  }
+
+  .management-table{
+    min-width:820px !important;
+  }
+}
+
