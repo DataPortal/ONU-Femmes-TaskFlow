@@ -7,6 +7,8 @@
   const byId = Core.byId || ((id) => document.getElementById(id));
   const getCurrentUser = Core.getCurrentUser || (() => AppState.currentUser);
   const getSb = Core.getSb || (() => window.sb);
+  const getUserRole = Core.getUserRole || ((user) => String(user?.role || user?.user_type || "staff").trim().toLowerCase());
+  const canViewManagementDashboard = Core.canViewManagementDashboard || (() => false);
   const normalizeStatusToDatabase = Core.normalizeStatusToDatabase || ((v) => v || "");
   const computeAutomaticStatus = Core.computeAutomaticStatus || ((task) => task.status || "");
   const clamp = Core.clamp || ((v, min, max) => Math.max(min, Math.min(max, Number(v) || 0)));
@@ -33,10 +35,6 @@
       .replace(/'/g, "&#039;");
   }
 
-  function getUserRole(user) {
-    return String(user?.role || user?.user_type || "staff").trim().toLowerCase();
-  }
-
   function getUserDisplayName(user) {
     return user?.name || user?.full_name || "Utilisateur";
   }
@@ -45,6 +43,8 @@
     const target = byId("managementPageMessage");
     if (AuthUI.showMessage && target) {
       AuthUI.showMessage(target, text, type);
+    } else if (target) {
+      target.textContent = text;
     }
   }
 
@@ -75,6 +75,7 @@
       if (value >= warningThreshold) return { label: "Modéré", className: "badge-orange" };
       return { label: "Stable", className: "badge-green" };
     }
+
     if (value <= dangerThreshold) return { label: "Faible", className: "badge-red" };
     if (value <= warningThreshold) return { label: "Moyen", className: "badge-orange" };
     return { label: "Bon", className: "badge-green" };
@@ -134,7 +135,9 @@
       task.activity_name,
       task.assigned_to_name,
       task.supervisor_name,
-      task.description
+      task.description,
+      task.staff_comment,
+      task.supervisor_comment
     ]
       .join(" ")
       .toLowerCase();
@@ -596,7 +599,7 @@
     }
 
     if (searchInput && !searchInput.dataset.boundKeydown) {
-      searchInput.addEventListener("keydown", (event) => {
+      searchInput.addEventListener("keydown", event => {
         if (event.key === "Enter") renderAll();
       });
       searchInput.dataset.boundKeydown = "true";
@@ -610,7 +613,7 @@
       }
     });
 
-    document.addEventListener("click", (event) => {
+    document.addEventListener("click", event => {
       document.querySelectorAll(".filter-menu[open]").forEach(menu => {
         if (!menu.contains(event.target)) {
           menu.removeAttribute("open");
@@ -658,10 +661,9 @@
     await Services.loadReferenceData();
 
     const currentUser = getCurrentUser();
-    const role = getUserRole(currentUser);
 
-    if (!["admin", "supervisor"].includes(role)) {
-      showMessage("Accès réservé au management, aux superviseurs ou aux administrateurs.", "error");
+    if (!canViewManagementDashboard(currentUser)) {
+      showMessage("Accès réservé aux profils admin, supervisor ou management.", "error");
       return;
     }
 
