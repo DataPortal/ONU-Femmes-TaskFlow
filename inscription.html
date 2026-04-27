@@ -3,136 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>ONU Femmes — Inscription et administration</title>
+
   <meta
     name="description"
-    content="Portail d’administration des membres, piliers et activités principales du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Espace de gestion des piliers, des membres et des activités principales du TaskFlow Management Portal - ONU Femmes RDC."
   />
-  <title>ONU Femmes — Administration</title>
+
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body data-page="register">
-  <header class="site-header">
+  <header class="site-header fixed-header">
     <div class="header-inner container">
       <div class="brand-block">
         <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
-          <h1>ONU Femmes RDC — Administration</h1>
-          <p>Administration des membres, des rôles, des piliers et des activités principales</p>
+          <h1>ONU Femmes RDC — Inscription et administration</h1>
+          <p>Gestion des piliers, des membres et des activités principales</p>
         </div>
       </div>
 
       <div class="top-tools no-print" aria-label="Outils utilisateur">
         <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
-        <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
+        <select id="currentUserSelect" aria-label="Utilisateur courant"></select>
+
         <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
-        <button id="logoutBtn" class="btn btn-secondary" type="button">Déconnexion</button>
+
+        <button id="logoutBtn" class="btn btn-secondary" type="button">
+          Déconnexion
+        </button>
       </div>
     </div>
   </header>
 
-  <div class="container nav-links">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="mes-taches.html">Mes tâches</a>
-  <a href="mon-equipe.html">Mon équipe</a>
-  <a href="inscription.html">Inscription</a>
-  <a href="profile.html">Mon profil</a>
-  <a href="management-dashboard.html">Management</a>
-  <a href="how-to-use.html">Guide d’utilisation</a>
-</div>
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html">Mon équipe</a>
+      <a href="inscription.html" class="active" aria-current="page">Inscription</a>
+      <a href="profile.html">Mon profil</a>
+      <a href="management-dashboard.html">Management</a>
+      <a href="how-to-use.html">Guide d’utilisation</a>
+    </div>
   </nav>
 
   <main class="container main-content">
     <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
-    <div id="registerAccessNotice" class="page-message" aria-live="polite"></div>
+    <div id="registerAccessNotice" aria-live="polite"></div>
 
     <section class="page-heading">
       <div>
-        <span class="section-kicker">Administration</span>
-        <h2 class="section-title">Gestion des membres, piliers et activités principales</h2>
+        <span class="section-kicker">Administration fonctionnelle</span>
+        <h2 class="section-title">Gestion de la structure de travail</h2>
         <p class="section-subtitle">
-          Affectez les utilisateurs existants, créez les piliers et définissez les activités principales
-          qui seront sélectionnées par le staff lors de la création ou du suivi des tâches.
+          Cet espace permet de structurer le dispositif de travail de l’application à travers les piliers,
+          les membres et les activités principales.
         </p>
       </div>
     </section>
 
-    <section class="admin-card">
-      <div class="card-header">
-        <div>
-          <h3>Affecter un membre existant</h3>
-          <p>Associer un compte existant à un rôle, un pilier et un superviseur.</p>
-        </div>
-      </div>
-
-      <div class="info-box">
-        Cette page sert à rattacher un compte déjà créé à un pilier, un superviseur et un rôle.
-        Pour créer un nouvel accès utilisateur, utilisez la page publique
-        <strong>Créer un compte</strong>.
-      </div>
-
-      <div class="form-grid two-columns">
-        <div class="field">
-          <label for="userName">Nom complet</label>
-          <input id="userName" type="text" placeholder="Ex. Hypolite Reoutar" />
+    <section class="split-layout">
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Créer un pilier</h3>
+            <p>Réservé en priorité à l’administration de la structure</p>
+          </div>
         </div>
 
-        <div class="field">
-          <label for="userEmail">Email</label>
-          <input id="userEmail" type="email" placeholder="nom@unwomen.org" />
-        </div>
-
-        <div class="field">
-          <label for="userRole">Rôle</label>
-          <select id="userRole">
-            <option value="staff">Staff</option>
-            <option value="supervisor">Superviseur</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="userOffice">Bureau / unité</label>
-          <input id="userOffice" type="text" placeholder="Ex. ONU Femmes RDC" />
-        </div>
-
-        <div class="field">
-          <label for="userPillar">Pilier</label>
-          <select id="userPillar">
-            <option value="">Sélectionner un pilier</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="userSupervisor">Superviseur</label>
-          <select id="userSupervisor">
-            <option value="">Sélectionner un superviseur</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="card-actions">
-        <button id="createUserBtn" class="btn btn-primary" type="button">
-          Affecter / mettre à jour
-        </button>
-      </div>
-
-      <div id="userMessage" class="form-message" aria-live="polite"></div>
-    </section>
-
-    <section class="admin-card">
-      <div class="card-header">
-        <div>
-          <h3>Créer un nouveau pilier</h3>
-          <p>Ajouter un pilier et lui rattacher un superviseur principal.</p>
-        </div>
-      </div>
-
-      <div class="form-grid two-columns">
         <div class="field">
           <label for="pillarName">Nom du pilier</label>
-          <input id="pillarName" type="text" placeholder="Ex. WPS" />
+          <input
+            id="pillarName"
+            type="text"
+            placeholder="Ex. Coordination, Programme, Opérations..."
+          />
         </div>
 
         <div class="field">
@@ -141,29 +90,88 @@
             <option value="">Sélectionner un superviseur</option>
           </select>
         </div>
-      </div>
 
-      <div class="card-actions">
-        <button id="createPillarBtn" class="btn btn-primary" type="button">
-          Créer le pilier
-        </button>
-      </div>
+        <div class="modal-actions" style="justify-content:flex-start; padding:0; margin-top:14px;">
+          <button id="createPillarBtn" class="btn btn-primary" type="button">
+            Créer le pilier
+          </button>
+        </div>
 
-      <div id="pillarMessage" class="form-message" aria-live="polite"></div>
+        <div id="pillarMessage" class="page-message" aria-live="polite"></div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Ajouter ou affecter un membre</h3>
+            <p>Mettre à jour le rattachement d’un utilisateur existant</p>
+          </div>
+        </div>
+
+        <div class="modal-row">
+          <div class="field">
+            <label for="userName">Nom complet</label>
+            <input id="userName" type="text" placeholder="Nom et prénom" />
+          </div>
+
+          <div class="field">
+            <label for="userEmail">Adresse email</label>
+            <input id="userEmail" type="email" placeholder="nom@organisation.org" />
+          </div>
+        </div>
+
+        <div class="modal-row">
+          <div class="field">
+            <label for="userRole">Rôle</label>
+            <select id="userRole">
+              <option value="staff">Staff</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="management">Management</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="userOffice">Bureau / localisation</label>
+            <input id="userOffice" type="text" placeholder="Ex. Kinshasa, Goma..." />
+          </div>
+        </div>
+
+        <div class="modal-row">
+          <div class="field">
+            <label for="userPillar">Pilier</label>
+            <select id="userPillar">
+              <option value="">Sélectionner un pilier</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="userSupervisor">Superviseur</label>
+            <select id="userSupervisor">
+              <option value="">Sélectionner un superviseur</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions" style="justify-content:flex-start; padding:0; margin-top:14px;">
+          <button id="createUserBtn" class="btn btn-primary" type="button">
+            Enregistrer / affecter le membre
+          </button>
+        </div>
+
+        <div id="userMessage" class="page-message" aria-live="polite"></div>
+      </article>
     </section>
 
-    <section class="admin-card" data-section="main-activities">
-      <div class="card-header">
-        <div>
-          <h3>Activités principales</h3>
-          <p>
-            Réservé aux superviseurs et administrateurs. Les activités créées ici seront proposées
-            au staff lors de la création ou du suivi d’une tâche.
-          </p>
+    <section class="split-layout">
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Créer une activité principale</h3>
+            <p>Activités structurantes rattachées à un pilier</p>
+          </div>
         </div>
-      </div>
 
-      <div class="form-grid two-columns">
         <div class="field">
           <label for="activityPillar">Pilier</label>
           <select id="activityPillar">
@@ -176,67 +184,103 @@
           <input
             id="activityName"
             type="text"
-            placeholder="Ex. Coordination inter-agences"
+            placeholder="Ex. Reporting mensuel, Coordination terrain, Analyse genre..."
           />
         </div>
-      </div>
 
-      <div class="field" style="margin-top:14px;">
-        <label for="activityDescription">Description optionnelle</label>
-        <textarea
-          id="activityDescription"
-          rows="4"
-          placeholder="Décrire brièvement l’activité principale, son objectif ou son périmètre"
-        ></textarea>
-      </div>
-
-      <div class="card-actions">
-        <button id="createActivityBtn" class="btn btn-primary" type="button">
-          Ajouter l’activité
-        </button>
-      </div>
-
-      <div id="activityMessage" class="form-message" aria-live="polite"></div>
-
-      <div class="card-header" style="margin-top:22px;">
-        <div>
-          <h3>Activités enregistrées</h3>
-          <p>Liste des activités disponibles dans votre périmètre.</p>
+        <div class="field">
+          <label for="activityDescription">Description</label>
+          <textarea
+            id="activityDescription"
+            rows="4"
+            placeholder="Décrire brièvement l’activité principale"
+          ></textarea>
         </div>
-      </div>
 
-      <section
-        id="mainActivitiesList"
-        class="grid-list grid-2"
-        aria-label="Liste des activités principales"
-      ></section>
+        <div class="modal-actions" style="justify-content:flex-start; padding:0; margin-top:14px;">
+          <button id="createActivityBtn" class="btn btn-primary" type="button">
+            Ajouter l’activité
+          </button>
+        </div>
+
+        <div id="activityMessage" class="page-message" aria-live="polite"></div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Lecture rapide</h3>
+            <p>Utilité de cette page</p>
+          </div>
+        </div>
+
+        <div class="info-box">
+          Cette page sert à structurer l’architecture fonctionnelle de l’application.
+          Elle permet de définir les piliers, rattacher les membres à leurs superviseurs
+          et organiser les activités principales utilisées lors de la création des tâches.
+        </div>
+
+        <div class="profile-guidance-grid" style="margin-top:16px;">
+          <div class="profile-guidance-card">
+            <h4>Piliers</h4>
+            <p>
+              Les piliers permettent de structurer les responsabilités et d’organiser
+              les vues de supervision dans l’application.
+            </p>
+          </div>
+
+          <div class="profile-guidance-card">
+            <h4>Membres</h4>
+            <p>
+              Chaque membre doit être correctement rattaché à un pilier et à un superviseur
+              afin de garantir la cohérence des droits d’accès et du suivi.
+            </p>
+          </div>
+
+          <div class="profile-guidance-card">
+            <h4>Activités principales</h4>
+            <p>
+              Elles servent de cadre de référence pour rattacher les tâches à une logique
+              de travail plus structurée et plus lisible.
+            </p>
+          </div>
+        </div>
+      </article>
     </section>
 
-    <section class="admin-card">
-      <div class="card-header">
-        <div>
-          <h3>Piliers disponibles</h3>
-          <p>Vue synthétique des piliers actuellement enregistrés dans le système.</p>
+    <section class="split-layout">
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Piliers enregistrés</h3>
+            <p>Vue synthétique des piliers disponibles dans l’application</p>
+          </div>
         </div>
-      </div>
-      <section id="pillarsList" class="grid-list grid-2" aria-label="Liste des piliers"></section>
+
+        <div id="pillarsList" class="grid-list grid-2"></div>
+      </article>
+
+      <article class="info-card">
+        <div class="card-header">
+          <div>
+            <h3>Membres enregistrés</h3>
+            <p>Vue synthétique des utilisateurs visibles dans votre périmètre</p>
+          </div>
+        </div>
+
+        <div id="registeredMembersList" class="grid-list grid-2"></div>
+      </article>
     </section>
 
-    <section class="admin-card">
+    <section class="info-card">
       <div class="card-header">
         <div>
-          <h3>Membres dans votre périmètre</h3>
-          <p>
-            Cliquez sur <strong>Modifier</strong> pour charger un membre dans le formulaire
-            d’affectation ci-dessus.
-          </p>
+          <h3>Activités principales enregistrées</h3>
+          <p>Liste des activités utilisées dans la création et le suivi des tâches</p>
         </div>
       </div>
-      <section
-        id="registeredMembersList"
-        class="grid-list grid-2"
-        aria-label="Liste des membres enregistrés"
-      ></section>
+
+      <div id="mainActivitiesList" class="grid-list grid-2"></div>
     </section>
   </main>
 
