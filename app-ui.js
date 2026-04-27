@@ -95,16 +95,6 @@
     return isManagementUser(user || getCurrentUser());
   }
 
-  function sortTasksNewestFirst(tasks = []) {
-    return [...tasks].sort((a, b) => {
-      const aDate = a?.created_at ? new Date(a.created_at).getTime() : 0;
-      const bDate = b?.created_at ? new Date(b.created_at).getTime() : 0;
-
-      if (bDate !== aDate) return bDate - aDate;
-      return Number(b.id || 0) - Number(a.id || 0);
-    });
-  }
-
   function setRoleControlledVisibility(buttonId, isAllowed) {
     const btn = byId(buttonId);
     if (!btn) return;
@@ -144,6 +134,17 @@
   function clearMessage(targetId) {
     const el = byId(targetId);
     if (el) el.innerHTML = "";
+  }
+
+  function sortTasksNewestFirst(tasks = []) {
+    return [...tasks].sort((a, b) => {
+      const aDate = a?.created_at ? new Date(a.created_at).getTime() : 0;
+      const bDate = b?.created_at ? new Date(b.created_at).getTime() : 0;
+
+      if (bDate !== aDate) return bDate - aDate;
+
+      return Number(b?.id || 0) - Number(a?.id || 0);
+    });
   }
 
   function getStatusBadge(status) {
@@ -668,7 +669,7 @@
       teamTasks = getVisibleTasks();
     }
 
-    const visibleTeamTasks = sortTasksNewestFirst(teamTasks || []);
+    const visibleTeamTasks = sortTasksNewestFirst(teamTasks);
 
     title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
     renderKPIs("myTeamKpis", visibleTeamTasks);
@@ -1658,4 +1659,353 @@
       saveBtn.dataset.boundClick = "true";
     }
 
-   
+    document.addEventListener("click", event => {
+      const replaceDocBtn = event.target.closest(".js-replace-task-document");
+      if (replaceDocBtn) {
+        replaceCurrentTaskDocument(replaceDocBtn.dataset.documentId);
+        return;
+      }
+
+      const deleteDocBtn = event.target.closest(".js-delete-task-document");
+      if (deleteDocBtn) {
+        const currentUser = getCurrentUser();
+        if (isReadOnlyUser(currentUser)) return;
+
+        const taskId = Number(byId("editTaskId")?.value);
+
+        Services.deleteTaskDocument(
+          deleteDocBtn.dataset.documentId,
+          deleteDocBtn.dataset.filePath
+        ).then(async () => {
+          if (currentUser && taskId) {
+            try {
+              await Services.logTaskActivity({
+                taskId,
+                actionType: "document_delete",
+                actionLabel: "Document supprimé",
+                actorId: currentUser.id,
+                actorName: getUserDisplayName(currentUser),
+                oldValue: { file_path: deleteDocBtn.dataset.filePath },
+                newValue: null
+              });
+            } catch (e) {
+              console.warn("Journal suppression document non enregistré :", e);
+            }
+          }
+
+          await renderTaskDocuments(taskId);
+          await renderTaskActivityLogs(taskId);
+        }).catch(error => {
+          alert(`Erreur suppression document : ${error.message || error}`);
+        });
+        return;
+      }
+
+      const openBtn = event.target.closest(".js-open-task-modal");
+      if (openBtn) {
+        openTaskModal(openBtn.dataset.taskId, false);
+        return;
+      }
+
+      const openReadonlyBtn = event.target.closest(".js-open-task-readonly");
+      if (openReadonlyBtn) {
+        openTaskModal(openReadonlyBtn.dataset.taskId, true);
+        return;
+      }
+
+      const deleteBtn = event.target.closest(".js-delete-task");
+      if (deleteBtn) {
+        deleteTask(deleteBtn.dataset.taskId);
+        return;
+      }
+
+      const disableBtn = event.target.closest(".js-disable-activity");
+      if (disableBtn) {
+        disableMainActivity(disableBtn.dataset.activityId);
+      }
+    });
+  }
+
+  function initRoleControlledButtons() {
+    const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
+    if (page !== "dashboard") return;
+
+    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask(currentUser) && !isReadOnlyUser(currentUser));
+    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard(currentUser));
+  }
+
+  function initTaskCreation() {
+    const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
+    if (page !== "dashboard") return;
+
+    const openBtn = byId("openCreateTaskModalBtn");
+    const closeTopBtn = byId("closeCreateTaskModalBtn");
+    const closeBottomBtn = byId("closeCreateTaskModalBtnFooter");
+    const createBtn = byId("createTaskBtn");
+    const dueDateInput = byId("taskDueDate");
+    const pillarInput = byId("taskPillar");
+
+    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask(currentUser) && !isReadOnlyUser(currentUser));
+
+    if (openBtn && canCreateTask(currentUser) && !isReadOnlyUser(currentUser) && !openBtn.dataset.boundClick) {
+      openBtn.addEventListener("click", openCreateTaskModal);
+      openBtn.dataset.boundClick = "true";
+    }
+
+    if (closeTopBtn && !closeTopBtn.dataset.boundClick) {
+      closeTopBtn.addEventListener("click", closeCreateTaskModal);
+      closeTopBtn.dataset.boundClick = "true";
+    }
+
+    if (closeBottomBtn && !closeBottomBtn.dataset.boundClick) {
+      closeBottomBtn.addEventListener("click", closeCreateTaskModal);
+      closeBottomBtn.dataset.boundClick = "true";
+    }
+
+    if (createBtn && !createBtn.dataset.boundClick) {
+      createBtn.addEventListener("click", createNewTask);
+      createBtn.dataset.boundClick = "true";
+    }
+
+    if (dueDateInput && !dueDateInput.dataset.boundChange) {
+      dueDateInput.addEventListener("change", updateCreateTaskAutoStatus);
+      dueDateInput.dataset.boundChange = "true";
+    }
+
+    if (pillarInput && !pillarInput.dataset.boundChange) {
+      pillarInput.addEventListener("change", populateTaskActivityOptions);
+      pillarInput.dataset.boundChange = "true";
+    }
+  }
+
+  function initPillarCreation() {
+    const page = document.body.dataset.page;
+    if (page !== "register") return;
+
+    const createPillarBtn = byId("createPillarBtn");
+    if (createPillarBtn && !createPillarBtn.dataset.boundClick) {
+      createPillarBtn.addEventListener("click", createNewPillar);
+      createPillarBtn.dataset.boundClick = "true";
+    }
+  }
+
+  function initRegisterPage() {
+    const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
+    if (page !== "register") return;
+    if (!canAccessRegisterPage(currentUser)) return;
+
+    const createUserBtn = byId("createUserBtn");
+    const createActivityBtn = byId("createActivityBtn");
+
+    if (createUserBtn && !createUserBtn.dataset.boundClick) {
+      createUserBtn.addEventListener("click", createOrAssignUserFromRegisterPage);
+      createUserBtn.dataset.boundClick = "true";
+    }
+
+    if (createActivityBtn && !createActivityBtn.dataset.boundClick) {
+      createActivityBtn.addEventListener("click", createMainActivity);
+      createActivityBtn.dataset.boundClick = "true";
+    }
+  }
+
+  function initMainActivitiesManagement() {
+    const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
+    if (page !== "register") return;
+    if (!canAccessRegisterPage(currentUser)) return;
+
+    populateActivityManagementDropdown();
+    renderMainActivitiesList();
+  }
+
+  function exportCurrentViewToXlsx() {
+    if (typeof window.XLSX === "undefined") {
+      alert("Librairie XLSX indisponible.");
+      return;
+    }
+
+    const rows = sortTasksNewestFirst(getFilteredDashboardTasks());
+
+    const exportData = rows.map(task => ({
+      ID: task.id,
+      Tache: task.title,
+      Pilier: task.pillar || "",
+      Activite_principale: task.activity_name || "",
+      Description: task.description || "",
+      Assigne_a: task.assigned_to_name || "",
+      Superviseur: task.supervisor_name || "",
+      Priorite: task.priority || "",
+      Statut: normalizeStatusToDatabase(task.status) || "",
+      Score_staff: task.progress_score ?? 0,
+      Progression_staff_pourcent: task.progress ?? 0,
+      Commentaire_staff: task.staff_comment || "",
+      Score_superviseur: task.supervisor_score ?? 0,
+      Progression_superviseur_pourcent: task.supervisor_progress ?? 0,
+      Appreciation_superviseur: task.supervisor_status || "",
+      Commentaire_superviseur: task.supervisor_comment || "",
+      Echeance: task.due_date || "",
+      Cree_le: task.created_at || ""
+    }));
+
+    const worksheet = window.XLSX.utils.json_to_sheet(exportData);
+    const workbook = window.XLSX.utils.book_new();
+
+    window.XLSX.utils.book_append_sheet(workbook, worksheet, "Taches");
+    window.XLSX.writeFile(workbook, "UNW_TaskManager.xlsx");
+  }
+
+  function initExportAndPrint() {
+    const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
+    if (page !== "dashboard") return;
+
+    const resetBtn = byId("resetDashboardBtn");
+    const exportBtn = byId("exportXlsxBtn");
+    const printBtn = byId("printPageBtn");
+    const searchBtn = byId("searchBtn");
+    const searchInput = byId("searchInput");
+
+    const filters = [
+      "pillarFilter",
+      "supervisorFilter",
+      "assignedToFilter",
+      "activityFilter",
+      "statusFilter",
+      "startDateFilter",
+      "endDateFilter"
+    ];
+
+    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard(currentUser));
+
+    if (exportBtn && canExportDashboard(currentUser) && !exportBtn.dataset.boundClick) {
+      exportBtn.addEventListener("click", exportCurrentViewToXlsx);
+      exportBtn.dataset.boundClick = "true";
+    }
+
+    if (resetBtn && !resetBtn.dataset.boundClick) {
+      resetBtn.addEventListener("click", resetAndRefreshDashboard);
+      resetBtn.dataset.boundClick = "true";
+    }
+
+    if (printBtn && !printBtn.dataset.boundClick) {
+      printBtn.addEventListener("click", () => window.print());
+      printBtn.dataset.boundClick = "true";
+    }
+
+    if (searchBtn && !searchBtn.dataset.boundClick) {
+      searchBtn.addEventListener("click", renderDashboardPage);
+      searchBtn.dataset.boundClick = "true";
+    }
+
+    if (searchInput && !searchInput.dataset.boundKeydown) {
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") renderDashboardPage();
+      });
+      searchInput.dataset.boundKeydown = "true";
+    }
+
+    filters.forEach(id => {
+      const el = byId(id);
+      if (el && !el.dataset.boundChange) {
+        el.addEventListener("change", renderDashboardPage);
+        el.dataset.boundChange = "true";
+      }
+    });
+  }
+
+  function initMyTasksFilters() {
+    const page = document.body.dataset.page;
+    if (page !== "my-tasks") return;
+
+    const searchBtn = byId("myTasksSearchBtn");
+    const searchInput = byId("myTasksSearchInput");
+
+    const filters = [
+      "myTasksAssignedToFilter",
+      "myTasksActivityFilter",
+      "myTasksStatusFilter",
+      "myTasksStartDateFilter",
+      "myTasksEndDateFilter"
+    ];
+
+    if (searchBtn && !searchBtn.dataset.boundClick) {
+      searchBtn.addEventListener("click", renderMyTasksPage);
+      searchBtn.dataset.boundClick = "true";
+    }
+
+    if (searchInput && !searchInput.dataset.boundKeydown) {
+      searchInput.addEventListener("keydown", event => {
+        if (event.key === "Enter") renderMyTasksPage();
+      });
+      searchInput.dataset.boundKeydown = "true";
+    }
+
+    filters.forEach(id => {
+      const el = byId(id);
+      if (el && !el.dataset.boundChange) {
+        el.addEventListener("change", renderMyTasksPage);
+        el.dataset.boundChange = "true";
+      }
+    });
+  }
+
+  function initTeamFilters() {
+    return;
+  }
+
+  function renderCurrentPage() {
+    const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
+    if (page === "dashboard") {
+      initRoleControlledButtons();
+      renderDashboardPage();
+      return;
+    }
+
+    if (page === "my-tasks") {
+      renderMyTasksPage();
+      return;
+    }
+
+    if (page === "my-team") {
+      renderMyTeamPage();
+      return;
+    }
+
+    if (page === "register") {
+      if (!canAccessRegisterPage(currentUser)) {
+        showGlobalError("Cette page n’est pas accessible pour votre profil.");
+        return;
+      }
+
+      renderRegisterPage();
+    }
+  }
+
+  window.AppUI = {
+    initExportAndPrint,
+    initFilterMenus,
+    initGlobalActions,
+    initLogout,
+    initMainActivitiesManagement,
+    initModalSystem,
+    initMyTasksFilters,
+    initPillarCreation,
+    initRegisterPage,
+    initTaskCreation,
+    initTeamFilters,
+    initUserHeader,
+    renderCurrentPage,
+    renderMainActivitiesList,
+    showGlobalError
+  };
+})();
