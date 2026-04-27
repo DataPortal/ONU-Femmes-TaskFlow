@@ -29,7 +29,8 @@
       const hasCore =
         window.AppCore &&
         window.AppCore.AppState &&
-        typeof window.AppCore.getCurrentUser === "function";
+        typeof window.AppCore.getCurrentUser === "function" &&
+        typeof window.AppCore.getUserRole === "function";
 
       if (hasServices && hasUI && hasCore) {
         return true;
@@ -59,6 +60,10 @@
     alert(message);
   }
 
+  function isManagementPage() {
+    return document.body?.dataset?.page === "management-dashboard";
+  }
+
   async function bootstrap() {
     await waitForAppModules();
 
@@ -75,6 +80,10 @@
       throw new Error("Utilisateur courant introuvable après chargement du profil.");
     }
 
+    const currentRole = window.AppCore.getUserRole?.(currentUser);
+
+    // Les protections fines sont gérées par chaque page.
+    // On évite ici tout blocage global qui empêcherait management d’entrer.
     window.AppUI.initUserHeader();
     window.AppUI.initLogout();
     window.AppUI.initModalSystem();
@@ -89,8 +98,8 @@
     window.AppUI.initTeamFilters();
     window.AppUI.renderCurrentPage();
 
-    // Deuxième rendu léger pour éviter les cas où les références
-    // se chargent juste après le premier cycle visuel
+    // Rendu secondaire léger pour éviter les cas où certains éléments
+    // s’attachent juste après le premier cycle visuel.
     requestAnimationFrame(() => {
       try {
         window.AppUI.initTaskCreation();
@@ -100,6 +109,12 @@
         console.warn("Rerender secondaire ignoré :", error);
       }
     });
+
+    // Sécurité douce : si un staff arrive par erreur sur la page management,
+    // on laisse management-dashboard.js afficher le bon message.
+    if (isManagementPage() && currentRole === "staff") {
+      console.warn("Profil staff détecté sur la page management-dashboard.");
+    }
   }
 
   document.addEventListener("DOMContentLoaded", async () => {
