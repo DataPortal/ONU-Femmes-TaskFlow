@@ -1,10 +1,10 @@
 (function () {
   const AppState = {
-    pillars: [],
+    currentUser: null,
     users: [],
-    tasks: [],
+    pillars: [],
     mainActivities: [],
-    currentUser: null
+    tasks: []
   };
 
   const STATUS = {
@@ -14,372 +14,352 @@
     DONE: "Achevé"
   };
 
-  const IMMINENT_DAYS_THRESHOLD = 2;
+  function byId(id) {
+    return document.getElementById(id);
+  }
+
+  function normalizeRole(value) {
+    const role = String(value || "staff").trim().toLowerCase();
+
+    if (role === "admin") return "admin";
+    if (role === "supervisor") return "supervisor";
+    if (role === "management") return "management";
+    return "staff";
+  }
+
+  function getCurrentUser() {
+    return AppState.currentUser || null;
+  }
 
   function getSb() {
     return window.sb || null;
   }
 
-  function byId(id) {
-    return document.getElementById(id);
+  function getUserRole(user = null) {
+    const safeUser = user || getCurrentUser();
+    return normalizeRole(safeUser?.role || safeUser?.user_type);
+  }
+
+  function isAdmin(user = null) {
+    return getUserRole(user) === "admin";
+  }
+
+  function isSupervisor(user = null) {
+    return getUserRole(user) === "supervisor";
+  }
+
+  function isStaff(user = null) {
+    return getUserRole(user) === "staff";
+  }
+
+  function isManagement(user = null) {
+    return getUserRole(user) === "management";
   }
 
   function clamp(value, min, max) {
     const n = Number(value);
     if (Number.isNaN(n)) return min;
-    return Math.max(min, Math.min(max, n));
+    return Math.min(Math.max(n, min), max);
   }
 
   function scoreToPercent(score) {
-    return clamp(score, 0, 10) * 10;
+    return clamp(Number(score) * 10, 0, 100);
   }
 
-  function normalizeStatusToDatabase(status) {
-    const raw = String(status || "").trim();
+  function appendComment(existing, author, text) {
+    const safeText = String(text || "").trim();
+    if (!safeText) return existing || "";
 
-    const map = {
-      "En bonne voie": "En bonne voie",
-
-      "Échéance imminente": "Échéance imminente",
-      "Echeance imminente": "Échéance imminente",
-
-      "En retard": "En retard",
-
-      "Achevé": "Achevé",
-      "Acheve": "Achevé",
-
-      "Non commencée": "En bonne voie",
-      "Non commencee": "En bonne voie",
-      "En cours": "En bonne voie",
-      "Bloquée": "En retard",
-      "Bloquee": "En retard",
-      "Terminée": "Achevé",
-      "Terminee": "Achevé"
-    };
-
-    return map[raw] || STATUS.ON_TRACK;
+    const safeAuthor = String(author || "").trim();
+    const prefix = safeAuthor ? `[${safeAuthor}] ` : "";
+    return [existing || "", `${prefix}${safeText}`].filter(Boolean).join("\n");
   }
 
-  function getStatusCandidates(status) {
-    return [normalizeStatusToDatabase(status)];
+  function getPillarNameByIdFromArray(pillarId, pillars = []) {
+    const match = (pillars || []).find(p => String(p.id) === String(pillarId));
+    return match ? match.name || match.full_name || "Sans pilier" : "Sans pilier";
   }
 
-  function isStatusConstraintError(error) {
-    if (!error) return false;
-
-    const raw = `${error.message || ""} ${error.details || ""} ${error.hint || ""}`.toLowerCase();
-
-    return (
-      raw.includes("tasks_status_check") ||
-      raw.includes("violates check constraint")
+  function getActivitiesForPillar(pillarId) {
+    return (AppState.mainActivities || []).filter(activity =>
+      String(activity.pillar_id) === String(pillarId) && activity.is_active !== false
     );
   }
 
-  function toLocalDateOnly(dateValue) {
-    const date = new Date(dateValue);
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  function getTodayString() {
+    return new Date().toISOString().slice(0, 10);
   }
 
-  function getProgressPercent(task) {
-    if (typeof task.progress === "number") {
-      return clamp(task.progress, 0, 100);
-    }
+  function daysBetween(dateA, dateB) {
+    if (!dateA || !dateB) return null;
 
-    if (task.progress !== undefined && task.progress !== null && task.progress !== "") {
-      return clamp(Number(task.progress), 0, 100);
-    }
+    const a = new Date(dateA);
+    const b = new Date(dateB);
 
-    if (task.progress_score !== undefined && task.progress_score !== null && task.progress_score !== "") {
-      return scoreToPercent(task.progress_score);
-    }
+    if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
 
-    return 0;
+    a.setHours(0, 0, 0, 0);
+    b.setHours(0, 0, 0, 0);
+
+    return Math.floor((a.getTime() - b.getTime()) / 86400000);
   }
 
-  function computeAutomaticStatus(task) {
-    const progressPercent = getProgressPercent(task);
+  function normalizeStatusToDatabase(status) {
+    const safeStatus = String(status || "").trim();
 
-    if (progressPercent >= 100) {
+    if (safeStatus === STATUS.ON_TRACK) return STATUS.ON_TRACK;
+    if (safeStatus === STATUS.DUE_SOON) return STATUS.DUE_SOON;
+    if (safeStatus === STATUS.LATE) return STATUS.LATE;
+    if (safeStatus === STATUS.DONE) return STATUS.DONE;
+
+    return STATUS.ON_TRACK;
+  }
+
+  function computeAutomaticStatus(task = {}) {
+    const progress = clamp(task.progress ?? scoreToPercent(task.progress_score ?? 0), 0, 100);
+
+    if (progress >= 100) {
       return STATUS.DONE;
     }
 
-    if (!task.due_date) {
+    const dueDate = task.due_date || null;
+    if (!dueDate) {
       return STATUS.ON_TRACK;
     }
 
-    const today = toLocalDateOnly(new Date());
-    const dueDate = toLocalDateOnly(task.due_date);
-    const diffMs = dueDate.getTime() - today.getTime();
-    const daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    const diff = daysBetween(dueDate, getTodayString());
 
-    if (daysRemaining < 0) {
+    if (diff !== null && diff < 0) {
       return STATUS.LATE;
     }
 
-    if (daysRemaining <= IMMINENT_DAYS_THRESHOLD) {
+    if (diff !== null && diff <= 3) {
       return STATUS.DUE_SOON;
     }
 
     return STATUS.ON_TRACK;
   }
 
-  function hydrateTaskStatus(task) {
+  function hydrateTaskStatus(task = {}) {
     return {
       ...task,
       status: normalizeStatusToDatabase(computeAutomaticStatus(task))
     };
   }
 
-  function isLate(task) {
-    return computeAutomaticStatus(task) === STATUS.LATE;
+  function isLate(task = {}) {
+    return normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE;
   }
 
-  function isDueSoon(task) {
-    return computeAutomaticStatus(task) === STATUS.DUE_SOON;
+  function isDueSoon(task = {}) {
+    return normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON;
   }
 
-  function isTaskWithinDateRange(task, startDate, endDate) {
-    if (!startDate && !endDate) return true;
-    if (!task.due_date) return false;
-
-    const dueDate = new Date(task.due_date);
-    dueDate.setHours(0, 0, 0, 0);
-
-    if (startDate) {
-      const start = new Date(startDate);
-      start.setHours(0, 0, 0, 0);
-      if (dueDate < start) return false;
-    }
-
-    if (endDate) {
-      const end = new Date(endDate);
-      end.setHours(0, 0, 0, 0);
-      if (dueDate > end) return false;
-    }
-
-    return true;
+  function canViewManagementDashboard(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor" || role === "management";
   }
 
-  function normalizeActivitiesList(value) {
-    if (Array.isArray(value)) {
-      return value.map(v => String(v || "").trim()).filter(Boolean);
-    }
-
-    if (typeof value === "string") {
-      return value
-        .split(/\r?\n|,/)
-        .map(v => v.trim())
-        .filter(Boolean);
-    }
-
-    return [];
+  function canAccessRegisterPage(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor";
   }
 
-  function getPillarNameByIdFromArray(pillarId, pillarsArray) {
-    const pillar = (pillarsArray || []).find(p => String(p.id) === String(pillarId));
-    return pillar ? pillar.name : "";
+  function canManageMembers(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor";
   }
 
-  function getPillarNameById(pillarId) {
-    return getPillarNameByIdFromArray(pillarId, AppState.pillars);
+  function canManageActivities(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor";
   }
 
-  function getActivitiesForPillar(pillarId) {
-    return AppState.mainActivities.filter(activity =>
-      String(activity.pillar_id) === String(pillarId) &&
-      activity.is_active !== false
-    );
+  function canCreatePillar(user = null) {
+    return getUserRole(user) === "admin";
   }
 
-  function getActivityNameById(activityId) {
-    const activity = AppState.mainActivities.find(a => String(a.id) === String(activityId));
-    return activity ? activity.name : "";
+  function canCreateTask(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor" || role === "staff";
   }
 
-  function appendComment(existingText, authorName, newText) {
-    const clean = String(newText || "").trim();
-    if (!clean) return existingText || "";
-
-    const now = new Date();
-    const stamp =
-      `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")} ` +
-      `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-
-    const entry = `[${stamp}] ${authorName} : ${clean}`;
-    return existingText ? `${existingText}\n${entry}` : entry;
+  function canExportDashboard(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor" || role === "management" || role === "staff";
   }
 
-  function getCurrentUser() {
-    if (!AppState.currentUser) return null;
-
-    return {
-      ...AppState.currentUser,
-      name: AppState.currentUser.full_name,
-      user_type: AppState.currentUser.role,
-      pillar: getPillarNameById(AppState.currentUser.pillar_id)
-    };
+  function canViewTeamPage(user = null) {
+    const role = getUserRole(user);
+    return role === "admin" || role === "supervisor";
   }
 
-  function isAdmin() {
-    const u = getCurrentUser();
-    return !!u && u.user_type === "admin";
-  }
-
-  function isSupervisor() {
-    const u = getCurrentUser();
-    return !!u && u.user_type === "supervisor";
-  }
-
-  function isStaff() {
-    const u = getCurrentUser();
-    return !!u && u.user_type === "staff";
-  }
-
-  function isSupervisorOrAdmin() {
-    return isSupervisor() || isAdmin();
-  }
-
-  function getVisibleTasks() {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return [];
-
-    if (currentUser.user_type === "admin") return AppState.tasks;
-
-    return AppState.tasks.filter(t =>
-      String(t.pillar_id) === String(currentUser.pillar_id)
-    );
-  }
-
-  function canViewTask(task) {
-    const currentUser = getCurrentUser();
+  function canViewTask(task = {}, user = null) {
+    const currentUser = user || getCurrentUser();
     if (!currentUser || !task) return false;
 
-    if (currentUser.user_type === "admin") return true;
+    const role = getUserRole(currentUser);
 
-    return String(task.pillar_id) === String(currentUser.pillar_id);
+    if (role === "admin") return true;
+    if (role === "management") return true;
+
+    if (role === "supervisor") {
+      return String(task.pillar_id) === String(currentUser.pillar_id);
+    }
+
+    if (role === "staff") {
+      return (
+        String(task.assigned_to_id) === String(currentUser.id) ||
+        String(task.pillar_id) === String(currentUser.pillar_id)
+      );
+    }
+
+    return false;
   }
 
-  function canCreateTask() {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return false;
-
-    return ["admin", "supervisor", "staff"].includes(currentUser.user_type);
-  }
-
-  function canCreatePillar() {
-    return isSupervisorOrAdmin();
-  }
-
-  function canManageMembers() {
-    return isSupervisorOrAdmin();
-  }
-
-  function canManageActivities() {
-    return isSupervisorOrAdmin();
-  }
-
-  function canExportDashboard() {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return false;
-
-    return ["admin", "supervisor", "staff"].includes(currentUser.user_type);
-  }
-
-  function canDeleteTask(task) {
-    const currentUser = getCurrentUser();
+  function canEditTask(task = {}, user = null) {
+    const currentUser = user || getCurrentUser();
     if (!currentUser || !task) return false;
 
-    if (currentUser.user_type === "admin") return true;
+    const role = getUserRole(currentUser);
 
-    if (currentUser.user_type === "supervisor") {
+    if (role === "admin") return true;
+    if (role === "management") return false;
+
+    if (role === "supervisor") {
+      return String(task.pillar_id) === String(currentUser.pillar_id);
+    }
+
+    if (role === "staff") {
+      return String(task.assigned_to_id) === String(currentUser.id);
+    }
+
+    return false;
+  }
+
+  function canDeleteTask(task = {}, user = null) {
+    const currentUser = user || getCurrentUser();
+    if (!currentUser || !task) return false;
+
+    const role = getUserRole(currentUser);
+
+    if (role === "admin") return true;
+    if (role === "management") return false;
+    if (role === "staff") return false;
+
+    if (role === "supervisor") {
       return String(task.pillar_id) === String(currentUser.pillar_id);
     }
 
     return false;
   }
 
-  function applyTaskFilters(tasks, filters = {}) {
-    const {
-      search = "",
-      pillar = "",
-      supervisorId = "",
-      assignedToId = "",
-      activityId = "",
-      activityName = "",
-      status = "",
-      startDate = "",
-      endDate = ""
-    } = filters;
+  function getVisibleTasks(user = null) {
+    const currentUser = user || getCurrentUser();
+    const role = getUserRole(currentUser);
+    const tasks = AppState.tasks || [];
 
-    const normalizedSearch = String(search || "").toLowerCase().trim();
+    if (!currentUser) return [];
 
-    return tasks.filter(task => {
-      const matchSearch =
-        !normalizedSearch ||
-        String(task.title || "").toLowerCase().includes(normalizedSearch) ||
-        String(task.description || "").toLowerCase().includes(normalizedSearch) ||
-        String(task.assigned_to_name || "").toLowerCase().includes(normalizedSearch) ||
-        String(task.supervisor_name || "").toLowerCase().includes(normalizedSearch) ||
-        String(task.pillar || "").toLowerCase().includes(normalizedSearch) ||
-        String(task.activity_name || "").toLowerCase().includes(normalizedSearch);
+    if (role === "admin") return tasks;
+    if (role === "management") return tasks;
 
-      const matchPillar = !pillar || task.pillar === pillar;
-      const matchSupervisor = !supervisorId || String(task.supervisor_id) === String(supervisorId);
-      const matchAssignedTo = !assignedToId || String(task.assigned_to_id) === String(assignedToId);
-      const matchActivityId = !activityId || String(task.activity_id) === String(activityId);
-      const matchActivityName = !activityName || String(task.activity_name || "") === String(activityName);
-      const matchStatus = !status || normalizeStatusToDatabase(task.status) === normalizeStatusToDatabase(status);
-      const matchDateRange = isTaskWithinDateRange(task, startDate, endDate);
-
-      return (
-        matchSearch &&
-        matchPillar &&
-        matchSupervisor &&
-        matchAssignedTo &&
-        matchActivityId &&
-        matchActivityName &&
-        matchStatus &&
-        matchDateRange
+    if (role === "supervisor") {
+      return tasks.filter(task =>
+        String(task.pillar_id) === String(currentUser.pillar_id)
       );
+    }
+
+    if (role === "staff") {
+      return tasks.filter(task =>
+        String(task.assigned_to_id) === String(currentUser.id) ||
+        String(task.pillar_id) === String(currentUser.pillar_id)
+      );
+    }
+
+    return [];
+  }
+
+  function applyTaskFilters(tasks = [], filters = {}) {
+    const search = String(filters.search || "").trim().toLowerCase();
+    const pillar = String(filters.pillar || "").trim();
+    const supervisorId = String(filters.supervisorId || "").trim();
+    const assignedToId = String(filters.assignedToId || "").trim();
+    const activityId = String(filters.activityId || "").trim();
+    const status = String(filters.status || "").trim();
+    const startDate = String(filters.startDate || "").trim();
+    const endDate = String(filters.endDate || "").trim();
+
+    return (tasks || []).filter(task => {
+      const computedStatus = normalizeStatusToDatabase(computeAutomaticStatus(task));
+
+      const haystack = [
+        task.title,
+        task.pillar,
+        task.activity_name,
+        task.assigned_to_name,
+        task.supervisor_name,
+        task.description,
+        task.staff_comment,
+        task.supervisor_comment
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if (search && !haystack.includes(search)) return false;
+      if (pillar && String(task.pillar || "") !== pillar) return false;
+      if (supervisorId && String(task.supervisor_id || "") !== supervisorId) return false;
+      if (assignedToId && String(task.assigned_to_id || "") !== assignedToId) return false;
+      if (activityId && String(task.activity_id || "") !== activityId) return false;
+      if (status && computedStatus !== status) return false;
+
+      const dueDate = String(task.due_date || "").trim();
+
+      if (startDate) {
+        if (!dueDate || dueDate < startDate) return false;
+      }
+
+      if (endDate) {
+        if (!dueDate || dueDate > endDate) return false;
+      }
+
+      return true;
     });
   }
 
   window.AppCore = {
     AppState,
     STATUS,
-    IMMINENT_DAYS_THRESHOLD,
-
     appendComment,
     applyTaskFilters,
     byId,
+    canAccessRegisterPage,
     canCreatePillar,
     canCreateTask,
     canDeleteTask,
+    canEditTask,
     canExportDashboard,
     canManageActivities,
     canManageMembers,
+    canViewManagementDashboard,
     canViewTask,
+    canViewTeamPage,
     clamp,
     computeAutomaticStatus,
     getActivitiesForPillar,
-    getActivityNameById,
     getCurrentUser,
-    getPillarNameById,
     getPillarNameByIdFromArray,
-    getProgressPercent,
     getSb,
-    getStatusCandidates,
+    getUserRole,
     getVisibleTasks,
     hydrateTaskStatus,
     isAdmin,
     isDueSoon,
     isLate,
+    isManagement,
     isStaff,
-    isStatusConstraintError,
     isSupervisor,
-    isSupervisorOrAdmin,
-    isTaskWithinDateRange,
-    normalizeActivitiesList,
+    normalizeRole,
     normalizeStatusToDatabase,
     scoreToPercent
   };
