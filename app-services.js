@@ -322,7 +322,7 @@
   .from("tasks_enriched")
   .select("*")
   .order("created_at", { ascending: false })
-  .order("id", { ascending: false });
+  .order("id", { ascending: false })
 
     if (!tasksViewRes.error && Array.isArray(tasksViewRes.data)) {
       AppState.tasks = tasksViewRes.data
