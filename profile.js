@@ -2,12 +2,15 @@ window.addEventListener("DOMContentLoaded", async function () {
   const authUI = window.AuthUI;
   const AppCore = window.AppCore;
   const AppServices = window.AppServices;
+  const sb = window.sb;
 
   const pageMessage = document.getElementById("pageDebugMessage");
+  const profileUpdateMessage = document.getElementById("profileUpdateMessage");
+  const profilePasswordMessage = document.getElementById("profilePasswordMessage");
 
-  function showMessage(text, type = "info") {
-    if (authUI?.showMessage && pageMessage) {
-      authUI.showMessage(pageMessage, text, type);
+  function showMessage(target, text, type = "info") {
+    if (authUI?.showMessage && target) {
+      authUI.showMessage(target, text, type);
     } else {
       console[type === "error" ? "error" : "log"](text);
     }
@@ -45,7 +48,7 @@ window.addEventListener("DOMContentLoaded", async function () {
 
   async function loadProfilePage() {
     try {
-      if (!AppServices || !AppCore) {
+      if (!AppServices || !AppCore || !sb) {
         throw new Error("Les modules de l’application ne sont pas disponibles.");
       }
 
@@ -78,6 +81,10 @@ window.addEventListener("DOMContentLoaded", async function () {
       const profileSupervisor = document.getElementById("profileSupervisor");
       const profileStatus = document.getElementById("profileStatus");
       const profileUserId = document.getElementById("profileUserId");
+
+      const profileEditFullName = document.getElementById("profileEditFullName");
+      const profileEditOffice = document.getElementById("profileEditOffice");
+      const profileEditEmail = document.getElementById("profileEditEmail");
 
       if (profileInitials) {
         profileInitials.textContent = getInitials(currentUser.full_name || currentUser.name);
@@ -117,12 +124,111 @@ window.addEventListener("DOMContentLoaded", async function () {
         profileUserId.textContent = safeText(currentUser.id);
       }
 
-      showMessage("Profil chargé avec succès.", "success");
+      if (profileEditFullName) {
+        profileEditFullName.value = currentUser.full_name || currentUser.name || "";
+      }
+
+      if (profileEditOffice) {
+        profileEditOffice.value = currentUser.office || "";
+      }
+
+      if (profileEditEmail) {
+        profileEditEmail.value = currentUser.email || "";
+      }
+
+      showMessage(pageMessage, "Profil chargé avec succès.", "success");
     } catch (error) {
       console.error("Erreur chargement profil :", error);
-      showMessage(`Une erreur empêche le chargement du profil : ${error.message || error}`, "error");
+      showMessage(pageMessage, `Une erreur empêche le chargement du profil : ${error.message || error}`, "error");
     }
   }
+
+  async function updateProfile() {
+    const currentUser = AppCore?.getCurrentUser?.();
+    if (!currentUser || !sb) return;
+
+    const fullName = String(document.getElementById("profileEditFullName")?.value || "").trim();
+    const office = String(document.getElementById("profileEditOffice")?.value || "").trim();
+    const email = String(document.getElementById("profileEditEmail")?.value || "").trim().toLowerCase();
+
+    if (!fullName) {
+      showMessage(profileUpdateMessage, "Veuillez renseigner votre nom complet.", "error");
+      return;
+    }
+
+    try {
+      const { error: profileError } = await sb
+        .from("profiles")
+        .update({
+          full_name: fullName,
+          office: office,
+          email: email
+        })
+        .eq("id", currentUser.id);
+
+      if (profileError) {
+        throw new Error(profileError.message);
+      }
+
+      const authUserPayload = {
+        data: {
+          full_name: fullName,
+          office: office
+        }
+      };
+
+      if (email && email !== currentUser.email) {
+        authUserPayload.email = email;
+      }
+
+      const { error: authError } = await sb.auth.updateUser(authUserPayload);
+
+      if (authError) {
+        throw new Error(authError.message);
+      }
+
+      showMessage(profileUpdateMessage, "Profil mis à jour avec succès.", "success");
+      await loadProfilePage();
+    } catch (error) {
+      console.error("Erreur mise à jour profil :", error);
+      showMessage(profileUpdateMessage, `Mise à jour impossible : ${error.message || error}`, "error");
+    }
+  }
+
+  async function updatePassword() {
+    const password = document.getElementById("profileNewPassword")?.value || "";
+    const confirmPassword = document.getElementById("profileConfirmPassword")?.value || "";
+
+    const validationError = authUI?.validatePasswordPair
+      ? authUI.validatePasswordPair(password, confirmPassword)
+      : null;
+
+    if (validationError) {
+      showMessage(profilePasswordMessage, validationError, "error");
+      return;
+    }
+
+    try {
+      const { error } = await sb.auth.updateUser({
+        password: password
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      document.getElementById("profileNewPassword").value = "";
+      document.getElementById("profileConfirmPassword").value = "";
+
+      showMessage(profilePasswordMessage, "Mot de passe mis à jour avec succès.", "success");
+    } catch (error) {
+      console.error("Erreur mise à jour mot de passe :", error);
+      showMessage(profilePasswordMessage, `Mise à jour impossible : ${error.message || error}`, "error");
+    }
+  }
+
+  document.getElementById("updateProfileBtn")?.addEventListener("click", updateProfile);
+  document.getElementById("updatePasswordBtn")?.addEventListener("click", updatePassword);
 
   await loadProfilePage();
 });
