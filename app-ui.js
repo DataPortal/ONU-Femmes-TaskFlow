@@ -1557,18 +1557,17 @@
   }
 
   async function deleteTask(taskId) {
-    const sb = getSb();
     const task = AppState.tasks.find(item => String(item.id) === String(taskId));
     const currentUser = getCurrentUser();
 
-    if (!sb || !task || !currentUser) return;
+    if (!task || !currentUser) return;
 
     if (!canDeleteTask(task)) {
       alert("Vous n’êtes pas autorisé à supprimer cette tâche.");
       return;
     }
 
-    const confirmed = confirm(`Supprimer la tâche "${task.title}" ?`);
+    const confirmed = confirm(`Supprimer la tâche "${task.title}" ainsi que ses documents liés ?`);
     if (!confirmed) return;
 
     const oldSnapshot = {
@@ -1578,28 +1577,27 @@
       pillar_id: task.pillar_id
     };
 
-    const { error } = await sb.from("tasks").delete().eq("id", taskId);
-
-    if (error) {
-      alert(`Erreur suppression: ${error.message}`);
-      return;
-    }
-
     try {
-      await Services.logTaskActivity({
-        taskId,
-        actionType: "delete",
-        actionLabel: "Tâche supprimée",
-        actorId: currentUser.id,
-        actorName: getUserDisplayName(currentUser),
-        oldValue: oldSnapshot,
-        newValue: null
-      });
-    } catch (e) {
-      console.warn("Journal suppression non enregistré :", e);
-    }
+      await Services.deleteTaskAndLinkedDocuments(taskId);
 
-    await Services.reloadAndRerender();
+      try {
+        await Services.logTaskActivity({
+          taskId,
+          actionType: "delete",
+          actionLabel: "Tâche supprimée",
+          actorId: currentUser.id,
+          actorName: getUserDisplayName(currentUser),
+          oldValue: oldSnapshot,
+          newValue: null
+        });
+      } catch (e) {
+        console.warn("Journal suppression non enregistré :", e);
+      }
+
+      await Services.reloadAndRerender();
+    } catch (error) {
+      alert(`Erreur suppression : ${error.message || error}`);
+    }
   }
 
   function initGlobalActions() {
