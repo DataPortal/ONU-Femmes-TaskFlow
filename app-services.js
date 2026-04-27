@@ -319,9 +319,10 @@
     }
 
     const tasksViewRes = await sb
-      .from("tasks_enriched")
-      .select("*")
-      .order("id", { ascending: true });
+  .from("tasks_enriched")
+  .select("*")
+  .order("created_at", { ascending: false })
+  .order("id", { ascending: false });
 
     if (!tasksViewRes.error && Array.isArray(tasksViewRes.data)) {
       AppState.tasks = tasksViewRes.data
@@ -331,9 +332,10 @@
     }
 
     const tasksRes = await sb
-      .from("tasks")
-      .select("*")
-      .order("id", { ascending: true });
+  .from("tasks")
+  .select("*")
+  .order("created_at", { ascending: false })
+  .order("id", { ascending: false });
 
     if (tasksRes.error) {
       const enrichedMessage = tasksViewRes.error?.message
