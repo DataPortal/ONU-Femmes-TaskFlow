@@ -6,7 +6,7 @@
 
   <meta
     name="description"
-    content="Page de suivi individuel des tâches du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Page de suivi des tâches personnelles du TaskFlow Management Portal - ONU Femmes RDC."
   />
 
   <title>ONU Femmes — Mes tâches</title>
@@ -22,13 +22,14 @@
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Mes tâches</h1>
-          <p>Suivi individuel des tâches et mise à jour de la progression</p>
+          <p>Suivi des tâches personnelles, progression, commentaires et documentation</p>
         </div>
       </div>
 
       <div class="top-tools no-print" aria-label="Outils utilisateur">
         <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
-        <select id="currentUserSelect" aria-label="Sélectionner l’utilisateur courant"></select>
+        <select id="currentUserSelect" aria-label="Utilisateur courant"></select>
+
         <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
 
         <button id="logoutBtn" class="btn btn-secondary" type="button">
@@ -38,15 +39,16 @@
     </div>
   </header>
 
-  <div class="container nav-links">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="mes-taches.html">Mes tâches</a>
-  <a href="mon-equipe.html">Mon équipe</a>
-  <a href="inscription.html">Inscription</a>
-  <a href="profile.html">Mon profil</a>
-  <a href="management-dashboard.html">Management</a>
-  <a href="how-to-use.html">Guide d’utilisation</a>
-</div>
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html" class="active" aria-current="page">Mes tâches</a>
+      <a href="mon-equipe.html">Mon équipe</a>
+      <a href="inscription.html">Inscription</a>
+      <a href="profile.html">Mon profil</a>
+      <a href="management-dashboard.html">Management</a>
+      <a href="how-to-use.html">Guide d’utilisation</a>
+    </div>
   </nav>
 
   <main class="container main-content">
@@ -57,32 +59,34 @@
         <span class="section-kicker">Suivi individuel</span>
         <h2 id="myTasksTitle" class="section-title">Mes tâches</h2>
         <p class="section-subtitle">
-          Visualisez vos tâches, suivez vos échéances et mettez à jour votre progression ainsi que vos commentaires.
+          Consultez vos tâches, mettez à jour votre progression, ajoutez des commentaires et joignez les documents utiles.
         </p>
       </div>
     </section>
 
-    <section class="dashboard-control-panel no-print" aria-label="Filtres de mes tâches">
-      <div class="dashboard-command-bar">
-        <div class="dashboard-command-title">
-          <span class="section-kicker">Filtres</span>
-          <h3>Suivi de mes tâches</h3>
-          <p>Recherchez et filtrez vos tâches par activité, statut, assignation ou échéance.</p>
-        </div>
-      </div>
-
-      <div class="dashboard-filter-chips" aria-label="Filtres des tâches personnelles">
+    <section class="dashboard-control-panel no-print" aria-label="Filtres des tâches personnelles">
+      <div class="dashboard-filter-chips">
         <div class="dashboard-search-chip">
           <label for="myTasksSearchInput" class="sr-only">Recherche</label>
           <input
             type="text"
             id="myTasksSearchInput"
-            placeholder="Rechercher une tâche, activité ou commentaire..."
+            placeholder="Rechercher une tâche, une activité ou un commentaire..."
           />
           <button id="myTasksSearchBtn" class="btn btn-primary" type="button">
             Rechercher
           </button>
         </div>
+
+        <details class="filter-menu">
+          <summary>Assigné à</summary>
+          <div class="filter-popover">
+            <label for="myTasksAssignedToFilter">Assigné à</label>
+            <select id="myTasksAssignedToFilter">
+              <option value="">Tous les assignés</option>
+            </select>
+          </div>
+        </details>
 
         <details class="filter-menu">
           <summary>Activité</summary>
@@ -108,27 +112,17 @@
           </div>
         </details>
 
-        <details class="filter-menu">
-          <summary>Assigné à</summary>
-          <div class="filter-popover">
-            <label for="myTasksAssignedToFilter">Assigné à</label>
-            <select id="myTasksAssignedToFilter">
-              <option value="">Tous les assignés</option>
-            </select>
-          </div>
-        </details>
-
         <details class="filter-menu filter-menu-wide">
           <summary>Dates</summary>
           <div class="filter-popover date-popover">
             <div class="field">
               <label for="myTasksStartDateFilter">Date de début</label>
-              <input type="date" id="myTasksStartDateFilter" />
+              <input id="myTasksStartDateFilter" type="date" />
             </div>
 
             <div class="field">
               <label for="myTasksEndDateFilter">Date de fin</label>
-              <input type="date" id="myTasksEndDateFilter" />
+              <input id="myTasksEndDateFilter" type="date" />
             </div>
           </div>
         </details>
@@ -140,11 +134,11 @@
     <section class="table-card">
       <div class="table-card-header">
         <h3>Liste de mes tâches</h3>
-        <p>Suivi détaillé des tâches qui vous sont attribuées</p>
+        <p>Vue détaillée de vos tâches et de leur état d’avancement</p>
       </div>
 
       <div class="table-wrap">
-        <table class="tasks-table">
+        <table id="myTasksTable" class="tasks-table">
           <colgroup>
             <col class="col-id" />
             <col class="col-task" />
@@ -187,7 +181,14 @@
     </section>
   </main>
 
-  <div id="taskModal" class="modal no-print" role="dialog" aria-modal="true" aria-labelledby="taskModalTitle" aria-hidden="true">
+  <div
+    id="taskModal"
+    class="modal no-print"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="taskModalTitle"
+    aria-hidden="true"
+  >
     <div class="modal-overlay"></div>
 
     <div class="modal-content modal-lg">
@@ -268,11 +269,34 @@
           <label for="editSupervisorComment">Commentaire du superviseur</label>
           <textarea id="editSupervisorComment" rows="4"></textarea>
         </div>
+
+        <div class="field">
+          <label for="taskDocumentFile">Ajouter un document</label>
+          <input id="taskDocumentFile" type="file" multiple />
+          <small class="muted">Vous pouvez joindre jusqu’à 5 fichiers par tâche.</small>
+          <button id="uploadTaskDocumentBtn" class="btn btn-outline" type="button">
+            Joindre le document
+          </button>
+        </div>
+
+        <div class="field">
+          <label>Documents liés à la tâche</label>
+          <div id="taskDocumentsList" class="grid-list"></div>
+        </div>
+
+        <div class="field">
+          <label>Historique des actions</label>
+          <div id="taskActivityLogsList" class="grid-list"></div>
+        </div>
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
+          Fermer
+        </button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">
+          Enregistrer
+        </button>
       </div>
     </div>
   </div>
