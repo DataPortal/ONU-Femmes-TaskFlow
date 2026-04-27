@@ -303,7 +303,16 @@
       <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
     `;
   }
+  function sortTasksNewestFirst(tasks = []) {
+  return [...tasks].sort((a, b) => {
+    const aDate = a?.created_at ? new Date(a.created_at).getTime() : 0;
+    const bDate = b?.created_at ? new Date(b.created_at).getTime() : 0;
 
+    if (bDate !== aDate) return bDate - aDate;
+
+    return Number(b.id || 0) - Number(a.id || 0);
+  });
+}
   function renderTaskRows(tasks, options = {}) {
     const { showDescription = false } = options;
     const currentUser = getCurrentUser();
@@ -549,13 +558,15 @@
     if (!tbody) return;
 
     populateDashboardFilters();
+    const filteredTasks = getFilteredMyTasks(myTasks);
 
-    const filteredTasks = getFilteredDashboardTasks();
-    renderKPIs("dashboardKpis", filteredTasks);
+title.textContent = `Mes tâches — ${getUserDisplayName(currentUser)}`;
+renderKPIs("myTasksKpis", filteredTasks);
 
-    tbody.innerHTML = filteredTasks.length
-      ? renderTaskRows(filteredTasks, { showDescription: true })
-      : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
+tbody.innerHTML = filteredTasks.length
+  ? renderTaskRows(filteredTasks, { showDescription: true })
+  : `<tr><td colspan="14"><span class="muted">Aucune tâche correspondant aux filtres.</span></td></tr>`;
+    
   }
 
   function getFilteredMyTasks(tasks) {
