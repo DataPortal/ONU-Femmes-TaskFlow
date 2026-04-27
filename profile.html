@@ -22,7 +22,7 @@
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Mon profil</h1>
-          <p>Consultation des informations liées à votre compte utilisateur</p>
+          <p>Résumé du profil, mise à jour des informations et du mot de passe</p>
         </div>
       </div>
 
@@ -59,7 +59,7 @@
         <span class="section-kicker">Compte utilisateur</span>
         <h2 class="section-title">Mon profil</h2>
         <p class="section-subtitle">
-          Cette page présente les informations principales associées à votre compte dans l’application TaskFlow.
+          Consultez votre résumé de profil et mettez à jour vos informations personnelles.
         </p>
       </div>
     </section>
@@ -69,7 +69,7 @@
         <div class="card-header">
           <div>
             <h3>Résumé du profil</h3>
-            <p>Informations d’identification et de rattachement</p>
+            <p>Informations principales liées à votre compte</p>
           </div>
         </div>
 
@@ -120,74 +120,64 @@
       <article class="info-card">
         <div class="card-header">
           <div>
-            <h3>Lecture rapide</h3>
-            <p>Comprendre votre profil dans l’application</p>
+            <h3>Mettre à jour le profil</h3>
+            <p>Modifier vos informations personnelles</p>
           </div>
         </div>
 
-        <div class="info-box">
-          Votre profil détermine les pages visibles, les actions autorisées et le niveau d’accès aux données.
-          Les profils opérationnels comme <strong>staff</strong> et <strong>supervisor</strong> ont des droits
-          différents du profil <strong>management</strong> ou du profil <strong>admin</strong>.
+        <div class="field">
+          <label for="profileEditFullName">Nom complet</label>
+          <input id="profileEditFullName" type="text" placeholder="Votre nom complet" />
         </div>
 
-        <div class="profile-role-explainer">
-          <div class="profile-role-item">
-            <h4>Admin</h4>
-            <p>Accès complet à toutes les fonctions de l’application.</p>
-          </div>
-
-          <div class="profile-role-item">
-            <h4>Supervisor</h4>
-            <p>Gestion opérationnelle des tâches et du périmètre relevant de son pilier.</p>
-          </div>
-
-          <div class="profile-role-item">
-            <h4>Staff</h4>
-            <p>Suivi, mise à jour et documentation des tâches qui lui sont assignées.</p>
-          </div>
-
-          <div class="profile-role-item">
-            <h4>Management</h4>
-            <p>Accès stratégique et analytique en lecture, sans gestion opérationnelle directe.</p>
-          </div>
+        <div class="field">
+          <label for="profileEditOffice">Bureau / localisation</label>
+          <input id="profileEditOffice" type="text" placeholder="Ex. Kinshasa, Goma..." />
         </div>
+
+        <div class="field">
+          <label for="profileEditEmail">Adresse email</label>
+          <input id="profileEditEmail" type="email" placeholder="nom@organisation.org" />
+          <small class="muted">Si votre système limite le changement d’email, laissez ce champ inchangé.</small>
+        </div>
+
+        <div class="modal-actions" style="justify-content:flex-start; padding:0; margin-top:14px;">
+          <button id="updateProfileBtn" class="btn btn-primary" type="button">
+            Mettre à jour le profil
+          </button>
+        </div>
+
+        <div id="profileUpdateMessage" class="page-message" aria-live="polite"></div>
       </article>
     </section>
 
     <section class="info-card">
       <div class="card-header">
         <div>
-          <h3>Utilisation recommandée</h3>
-          <p>Conseils simples selon votre profil</p>
+          <h3>Mettre à jour le mot de passe</h3>
+          <p>Renforcer la sécurité de votre compte</p>
         </div>
       </div>
 
-      <div class="profile-guidance-grid">
-        <div class="profile-guidance-card">
-          <h4>Mettre à jour ses tâches</h4>
-          <p>
-            Les utilisateurs opérationnels doivent mettre à jour régulièrement leur progression,
-            leurs commentaires et leurs documents de preuve.
-          </p>
+      <div class="modal-row">
+        <div class="field">
+          <label for="profileNewPassword">Nouveau mot de passe</label>
+          <input id="profileNewPassword" type="password" placeholder="Nouveau mot de passe" />
         </div>
 
-        <div class="profile-guidance-card">
-          <h4>Consulter les KPI</h4>
-          <p>
-            Les superviseurs, admins et management peuvent utiliser les vues synthétiques pour
-            suivre l’avancement global, les retards et les besoins de réajustement.
-          </p>
-        </div>
-
-        <div class="profile-guidance-card">
-          <h4>Vérifier le rattachement</h4>
-          <p>
-            Assurez-vous que votre pilier et votre superviseur sont corrects afin de garantir
-            une bonne visibilité sur vos tâches et vos droits d’accès.
-          </p>
+        <div class="field">
+          <label for="profileConfirmPassword">Confirmer le mot de passe</label>
+          <input id="profileConfirmPassword" type="password" placeholder="Confirmer le mot de passe" />
         </div>
       </div>
+
+      <div class="modal-actions" style="justify-content:flex-start; padding:0; margin-top:14px;">
+        <button id="updatePasswordBtn" class="btn btn-primary" type="button">
+          Mettre à jour le mot de passe
+        </button>
+      </div>
+
+      <div id="profilePasswordMessage" class="page-message" aria-live="polite"></div>
     </section>
   </main>
 
