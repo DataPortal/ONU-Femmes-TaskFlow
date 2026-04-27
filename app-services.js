@@ -6,6 +6,7 @@
     getPillarNameByIdFromArray,
     getSb,
     hydrateTaskStatus,
+    normalizeRole,
     normalizeStatusToDatabase
   } = Core;
 
@@ -62,22 +63,21 @@
     return;
   }
 
-  function normalizeRole(value) {
-    const role = String(value || "staff").trim().toLowerCase();
-    if (role === "admin") return "admin";
-    if (role === "supervisor") return "supervisor";
-    return "staff";
-  }
-
   function normalizeProfileRecord(profile, pillars = []) {
     const safeProfile = profile || {};
+
     return {
       ...safeProfile,
+      id: safeProfile.id || null,
       full_name: safeProfile.full_name || "",
       name: safeProfile.full_name || safeProfile.name || "Utilisateur",
       email: safeProfile.email || "",
-      role: normalizeRole(safeProfile.role || safeProfile.user_type),
-      user_type: normalizeRole(safeProfile.role || safeProfile.user_type),
+      role: normalizeRole
+        ? normalizeRole(safeProfile.role || safeProfile.user_type)
+        : String(safeProfile.role || safeProfile.user_type || "staff").toLowerCase(),
+      user_type: normalizeRole
+        ? normalizeRole(safeProfile.role || safeProfile.user_type)
+        : String(safeProfile.role || safeProfile.user_type || "staff").toLowerCase(),
       pillar_id: safeProfile.pillar_id ?? null,
       supervisor_id: safeProfile.supervisor_id ?? null,
       office: safeProfile.office || "",
@@ -90,6 +90,7 @@
 
   function normalizeActivityRecord(activity, pillars = []) {
     const safeActivity = activity || {};
+
     return {
       ...safeActivity,
       pillar_name: getPillarNameByIdFromArray
@@ -106,18 +107,22 @@
       title: safeTask.title || "",
 
       pillar_id: safeTask.pillar_id ?? null,
-      pillar: safeTask.pillar_name || "",
+      pillar: safeTask.pillar_name || safeTask.pillar || "",
 
       activity_id: safeTask.activity_id ?? null,
       activity_name: safeTask.activity_name || "",
 
       assigned_to_id: safeTask.assigned_to_id ?? null,
       assigned_to_name: safeTask.assigned_to_name || "Non défini",
-      assigned_to_role: normalizeRole(safeTask.assigned_to_role),
+      assigned_to_role: normalizeRole
+        ? normalizeRole(safeTask.assigned_to_role)
+        : String(safeTask.assigned_to_role || "staff").toLowerCase(),
 
       supervisor_id: safeTask.supervisor_id ?? null,
       supervisor_name: safeTask.supervisor_name || "Non défini",
-      supervisor_role: normalizeRole(safeTask.supervisor_role),
+      supervisor_role: normalizeRole
+        ? normalizeRole(safeTask.supervisor_role)
+        : String(safeTask.supervisor_role || "staff").toLowerCase(),
 
       priority: safeTask.priority || "Moyenne",
       status: normalizeStatusToDatabase
@@ -143,20 +148,20 @@
   function normalizeTaskRecordFromRaw(task, users, pillars, activities) {
     const safeTask = task || {};
 
-    const assigned = users.find(user =>
+    const assigned = (users || []).find(user =>
       String(user.id) === String(safeTask.assigned_to_id)
     );
 
     const supervisor = assigned
-      ? users.find(user => String(user.id) === String(assigned.supervisor_id))
+      ? (users || []).find(user => String(user.id) === String(assigned.supervisor_id))
       : null;
 
-    const pillar = pillars.find(p =>
-      String(p.id) === String(safeTask.pillar_id)
+    const pillar = (pillars || []).find(item =>
+      String(item.id) === String(safeTask.pillar_id)
     );
 
-    const activity = activities.find(a =>
-      String(a.id) === String(safeTask.activity_id)
+    const activity = (activities || []).find(item =>
+      String(item.id) === String(safeTask.activity_id)
     );
 
     return {
@@ -322,7 +327,6 @@
       AppState.tasks = tasksViewRes.data
         .map(normalizeTaskRecordFromEnriched)
         .map(task => (hydrateTaskStatus ? hydrateTaskStatus(task) : task));
-
       return;
     }
 
