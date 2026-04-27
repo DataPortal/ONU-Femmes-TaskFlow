@@ -41,13 +41,16 @@
     return document.getElementById(id);
   };
 
+  const canAccessRegisterPage = Core.canAccessRegisterPage || function () { return false; };
   const canCreatePillar = Core.canCreatePillar || function () { return false; };
   const canCreateTask = Core.canCreateTask || function () { return false; };
   const canDeleteTask = Core.canDeleteTask || function () { return false; };
+  const canEditTask = Core.canEditTask || function () { return false; };
   const canExportDashboard = Core.canExportDashboard || function () { return false; };
   const canManageActivities = Core.canManageActivities || function () { return false; };
   const canManageMembers = Core.canManageMembers || function () { return false; };
   const canViewTask = Core.canViewTask || function () { return true; };
+  const canViewTeamPage = Core.canViewTeamPage || function () { return false; };
   const clamp = Core.clamp || function (value, min, max) {
     const n = Number(value);
     if (Number.isNaN(n)) return min;
@@ -59,6 +62,9 @@
   const getActivitiesForPillar = Core.getActivitiesForPillar || function () { return []; };
   const getCurrentUser = Core.getCurrentUser || function () { return AppState.currentUser; };
   const getSb = Core.getSb || function () { return window.sb || null; };
+  const getUserRoleFromCore = Core.getUserRole || function (user) {
+    return String(user?.role || user?.user_type || "staff").trim().toLowerCase();
+  };
   const getVisibleTasks = Core.getVisibleTasks || function () { return AppState.tasks || []; };
   const isDueSoon = Core.isDueSoon || function () { return false; };
   const isLate = Core.isLate || function () { return false; };
@@ -70,7 +76,7 @@
   };
 
   function getUserRole(user) {
-    return String(user?.role || user?.user_type || "staff").trim().toLowerCase();
+    return getUserRoleFromCore(user);
   }
 
   function getUserDisplayName(user) {
@@ -79,6 +85,14 @@
 
   function getUserPillarLabel(user) {
     return user?.pillar || user?.pillar_name || "Sans pilier";
+  }
+
+  function isManagementUser(user = null) {
+    return getUserRole(user || getCurrentUser()) === "management";
+  }
+
+  function isReadOnlyUser(user = null) {
+    return isManagementUser(user || getCurrentUser());
   }
 
   function setRoleControlledVisibility(buttonId, isAllowed) {
@@ -292,6 +306,7 @@
 
   function renderTaskRows(tasks, options = {}) {
     const { showDescription = false } = options;
+    const currentUser = getCurrentUser();
 
     return tasks
       .map(task => {
@@ -310,6 +325,9 @@
         const supervisorComment = task.supervisor_comment
           ? escapeHtml(task.supervisor_comment)
           : "Aucun commentaire";
+
+        const canEditThisTask = canEditTask(task, currentUser);
+        const canDeleteThisTask = canDeleteTask(task, currentUser);
 
         return `
           <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
@@ -391,11 +409,17 @@
 
             <td class="no-print action-cell">
               <div class="table-actions">
-                <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
-                  Mettre à jour
-                </button>
+                ${canEditThisTask ? `
+                  <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
+                    Mettre à jour
+                  </button>
+                ` : `
+                  <button class="action-btn js-open-task-readonly" type="button" data-task-id="${Number(task.id)}">
+                    Voir
+                  </button>
+                `}
 
-                ${canDeleteTask(task) ? `
+                ${canDeleteThisTask ? `
                   <button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">
                     Supprimer
                   </button>
@@ -425,7 +449,7 @@
     let visibleAssignees = AppState.users;
     let visibleActivities = AppState.mainActivities;
 
-    if (currentUser && currentRole !== "admin") {
+    if (currentUser && currentRole !== "admin" && currentRole !== "management") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -547,12 +571,20 @@
 
   function renderMyTasksPage() {
     const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
     const tbody = byId("myTasksTbody");
     const title = byId("myTasksTitle");
     const assignedToFilter = byId("myTasksAssignedToFilter");
     const activityFilter = byId("myTasksActivityFilter");
 
     if (!currentUser || !tbody || !title) return;
+
+    if (currentRole === "management") {
+      tbody.innerHTML = `<tr><td colspan="14"><span class="muted">Cette page n’est pas destinée au profil management.</span></td></tr>`;
+      title.textContent = "Mes tâches";
+      renderKPIs("myTasksKpis", []);
+      return;
+    }
 
     const myTasks = getVisibleTasks().filter(task =>
       String(task.assigned_to_id) === String(currentUser.id)
@@ -670,6 +702,13 @@
     const title = byId("myTeamTitle");
 
     if (!currentUser || !membersBox || !title) return;
+
+    if (!canViewTeamPage(currentUser)) {
+      title.textContent = "Mon équipe";
+      membersBox.innerHTML = `<div class="empty">Cette page n’est pas accessible pour votre profil.</div>`;
+      renderKPIs("myTeamKpis", []);
+      return;
+    }
 
     let teamMembers = [];
     let teamTasks = [];
@@ -797,9 +836,12 @@
         return;
       }
 
+      const canEditDocs = !isReadOnlyUser(getCurrentUser());
+
       const rows = await Promise.all(
         docs.map(async doc => {
           const url = await Services.getTaskDocumentSignedUrl(doc.file_path);
+
           return `
             <div class="member-card">
               <h4>${escapeHtml(doc.file_name)}</h4>
@@ -808,22 +850,24 @@
               <div class="card-actions" style="margin-top:12px;">
                 <a href="${escapeHtml(url)}" target="_blank" class="btn btn-outline">Télécharger</a>
 
-                <button
-                  class="action-btn js-replace-task-document"
-                  type="button"
-                  data-document-id="${Number(doc.id)}"
-                >
-                  Remplacer
-                </button>
+                ${canEditDocs ? `
+                  <button
+                    class="action-btn js-replace-task-document"
+                    type="button"
+                    data-document-id="${Number(doc.id)}"
+                  >
+                    Remplacer
+                  </button>
 
-                <button
-                  class="action-btn secondary-danger js-delete-task-document"
-                  type="button"
-                  data-document-id="${Number(doc.id)}"
-                  data-file-path="${escapeHtml(doc.file_path)}"
-                >
-                  Supprimer
-                </button>
+                  <button
+                    class="action-btn secondary-danger js-delete-task-document"
+                    type="button"
+                    data-document-id="${Number(doc.id)}"
+                    data-file-path="${escapeHtml(doc.file_path)}"
+                  >
+                    Supprimer
+                  </button>
+                ` : ``}
               </div>
             </div>
           `;
@@ -840,7 +884,7 @@
     const currentUser = getCurrentUser();
     const taskId = Number(byId("editTaskId")?.value);
 
-    if (!currentUser || !taskId || !documentId) return;
+    if (!currentUser || !taskId || !documentId || isReadOnlyUser(currentUser)) return;
 
     const tempInput = document.createElement("input");
     tempInput.type = "file";
@@ -907,7 +951,7 @@
     if (!sb) return;
 
     if (!canCreatePillar()) {
-      setMessage("pillarMessage", "Seuls les superviseurs et admins peuvent créer un pilier.", "error");
+      setMessage("pillarMessage", "Seul le profil admin peut créer un pilier.", "error");
       return;
     }
 
@@ -945,7 +989,7 @@
     if (!sb || !currentUser) return;
 
     if (!canManageMembers()) {
-      setMessage("userMessage", "Seuls les superviseurs et admins peuvent gérer les membres.", "error");
+      setMessage("userMessage", "Vous n’êtes pas autorisé à gérer les membres.", "error");
       return;
     }
 
@@ -1042,21 +1086,25 @@
       return;
     }
 
+    const canDisable = canManageActivities(currentUser);
+
     list.innerHTML = visibleActivities
       .map(activity => `
         <div class="member-card">
           <h4>${escapeHtml(activity.name)}</h4>
           <div class="muted">Pilier : ${escapeHtml(activity.pillar_name || "Non défini")}</div>
           <div class="muted">${escapeHtml(activity.description || "Aucune description")}</div>
-          <div class="card-actions" style="margin-top:12px;">
-            <button
-              class="action-btn secondary-danger js-disable-activity"
-              type="button"
-              data-activity-id="${Number(activity.id)}"
-            >
-              Désactiver
-            </button>
-          </div>
+          ${canDisable ? `
+            <div class="card-actions" style="margin-top:12px;">
+              <button
+                class="action-btn secondary-danger js-disable-activity"
+                type="button"
+                data-activity-id="${Number(activity.id)}"
+              >
+                Désactiver
+              </button>
+            </div>
+          ` : ``}
         </div>
       `)
       .join("");
@@ -1070,7 +1118,7 @@
     if (!sb || !currentUser) return;
 
     if (!canManageActivities()) {
-      setMessage("activityMessage", "Seuls les admins et superviseurs peuvent ajouter des activités.", "error");
+      setMessage("activityMessage", "Vous n’êtes pas autorisé à ajouter des activités.", "error");
       return;
     }
 
@@ -1153,6 +1201,14 @@
   }
 
   function renderRegisterPage() {
+    const currentUser = getCurrentUser();
+    const currentRole = getUserRole(currentUser);
+
+    if (!canAccessRegisterPage(currentUser)) {
+      showGlobalError("Cette page n’est pas accessible pour votre profil.");
+      return;
+    }
+
     populateRegisterDropdowns();
     populateActivityManagementDropdown();
     renderMainActivitiesList();
@@ -1160,8 +1216,6 @@
     const pillarsList = byId("pillarsList");
     const membersList = byId("registeredMembersList");
     const accessNotice = byId("registerAccessNotice");
-    const currentUser = getCurrentUser();
-    const currentRole = getUserRole(currentUser);
 
     if (!currentUser) return;
 
@@ -1251,7 +1305,7 @@
       eligibleUsers = AppState.users.filter(user =>
         String(user.id) === String(currentUser.id)
       );
-    } else if (currentUser && currentRole !== "admin") {
+    } else if (currentUser && currentRole !== "admin" && currentRole !== "management") {
       visiblePillars = AppState.pillars.filter(pillar =>
         String(pillar.id) === String(currentUser.pillar_id)
       );
@@ -1321,7 +1375,7 @@
 
   function openCreateTaskModal() {
     if (!canCreateTask()) {
-      setMessage("taskCreateMessage", "Seuls les superviseurs et admins peuvent créer une tâche.", "error");
+      setMessage("taskCreateMessage", "Vous n’êtes pas autorisé à créer une tâche.", "error");
       return;
     }
 
@@ -1357,7 +1411,7 @@
     if (!currentUser) return;
 
     if (!canCreateTask()) {
-      setMessage("taskCreateMessage", "Seuls les superviseurs et admins peuvent créer une tâche.", "error");
+      setMessage("taskCreateMessage", "Vous n’êtes pas autorisé à créer une tâche.", "error");
       return;
     }
 
@@ -1377,7 +1431,7 @@
       return;
     }
 
-    if (currentRole !== "admin" && String(pillarId) !== String(currentUser.pillar_id)) {
+    if (currentRole !== "admin" && currentRole !== "management" && String(pillarId) !== String(currentUser.pillar_id)) {
       setMessage("taskCreateMessage", "Vous ne pouvez créer une tâche que dans votre pilier.", "error");
       return;
     }
@@ -1423,9 +1477,41 @@
     }
   }
 
-  function openTaskModal(taskId) {
+  function setTaskModalReadOnly(isReadOnly) {
+    const idsToDisable = [
+      "editProgressScore",
+      "editStaffComment",
+      "editSupervisorScore",
+      "editSupervisorStatus",
+      "editSupervisorComment",
+      "taskDocumentFile",
+      "uploadTaskDocumentBtn",
+      "saveTaskBtn"
+    ];
+
+    idsToDisable.forEach(id => {
+      const el = byId(id);
+      if (!el) return;
+      el.disabled = !!isReadOnly;
+    });
+
+    const saveBtn = byId("saveTaskBtn");
+    if (saveBtn) {
+      saveBtn.style.display = isReadOnly ? "none" : "";
+    }
+
+    const uploadBtn = byId("uploadTaskDocumentBtn");
+    if (uploadBtn) {
+      uploadBtn.style.display = isReadOnly ? "none" : "";
+    }
+  }
+
+  function openTaskModal(taskId, forceReadOnly = false) {
+    const currentUser = getCurrentUser();
     const task = AppState.tasks.find(item => String(item.id) === String(taskId));
-    if (!task || !canViewTask(task)) return;
+    if (!task || !canViewTask(task, currentUser)) return;
+
+    const readonly = forceReadOnly || !canEditTask(task, currentUser);
 
     if (byId("editTaskId")) byId("editTaskId").value = task.id;
     if (byId("editStatus")) byId("editStatus").value = normalizeStatusToDatabase(computeAutomaticStatus(task));
@@ -1434,6 +1520,8 @@
     if (byId("editSupervisorScore")) byId("editSupervisorScore").value = task.supervisor_score ?? 0;
     if (byId("editSupervisorStatus")) byId("editSupervisorStatus").value = task.supervisor_status || "Non évalué";
     if (byId("editSupervisorComment")) byId("editSupervisorComment").value = "";
+
+    setTaskModalReadOnly(readonly);
 
     renderTaskDocuments(task.id);
     renderTaskActivityLogs(task.id);
@@ -1446,6 +1534,8 @@
 
   async function uploadDocumentForCurrentTask() {
     const currentUser = getCurrentUser();
+    if (isReadOnlyUser(currentUser)) return;
+
     const taskId = Number(byId("editTaskId")?.value);
     const fileInput = byId("taskDocumentFile");
     const files = Array.from(fileInput?.files || []);
@@ -1485,12 +1575,12 @@
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
 
-    if (!currentUser) return;
+    if (!currentUser || isReadOnlyUser(currentUser)) return;
 
     const taskId = Number(byId("editTaskId")?.value);
     const task = AppState.tasks.find(item => Number(item.id) === taskId);
 
-    if (!task || !canViewTask(task)) return;
+    if (!task || !canEditTask(task, currentUser)) return;
 
     const oldSnapshot = {
       progress_score: task.progress_score,
@@ -1562,7 +1652,7 @@
 
     if (!task || !currentUser) return;
 
-    if (!canDeleteTask(task)) {
+    if (!canDeleteTask(task, currentUser)) {
       alert("Vous n’êtes pas autorisé à supprimer cette tâche.");
       return;
     }
@@ -1635,8 +1725,10 @@
 
       const deleteDocBtn = event.target.closest(".js-delete-task-document");
       if (deleteDocBtn) {
-        const taskId = Number(byId("editTaskId")?.value);
         const currentUser = getCurrentUser();
+        if (isReadOnlyUser(currentUser)) return;
+
+        const taskId = Number(byId("editTaskId")?.value);
 
         Services.deleteTaskDocument(
           deleteDocBtn.dataset.documentId,
@@ -1668,7 +1760,13 @@
 
       const openBtn = event.target.closest(".js-open-task-modal");
       if (openBtn) {
-        openTaskModal(openBtn.dataset.taskId);
+        openTaskModal(openBtn.dataset.taskId, false);
+        return;
+      }
+
+      const openReadonlyBtn = event.target.closest(".js-open-task-readonly");
+      if (openReadonlyBtn) {
+        openTaskModal(openReadonlyBtn.dataset.taskId, true);
         return;
       }
 
@@ -1687,14 +1785,18 @@
 
   function initRoleControlledButtons() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
     if (page !== "dashboard") return;
 
-    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask());
-    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard());
+    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask(currentUser) && !isReadOnlyUser(currentUser));
+    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard(currentUser));
   }
 
   function initTaskCreation() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
     if (page !== "dashboard") return;
 
     const openBtn = byId("openCreateTaskModalBtn");
@@ -1704,9 +1806,9 @@
     const dueDateInput = byId("taskDueDate");
     const pillarInput = byId("taskPillar");
 
-    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask());
+    setRoleControlledVisibility("openCreateTaskModalBtn", !!canCreateTask(currentUser) && !isReadOnlyUser(currentUser));
 
-    if (openBtn && canCreateTask() && !openBtn.dataset.boundClick) {
+    if (openBtn && canCreateTask(currentUser) && !isReadOnlyUser(currentUser) && !openBtn.dataset.boundClick) {
       openBtn.addEventListener("click", openCreateTaskModal);
       openBtn.dataset.boundClick = "true";
     }
@@ -1750,7 +1852,10 @@
 
   function initRegisterPage() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
     if (page !== "register") return;
+    if (!canAccessRegisterPage(currentUser)) return;
 
     const createUserBtn = byId("createUserBtn");
     const createActivityBtn = byId("createActivityBtn");
@@ -1768,7 +1873,10 @@
 
   function initMainActivitiesManagement() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
     if (page !== "register") return;
+    if (!canAccessRegisterPage(currentUser)) return;
 
     populateActivityManagementDropdown();
     renderMainActivitiesList();
@@ -1811,6 +1919,8 @@
 
   function initExportAndPrint() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
     if (page !== "dashboard") return;
 
     const resetBtn = byId("resetDashboardBtn");
@@ -1829,9 +1939,9 @@
       "endDateFilter"
     ];
 
-    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard());
+    setRoleControlledVisibility("exportXlsxBtn", !!canExportDashboard(currentUser));
 
-    if (exportBtn && canExportDashboard() && !exportBtn.dataset.boundClick) {
+    if (exportBtn && canExportDashboard(currentUser) && !exportBtn.dataset.boundClick) {
       exportBtn.addEventListener("click", exportCurrentViewToXlsx);
       exportBtn.dataset.boundClick = "true";
     }
@@ -1905,7 +2015,10 @@
 
   function initTeamFilters() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
+
     if (page !== "my-team") return;
+    if (!canViewTeamPage(currentUser)) return;
 
     const searchBtn = byId("teamSearchBtn");
     const searchInput = byId("teamSearchInput");
@@ -1942,6 +2055,7 @@
 
   function renderCurrentPage() {
     const page = document.body.dataset.page;
+    const currentUser = getCurrentUser();
 
     if (page === "dashboard") {
       initRoleControlledButtons();
@@ -1960,6 +2074,11 @@
     }
 
     if (page === "register") {
+      if (!canAccessRegisterPage(currentUser)) {
+        showGlobalError("Cette page n’est pas accessible pour votre profil.");
+        return;
+      }
+
       renderRegisterPage();
     }
   }
