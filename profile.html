@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <title>ONU Femmes — Mon profil</title>
+
   <meta
     name="description"
-    content="Page de profil utilisateur du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Profil utilisateur du TaskFlow Management Portal - ONU Femmes RDC."
   />
-
-  <title>ONU Femmes — Mon profil</title>
 
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -19,15 +19,19 @@
     <div class="header-inner container">
       <div class="brand-block">
         <img src="assets/img/logunw.jpg" alt="Logo ONU Femmes" class="logo" />
-
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Mon profil</h1>
-          <p>Gestion du profil utilisateur et sécurité du compte</p>
+          <p>Consultation des informations liées à votre compte utilisateur</p>
         </div>
       </div>
 
       <div class="top-tools no-print" aria-label="Outils utilisateur">
+        <label for="currentUserSelect" class="sr-only">Utilisateur courant</label>
+        <select id="currentUserSelect" aria-label="Utilisateur courant"></select>
+
+        <div id="currentUserLabel" class="current-user-label" aria-live="polite"></div>
+
         <button id="logoutBtn" class="btn btn-secondary" type="button">
           Déconnexion
         </button>
@@ -35,141 +39,164 @@
     </div>
   </header>
 
-  <div class="container nav-links">
-  <a href="dashboard.html">Dashboard</a>
-  <a href="mes-taches.html">Mes tâches</a>
-  <a href="mon-equipe.html">Mon équipe</a>
-  <a href="inscription.html">Inscription</a>
-  <a href="profile.html">Mon profil</a>
-  <a href="management-dashboard.html">Management</a>
-  <a href="how-to-use.html">Guide d’utilisation</a>
-</div>
+  <nav class="main-nav fixed-nav no-print" aria-label="Navigation principale">
+    <div class="container nav-links">
+      <a href="dashboard.html">Dashboard</a>
+      <a href="mes-taches.html">Mes tâches</a>
+      <a href="mon-equipe.html">Mon équipe</a>
+      <a href="inscription.html">Inscription</a>
+      <a href="profile.html" class="active" aria-current="page">Mon profil</a>
+      <a href="management-dashboard.html">Management</a>
+      <a href="how-to-use.html">Guide d’utilisation</a>
+    </div>
+  </nav>
 
   <main class="container main-content">
-    <div id="profileMessage" class="page-message" aria-live="polite"></div>
+    <div id="pageDebugMessage" class="page-message" aria-live="polite"></div>
 
     <section class="page-heading">
       <div>
-        <span class="section-kicker">Profil utilisateur</span>
+        <span class="section-kicker">Compte utilisateur</span>
         <h2 class="section-title">Mon profil</h2>
         <p class="section-subtitle">
-          Consultez vos informations de rattachement et mettez à jour vos informations personnelles.
-          Le pilier et le superviseur sont figés après inscription.
+          Cette page présente les informations principales associées à votre compte dans l’application TaskFlow.
         </p>
       </div>
     </section>
 
     <section class="split-layout">
-      <article class="profile-card">
+      <article class="info-card profile-summary-card">
         <div class="card-header">
-          <h3>Informations personnelles</h3>
-          <p>Ces informations permettent d’identifier votre profil dans le portail.</p>
-        </div>
-
-        <div class="form-grid two-columns">
-          <div class="field">
-            <label for="profileFullName">Nom complet</label>
-            <input
-              id="profileFullName"
-              type="text"
-              autocomplete="name"
-              placeholder="Nom et prénom"
-            />
-          </div>
-
-          <div class="field">
-            <label for="profileEmail">Email</label>
-            <input
-              id="profileEmail"
-              type="email"
-              autocomplete="email"
-              placeholder="prenom.nom@unwomen.org"
-              disabled
-            />
-          </div>
-
-          <div class="field">
-            <label for="profileOffice">Bureau / Office</label>
-            <input
-              id="profileOffice"
-              type="text"
-              autocomplete="organization"
-              placeholder="Ex. Kinshasa"
-            />
-          </div>
-
-          <div class="field">
-            <label for="profilePillarDisplay">Pilier</label>
-            <input
-              id="profilePillarDisplay"
-              type="text"
-              disabled
-              placeholder="Pilier non défini"
-            />
-          </div>
-
-          <div class="field field-full">
-            <label for="profileSupervisorDisplay">Superviseur</label>
-            <input
-              id="profileSupervisorDisplay"
-              type="text"
-              disabled
-              placeholder="Superviseur non défini"
-            />
+          <div>
+            <h3>Résumé du profil</h3>
+            <p>Informations d’identification et de rattachement</p>
           </div>
         </div>
 
-        <div class="card-actions">
-          <button id="saveProfileBtn" class="btn btn-primary" type="button">
-            Enregistrer les modifications
-          </button>
+        <div class="profile-identity-block">
+          <div class="profile-avatar" aria-hidden="true">
+            <span id="profileInitials">U</span>
+          </div>
+
+          <div class="profile-identity-text">
+            <h3 id="profileFullName">Utilisateur</h3>
+            <p id="profileRoleLabel" class="muted">Rôle</p>
+          </div>
+        </div>
+
+        <div class="profile-grid">
+          <div class="profile-field-card">
+            <span class="profile-label">Adresse email</span>
+            <strong id="profileEmail">—</strong>
+          </div>
+
+          <div class="profile-field-card">
+            <span class="profile-label">Bureau / localisation</span>
+            <strong id="profileOffice">—</strong>
+          </div>
+
+          <div class="profile-field-card">
+            <span class="profile-label">Pilier</span>
+            <strong id="profilePillar">—</strong>
+          </div>
+
+          <div class="profile-field-card">
+            <span class="profile-label">Superviseur</span>
+            <strong id="profileSupervisor">—</strong>
+          </div>
+
+          <div class="profile-field-card">
+            <span class="profile-label">Statut du compte</span>
+            <strong id="profileStatus">—</strong>
+          </div>
+
+          <div class="profile-field-card">
+            <span class="profile-label">Identifiant interne</span>
+            <strong id="profileUserId">—</strong>
+          </div>
         </div>
       </article>
 
-      <article class="profile-card">
+      <article class="info-card">
         <div class="card-header">
-          <h3>Sécurité du compte</h3>
-          <p>Modifiez votre mot de passe si nécessaire.</p>
-        </div>
-
-        <div class="form-grid single-column">
-          <div class="field">
-            <label for="newPassword">Nouveau mot de passe</label>
-            <input
-              id="newPassword"
-              type="password"
-              autocomplete="new-password"
-              placeholder="Au moins 8 caractères"
-            />
-          </div>
-
-          <div class="field">
-            <label for="confirmNewPassword">Confirmer le nouveau mot de passe</label>
-            <input
-              id="confirmNewPassword"
-              type="password"
-              autocomplete="new-password"
-              placeholder="Confirmez le nouveau mot de passe"
-            />
+          <div>
+            <h3>Lecture rapide</h3>
+            <p>Comprendre votre profil dans l’application</p>
           </div>
         </div>
 
-        <div class="card-actions">
-          <button id="changePasswordBtn" class="btn btn-outline" type="button">
-            Modifier le mot de passe
-          </button>
+        <div class="info-box">
+          Votre profil détermine les pages visibles, les actions autorisées et le niveau d’accès aux données.
+          Les profils opérationnels comme <strong>staff</strong> et <strong>supervisor</strong> ont des droits
+          différents du profil <strong>management</strong> ou du profil <strong>admin</strong>.
         </div>
 
-        <div class="info-box" style="margin-top:18px;">
-          Pour des raisons de cohérence administrative, le pilier et le superviseur ne peuvent pas être modifiés depuis cette page.
+        <div class="profile-role-explainer">
+          <div class="profile-role-item">
+            <h4>Admin</h4>
+            <p>Accès complet à toutes les fonctions de l’application.</p>
+          </div>
+
+          <div class="profile-role-item">
+            <h4>Supervisor</h4>
+            <p>Gestion opérationnelle des tâches et du périmètre relevant de son pilier.</p>
+          </div>
+
+          <div class="profile-role-item">
+            <h4>Staff</h4>
+            <p>Suivi, mise à jour et documentation des tâches qui lui sont assignées.</p>
+          </div>
+
+          <div class="profile-role-item">
+            <h4>Management</h4>
+            <p>Accès stratégique et analytique en lecture, sans gestion opérationnelle directe.</p>
+          </div>
         </div>
       </article>
+    </section>
+
+    <section class="info-card">
+      <div class="card-header">
+        <div>
+          <h3>Utilisation recommandée</h3>
+          <p>Conseils simples selon votre profil</p>
+        </div>
+      </div>
+
+      <div class="profile-guidance-grid">
+        <div class="profile-guidance-card">
+          <h4>Mettre à jour ses tâches</h4>
+          <p>
+            Les utilisateurs opérationnels doivent mettre à jour régulièrement leur progression,
+            leurs commentaires et leurs documents de preuve.
+          </p>
+        </div>
+
+        <div class="profile-guidance-card">
+          <h4>Consulter les KPI</h4>
+          <p>
+            Les superviseurs, admins et management peuvent utiliser les vues synthétiques pour
+            suivre l’avancement global, les retards et les besoins de réajustement.
+          </p>
+        </div>
+
+        <div class="profile-guidance-card">
+          <h4>Vérifier le rattachement</h4>
+          <p>
+            Assurez-vous que votre pilier et votre superviseur sont corrects afin de garantir
+            une bonne visibilité sur vos tâches et vos droits d’accès.
+          </p>
+        </div>
+      </div>
     </section>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-client.js"></script>
   <script src="auth-utils.js"></script>
+  <script src="app-core.js"></script>
+  <script src="app-services.js"></script>
+  <script src="app-ui.js"></script>
   <script src="profile.js"></script>
 </body>
 </html>
