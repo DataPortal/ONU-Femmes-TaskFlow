@@ -671,7 +671,45 @@
     if (error) throw error;
     return data || [];
   }
+  async function getVisibleTeamMembers(currentUserProfile) {
+  if (!currentUserProfile) {
+    throw new Error("Profil utilisateur introuvable.");
+  }
 
+  const role = currentUserProfile.role;
+  const pillar = currentUserProfile.pillar;
+
+  let query = supabaseClient
+    .from("profiles")
+    .select(`
+      id,
+      full_name,
+      email,
+      role,
+      office,
+      pillar,
+      supervisor,
+      created_at
+    `)
+    .order("full_name", { ascending: true });
+
+  if (role === "admin" || role === "management") {
+    // Admin et Management voient tous les membres
+    return await query;
+  }
+
+  if (role === "supervisor" || role === "staff") {
+    // Supervisor et Staff voient uniquement les membres de leur pilier
+    if (!pillar) {
+      throw new Error("Aucun pilier n’est associé à votre profil.");
+    }
+
+    return await query.eq("pillar", pillar);
+  }
+
+  // Par défaut, aucun accès
+  throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
+}
   window.AppServices = {
     createTaskWithFallbackStatus,
     deleteTaskAndLinkedDocuments,
