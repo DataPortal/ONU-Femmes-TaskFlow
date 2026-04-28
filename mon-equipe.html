@@ -6,7 +6,7 @@
 
   <meta
     name="description"
-    content="Page de suivi des membres supervisés du TaskFlow Management Portal - ONU Femmes RDC."
+    content="Page de consultation des membres visibles selon le rôle et le périmètre d’accès dans le TaskFlow Management Portal - ONU Femmes RDC."
   />
 
   <title>ONU Femmes — Mon équipe</title>
@@ -22,7 +22,7 @@
         <div class="brand-text">
           <span class="eyebrow">TaskFlow Management Portal</span>
           <h1>ONU Femmes RDC — Mon équipe</h1>
-          <p>Suivi des membres supervisés et de leurs indicateurs clés</p>
+          <p>Consultation des membres visibles selon votre rôle et votre pilier</p>
         </div>
       </div>
 
@@ -56,11 +56,56 @@
 
     <section class="page-heading">
       <div>
-        <span class="section-kicker">Pilotage d’équipe</span>
+        <span class="section-kicker">Espace équipe</span>
         <h2 id="myTeamTitle" class="section-title">Mon équipe</h2>
         <p class="section-subtitle">
-          Consultez les membres rattachés à votre périmètre, ainsi qu’une lecture synthétique de leur charge et de leur suivi.
+          Consultez les membres visibles selon votre rôle et votre périmètre d’accès.
+          Pour le profil staff, cette page permet de voir uniquement les membres rattachés au même pilier,
+          en lecture seule.
         </p>
+      </div>
+    </section>
+
+    <section class="card">
+      <span class="section-kicker">Règle d’accès</span>
+      <h3>Qui peut voir quels membres ?</h3>
+
+      <div class="guide-feature-grid">
+        <div class="guide-feature-card">
+          <h4>Staff</h4>
+          <p>
+            Le staff peut consulter les membres rattachés à son propre pilier.
+            Cette consultation est en lecture seule et vise à faciliter la coordination interne.
+          </p>
+        </div>
+
+        <div class="guide-feature-card">
+          <h4>Supervisor</h4>
+          <p>
+            Le superviseur peut consulter les membres relevant de son pilier ou de son périmètre de supervision,
+            ainsi que les indicateurs utiles au suivi opérationnel.
+          </p>
+        </div>
+
+        <div class="guide-feature-card">
+          <h4>Management</h4>
+          <p>
+            Le management dispose d’une vue globale et analytique pour suivre les équipes, les charges,
+            les progrès et les points nécessitant une attention.
+          </p>
+        </div>
+
+        <div class="guide-feature-card">
+          <h4>Admin</h4>
+          <p>
+            L’admin dispose d’un accès complet à l’ensemble des membres et des paramètres de gestion associés.
+          </p>
+        </div>
+      </div>
+
+      <div class="info-box" style="margin-top:16px;">
+        Les membres affichés dépendent automatiquement du rôle connecté. Le staff ne peut pas modifier les profils,
+        changer les rôles, supprimer des membres ou accéder aux membres d’autres piliers.
       </div>
     </section>
 
@@ -70,8 +115,10 @@
       <article class="info-card">
         <div class="card-header">
           <div>
-            <h3>Membres rattachés</h3>
-            <p>Liste des membres visibles dans votre périmètre de supervision</p>
+            <h3>Membres visibles</h3>
+            <p>
+              Liste des membres accessibles selon votre rôle, votre pilier et vos permissions.
+            </p>
           </div>
         </div>
 
@@ -87,33 +134,41 @@
         </div>
 
         <div class="info-box">
-          Cette page affiche les membres visibles dans votre périmètre ainsi qu’une synthèse de leurs tâches.
-          Elle permet une lecture simple de la charge, des tâches achevées, des échéances imminentes et des retards,
-          sans afficher le tableau détaillé des tâches.
+          Cette page permet de consulter les membres visibles dans votre périmètre.
+          Elle facilite la coordination interne, la compréhension de la répartition des responsabilités
+          et la lecture synthétique de la charge de travail.
         </div>
 
         <div class="profile-guidance-grid" style="margin-top:16px;">
           <div class="profile-guidance-card">
+            <h4>Coordination par pilier</h4>
+            <p>
+              Pour le staff, cette page permet d’identifier les collègues rattachés au même pilier
+              et de mieux coordonner les tâches liées aux activités communes.
+            </p>
+          </div>
+
+          <div class="profile-guidance-card">
             <h4>Vision d’ensemble</h4>
             <p>
-              Utilisez cette page pour identifier rapidement la répartition des charges,
-              les membres très sollicités et les retards à surveiller.
+              Les superviseurs et le management peuvent identifier rapidement la répartition des charges,
+              les membres fortement sollicités et les retards à surveiller.
             </p>
           </div>
 
           <div class="profile-guidance-card">
             <h4>Suivi managérial</h4>
             <p>
-              Les KPI d’équipe vous aident à préparer les points de suivi et à orienter
-              les arbitrages de supervision sur votre périmètre.
+              Les indicateurs d’équipe facilitent la préparation des points de suivi,
+              l’analyse de performance et les arbitrages sur les priorités.
             </p>
           </div>
 
           <div class="profile-guidance-card">
             <h4>Lecture simplifiée</h4>
             <p>
-              Cette version ne montre pas le tableau détaillé des tâches afin de garder
-              une vue claire et synthétique centrée sur les membres.
+              Cette page privilégie une vue claire et synthétique des membres.
+              L’accès aux actions détaillées dépend du rôle et des permissions de l’utilisateur connecté.
             </p>
           </div>
         </div>
@@ -231,8 +286,12 @@
       </div>
 
       <div class="modal-actions">
-        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">Fermer</button>
-        <button id="saveTaskBtn" class="btn btn-primary" type="button">Enregistrer</button>
+        <button id="closeTaskModalBtnFooter" class="btn btn-secondary" type="button">
+          Fermer
+        </button>
+        <button id="saveTaskBtn" class="btn btn-primary" type="button">
+          Enregistrer
+        </button>
       </div>
     </div>
   </div>
