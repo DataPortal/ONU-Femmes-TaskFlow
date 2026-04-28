@@ -879,6 +879,95 @@
     };
   });
 }
+  async function getVisibleTeamSummary(currentUserProfile) {
+  const sb = getSb();
+
+  if (!sb) {
+    throw new Error("Client Supabase indisponible.");
+  }
+
+  if (!currentUserProfile) {
+    throw new Error("Profil utilisateur introuvable.");
+  }
+
+  const role = normalizeRole
+    ? normalizeRole(currentUserProfile.role || currentUserProfile.user_type)
+    : String(currentUserProfile.role || currentUserProfile.user_type || "staff").toLowerCase();
+
+  const pillarId = currentUserProfile.pillar_id ?? null;
+
+  const members = await getVisibleTeamMembers(currentUserProfile);
+
+  const visibleMemberIds = members
+    .map(member => member.id)
+    .filter(Boolean);
+
+  if (!visibleMemberIds.length) {
+    return [];
+  }
+
+  let tasksQuery = sb
+    .from("tasks")
+    .select(`
+      id,
+      title,
+      assigned_to_id,
+      pillar_id,
+      status,
+      progress,
+      progress_score,
+      due_date,
+      created_at
+    `)
+    .in("assigned_to_id", visibleMemberIds);
+
+  if (role === "staff" || role === "supervisor") {
+    tasksQuery = tasksQuery.eq("pillar_id", pillarId);
+  }
+
+  const { data: tasksData, error: tasksError } = await tasksQuery;
+
+  if (tasksError) {
+    console.warn("Résumé des tâches non disponible :", tasksError.message);
+  }
+
+  const tasks = (tasksData || []).map(task =>
+    hydrateTaskStatus ? hydrateTaskStatus(task) : task
+  );
+
+  return members.map(member => {
+    const memberTasks = tasks.filter(task =>
+      String(task.assigned_to_id) === String(member.id)
+    );
+
+    const total = memberTasks.length;
+    const completed = memberTasks.filter(task => task.status === "Achevé").length;
+    const onTrack = memberTasks.filter(task => task.status === "En bonne voie").length;
+    const imminent = memberTasks.filter(task => task.status === "Échéance imminente").length;
+    const late = memberTasks.filter(task => task.status === "En retard").length;
+
+    const averageProgress = total
+      ? Math.round(
+          memberTasks.reduce((sum, task) => {
+            const progress = Number(task.progress ?? task.progress_score * 10 ?? 0);
+            return sum + progress;
+          }, 0) / total
+        )
+      : 0;
+
+    return {
+      ...member,
+      task_summary: {
+        total,
+        completed,
+        onTrack,
+        imminent,
+        late,
+        averageProgress
+      }
+    };
+  });
+}
   window.AppServices = {
     createTaskWithFallbackStatus,
     deleteTaskAndLinkedDocuments,
