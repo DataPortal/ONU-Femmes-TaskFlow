@@ -314,136 +314,136 @@
       <div class="card"><h3>En retard</h3><div class="value">${late}</div></div>
     `;
   }
+    function renderTaskRows(tasks, options = {}) {
+  const { showDescription = false } = options;
+  const currentUser = getCurrentUser();
 
-  function renderTaskRows(tasks, options = {}) {
-    const { showDescription = false } = options;
-    const currentUser = getCurrentUser();
+  return tasks
+    .map(task => {
+      const status = normalizeStatusToDatabase(task.status);
+      const progress = clamp(task.progress || 0, 0, 100);
+      const supervisorProgress = clamp(task.supervisor_progress || 0, 0, 100);
 
-    return tasks
-      .map(task => {
-        const status = normalizeStatusToDatabase(task.status);
-        const progress = clamp(task.progress || 0, 0, 100);
-        const supervisorProgress = clamp(task.supervisor_progress || 0, 0, 100);
+      const description = task.description
+        ? escapeHtml(task.description)
+        : "Aucune description";
 
-        const description = task.description
-          ? escapeHtml(task.description)
-          : "Aucune description";
+      const staffComment = task.staff_comment
+        ? escapeHtml(task.staff_comment)
+        : "Aucun commentaire";
 
-        const staffComment = task.staff_comment
-          ? escapeHtml(task.staff_comment)
-          : "Aucun commentaire";
+      const supervisorComment = task.supervisor_comment
+        ? escapeHtml(task.supervisor_comment)
+        : "Aucun commentaire";
 
-        const supervisorComment = task.supervisor_comment
-          ? escapeHtml(task.supervisor_comment)
-          : "Aucun commentaire";
+      const canEditThisTask = canEditTask(task, currentUser);
+      const canDeleteThisTask = canDeleteTask(task, currentUser);
 
-        const canEditThisTask = canEditTask(task, currentUser);
-        const canDeleteThisTask = canDeleteTask(task, currentUser);
+      return `
+        <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
+          <td class="id-cell">${escapeHtml(task.id)}</td>
 
-        return `
-          <tr class="${isLate(task) ? "row-late" : isDueSoon(task) ? "row-due-soon" : ""}">
-            <td class="id-cell">${escapeHtml(task.id)}</td>
+          <td>
+            <div class="task-cell">
+              <div class="task-title">${escapeHtml(task.title || "Sans titre")}</div>
+              <div class="task-pillar">${escapeHtml(task.pillar || "Sans pilier")}</div>
+            </div>
+          </td>
 
-            <td>
-              <div class="task-cell">
-                <div class="task-title">${escapeHtml(task.title || "Sans titre")}</div>
-                <div class="task-pillar">${escapeHtml(task.pillar || "Sans pilier")}</div>
+          <td>
+            <span class="task-pill activity">
+              ${escapeHtml(task.activity_name || "Non définie")}
+            </span>
+          </td>
+
+          ${showDescription ? `
+            <td class="task-description-cell">
+              <div class="cell-content ${task.description ? "" : "is-empty"}">
+                ${description}
               </div>
             </td>
+          ` : ""}
 
-            <td>
-              <span class="task-pill activity">${escapeHtml(task.activity_name || "Non définie")}</span>
-            </td>
+          <td>
+            <div class="person-cell">
+              <span class="person-name">${escapeHtml(task.assigned_to_name || "Non défini")}</span>
+              <span class="person-role">${escapeHtml(task.assigned_to_role || "")}</span>
+            </div>
+          </td>
 
-            ${showDescription ? `
-              <td>
-                <div class="task-description ${task.description ? "" : "is-empty"}">
-                  ${description}
-                </div>
-              </td>
-            ` : ""}
+          <td>
+            <div class="person-cell">
+              <span class="person-name">${escapeHtml(task.supervisor_name || "Non défini")}</span>
+              <span class="person-role">${escapeHtml(task.supervisor_role || "")}</span>
+            </div>
+          </td>
 
-            <td>
-              <div class="person-cell">
-                <span class="person-name">${escapeHtml(task.assigned_to_name || "Non défini")}</span>
-                <span class="person-role">${escapeHtml(task.assigned_to_role || "")}</span>
+          <td>${getPriorityBadge(task.priority)}</td>
+          <td>${getStatusBadge(status)}</td>
+
+          <td>
+            <div class="progress-cell">
+              <div class="progress-track compact">
+                <div class="progress-fill" style="width:${progress}%"></div>
               </div>
-            </td>
+              <span class="progress-value">${progress}%</span>
+            </div>
+          </td>
 
-            <td>
-              <div class="person-cell">
-                <span class="person-name">${escapeHtml(task.supervisor_name || "Non défini")}</span>
-                <span class="person-role">${escapeHtml(task.supervisor_role || "")}</span>
+          <td class="task-staff-comment-cell">
+            <div class="cell-content comment-box ${task.staff_comment ? "" : "empty-comment"}">
+              ${staffComment}
+            </div>
+          </td>
+
+          <td>
+            <div class="supervisor-eval">
+              <div class="progress-track compact">
+                <div class="progress-fill supervisor" style="width:${supervisorProgress}%"></div>
               </div>
-            </td>
+              <span class="progress-value">${supervisorProgress}%</span>
+              ${getSupervisorBadge(task.supervisor_status)}
+            </div>
+          </td>
 
-            <td>${getPriorityBadge(task.priority)}</td>
-            <td>${getStatusBadge(status)}</td>
+          <td class="task-supervisor-comment-cell">
+            <div class="cell-content comment-box ${task.supervisor_comment ? "" : "empty-comment"}">
+              ${supervisorComment}
+            </div>
+          </td>
 
-            <td>
-              <div class="progress-cell">
-                <div class="progress-track compact">
-                  <div class="progress-fill" style="width:${progress}%"></div>
-                </div>
-                <span class="progress-value">${progress}%</span>
-              </div>
-            </td>
+          <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
+            <div class="due-date-cell">
+              <span class="due-date-main">${escapeHtml(task.due_date || "—")}</span>
+              <span class="due-date-label">Échéance</span>
+            </div>
+          </td>
 
-            <td>
-              <div class="comment-box ${task.staff_comment ? "" : "empty-comment"}">
-                ${staffComment}
-              </div>
-            </td>
+          <td class="no-print action-cell">
+            <div class="table-actions">
+              ${canEditThisTask ? `
+                <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
+                  Mettre à jour
+                </button>
+              ` : `
+                <button class="action-btn js-open-task-readonly" type="button" data-task-id="${Number(task.id)}">
+                  Voir
+                </button>
+              `}
 
-            <td>
-              <div class="supervisor-eval">
-                <div class="progress-track compact">
-                  <div class="progress-fill supervisor" style="width:${supervisorProgress}%"></div>
-                </div>
-                <span class="progress-value">${supervisorProgress}%</span>
-                ${getSupervisorBadge(task.supervisor_status)}
-              </div>
-            </td>
-
-            <td>
-              <div class="comment-box ${task.supervisor_comment ? "" : "empty-comment"}">
-                ${supervisorComment}
-              </div>
-            </td>
-
-            <td class="${isLate(task) ? "late" : isDueSoon(task) ? "soon" : ""}">
-              <div class="due-date-cell">
-                <span class="due-date-main">${escapeHtml(task.due_date || "—")}</span>
-                <span class="due-date-label">Échéance</span>
-              </div>
-            </td>
-
-            <td class="no-print action-cell">
-              <div class="table-actions">
-                ${canEditThisTask ? `
-                  <button class="action-btn js-open-task-modal" type="button" data-task-id="${Number(task.id)}">
-                    Mettre à jour
-                  </button>
-                ` : `
-                  <button class="action-btn js-open-task-readonly" type="button" data-task-id="${Number(task.id)}">
-                    Voir
-                  </button>
-                `}
-
-                ${canDeleteThisTask ? `
-                  <button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">
-                    Supprimer
-                  </button>
-                ` : ``}
-              </div>
-            </td>
-          </tr>
-        `;
-      })
-      .join("");
-  }
-
-  function populateDashboardFilters() {
+              ${canDeleteThisTask ? `
+                <button class="action-btn secondary-danger js-delete-task" type="button" data-task-id="${Number(task.id)}">
+                  Supprimer
+                </button>
+              ` : ``}
+            </div>
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+    function populateDashboardFilters() {
     const currentUser = getCurrentUser();
     const currentRole = getUserRole(currentUser);
 
