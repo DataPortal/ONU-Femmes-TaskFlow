@@ -764,13 +764,128 @@
 
     throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
   }
+  async function getVisibleTeamSummary(currentUserProfile) {
+  const sb = getSb();
 
+  if (!sb) {
+    throw new Error("Client Supabase indisponible.");
+  }
+
+  if (!currentUserProfile) {
+    throw new Error("Profil utilisateur introuvable.");
+  }
+
+  const role = normalizeRole
+    ? normalizeRole(currentUserProfile.role || currentUserProfile.user_type)
+    : String(currentUserProfile.role || currentUserProfile.user_type || "staff").toLowerCase();
+
+  const pillarId = currentUserProfile.pillar_id ?? null;
+
+  let membersQuery = sb
+    .from("profiles")
+    .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active, created_at")
+    .eq("is_active", true)
+    .order("full_name", { ascending: true });
+
+  if (role === "staff" || role === "supervisor") {
+    if (!pillarId) {
+      throw new Error("Aucun pilier n’est associé à votre profil.");
+    }
+
+    membersQuery = membersQuery.eq("pillar_id", pillarId);
+  }
+
+  if (!["admin", "management", "supervisor", "staff"].includes(role)) {
+    throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
+  }
+
+  const { data: membersData, error: membersError } = await membersQuery;
+
+  if (membersError) {
+    throw new Error(`Lecture des membres impossible : ${membersError.message}`);
+  }
+
+  const members = (membersData || []).map(user =>
+    normalizeProfileRecord(user, AppState.pillars || [])
+  );
+
+  const visibleMemberIds = members
+    .map(member => member.id)
+    .filter(Boolean);
+
+  if (!visibleMemberIds.length) {
+    return [];
+  }
+
+  let tasksQuery = sb
+    .from("tasks")
+    .select(`
+      id,
+      title,
+      assigned_to_id,
+      pillar_id,
+      status,
+      progress_score,
+      progress,
+      due_date,
+      created_at
+    `)
+    .in("assigned_to_id", visibleMemberIds);
+
+  if (role === "staff" || role === "supervisor") {
+    tasksQuery = tasksQuery.eq("pillar_id", pillarId);
+  }
+
+  const { data: tasksData, error: tasksError } = await tasksQuery;
+
+  if (tasksError) {
+    throw new Error(`Lecture des tâches de l’équipe impossible : ${tasksError.message}`);
+  }
+
+  const tasks = (tasksData || []).map(task =>
+    hydrateTaskStatus ? hydrateTaskStatus(task) : task
+  );
+
+  return members.map(member => {
+    const memberTasks = tasks.filter(task =>
+      String(task.assigned_to_id) === String(member.id)
+    );
+
+    const total = memberTasks.length;
+    const completed = memberTasks.filter(task => task.status === "Achevé").length;
+    const onTrack = memberTasks.filter(task => task.status === "En bonne voie").length;
+    const imminent = memberTasks.filter(task => task.status === "Échéance imminente").length;
+    const late = memberTasks.filter(task => task.status === "En retard").length;
+
+    const averageProgress = total
+      ? Math.round(
+          memberTasks.reduce((sum, task) => {
+            const progress = Number(task.progress ?? 0);
+            return sum + progress;
+          }, 0) / total
+        )
+      : 0;
+
+    return {
+      ...member,
+      task_summary: {
+        total,
+        completed,
+        onTrack,
+        imminent,
+        late,
+        averageProgress
+      }
+    };
+  });
+}
   window.AppServices = {
     createTaskWithFallbackStatus,
     deleteTaskAndLinkedDocuments,
     deleteTaskDocument,
     getTaskDocumentSignedUrl,
     getVisibleTeamMembers,
+    getVisibleTeamSummary,
     loadCurrentUser,
     loadReferenceData,
     loadTaskActivityLogs,
