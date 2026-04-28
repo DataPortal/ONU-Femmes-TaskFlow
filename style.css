@@ -3076,68 +3076,230 @@ textarea{
     width:100%;
   }
 }
+
 /* =========================================================
-   TABLEAUX DES TÂCHES — ALIGNEMENT DES COLONNES TEXTUELLES
+   TABLEAUX DES TÂCHES — ALIGNEMENT DES COLONNES LONGUES
    Description / Commentaire staff / Commentaire superviseur
+   Version consolidée — ne pas dupliquer ailleurs
 ========================================================= */
 
+/* Les tables restent en layout fixe afin de respecter les largeurs
+   déclarées par colonnes, mais les cellules longues s'ajustent
+   automatiquement en hauteur grâce au retour à la ligne. */
+.tasks-table,
+#teamTasksTable{
+  table-layout:fixed;
+  width:100%;
+}
+
+/* Alignement général des cellules */
+.tasks-table tbody td,
+#teamTasksTable tbody td,
+tbody td{
+  vertical-align:top;
+}
+
+/* Colonnes longues : affichage lisible, gras, aligné à gauche */
 .task-description-cell,
 .task-staff-comment-cell,
-.task-supervisor-comment-cell {
-  font-weight: 700;
-  text-align: left;
-  vertical-align: top;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  line-height: 1.45;
-  min-width: 220px;
-  max-width: 360px;
+.task-supervisor-comment-cell{
+  text-align:left;
+  vertical-align:top;
+  white-space:normal;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  overflow:visible !important;
+  font-weight:800;
+  line-height:1.5;
+  color:#1f2937;
 }
 
-/* Rend le contenu plus lisible dans les tableaux */
+.task-description-cell{
+  min-width:300px;
+}
+
+.task-staff-comment-cell,
+.task-supervisor-comment-cell{
+  min-width:280px;
+}
+
+/* Le contenu interne s'étend automatiquement selon le texte */
 .task-description-cell .cell-content,
 .task-staff-comment-cell .cell-content,
-.task-supervisor-comment-cell .cell-content {
-  display: block;
-  width: 100%;
-  max-height: none;
-  white-space: normal;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  font-weight: 700;
+.task-supervisor-comment-cell .cell-content{
+  display:block;
+  width:100%;
+  height:auto;
+  min-height:74px;
+  max-height:none !important;
+  overflow:visible !important;
+  white-space:pre-line;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  font-weight:800;
+  line-height:1.5;
 }
 
-/* Ajustement automatique de la hauteur des lignes */
-.tasks-table td,
-.tasks-table th,
-.table td,
-.table th {
-  vertical-align: top;
+/* Neutralise les limites de hauteur des anciens blocs dans ces colonnes */
+.task-description-cell .task-description,
+.task-staff-comment-cell .comment-box,
+.task-supervisor-comment-cell .comment-box{
+  height:auto;
+  min-height:74px;
+  max-height:none !important;
+  overflow:visible !important;
+  white-space:pre-line;
+  word-break:normal;
+  overflow-wrap:anywhere;
+  font-weight:800;
 }
 
-/* Évite que les longues descriptions cassent la mise en page */
+/* Couleurs légèrement différenciées pour faciliter la lecture */
+.task-description-cell,
+.task-description-cell .cell-content,
+.task-description-cell .task-description{
+  color:#1f2937;
+}
+
+.task-staff-comment-cell,
+.task-staff-comment-cell .cell-content,
+.task-staff-comment-cell .comment-box{
+  color:#243b53;
+}
+
+.task-supervisor-comment-cell,
+.task-supervisor-comment-cell .cell-content,
+.task-supervisor-comment-cell .comment-box{
+  color:#2f3a4a;
+}
+
+/* État vide : visible mais moins dominant */
+.task-description-cell .is-empty,
+.task-description-cell .task-description.is-empty,
+.task-staff-comment-cell .empty-comment,
+.task-supervisor-comment-cell .empty-comment{
+  font-weight:700;
+  opacity:.72;
+  font-style:italic;
+}
+
+/* Largeurs cohérentes avec les colonnes longues */
+.col-description{
+  width:340px;
+}
+
+.col-staff-comment{
+  width:320px;
+}
+
+.col-supervisor-comment{
+  width:320px;
+}
+
+#teamTasksTable .col-description{
+  width:340px;
+}
+
+#teamTasksTable .col-staff-comment{
+  width:320px;
+}
+
+#teamTasksTable .col-supervisor-comment{
+  width:320px;
+}
+
+/* Ajustement de la largeur minimale globale du tableau après élargissement */
 .tasks-table,
-.table {
-  table-layout: auto;
+#teamTasksTable{
+  min-width:1960px;
+}
+
+@media (max-width:1200px){
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1750px;
+  }
+}
+
+@media (max-width:900px){
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1600px;
+  }
+}
+
+@media (max-width:760px){
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1450px;
+  }
+}
+
+@media (max-width:480px){
+  .tasks-table,
+  #teamTasksTable{
+    min-width:1350px;
+  }
+}
+/* =====================================================
+   HEADER + MENU FIGÉS AU DÉFILEMENT VERTICAL
+   Application globale à toutes les pages
+===================================================== */
+
+.site-header,
+header.fixed-header,
+.fixed-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   width: 100%;
 }
 
-/* Option utile si le tableau est dans un conteneur scrollable */
-.table-responsive,
-.table-wrapper {
-  overflow-x: auto;
+.main-nav,
+nav.fixed-nav,
+.fixed-nav {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 999;
+  width: 100%;
 }
 
-/* Amélioration de lecture pour les textes longs */
-.task-description-cell {
-  color: #1f2937;
+/* Évite que le menu passe sous le header */
+:root {
+  --header-height: 96px;
+  --nav-height: 49px;
 }
 
-.task-staff-comment-cell {
-  color: #243b53;
+/* Ajustement lorsque le header devient plus haut sur tablette */
+@media (max-width: 1200px) {
+  :root {
+    --header-height: 104px;
+  }
+
+  .fixed-nav {
+    top: var(--header-height);
+  }
 }
 
-.task-supervisor-comment-cell {
-  color: #2f3a4a;
+/* Sur mobile, on garde aussi le header et le menu figés */
+@media (max-width: 760px) {
+  :root {
+    --header-height: auto;
+  }
+
+  .site-header,
+  header.fixed-header,
+  .fixed-header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+
+  .main-nav,
+  nav.fixed-nav,
+  .fixed-nav {
+    position: sticky;
+    top: 0;
+    z-index: 999;
+  }
 }
