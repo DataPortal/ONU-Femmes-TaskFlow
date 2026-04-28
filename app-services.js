@@ -12,6 +12,7 @@
 
   if (!AppState || typeof getSb !== "function") {
     console.error("AppCore est incomplet ou indisponible.");
+
     window.AppServices = {
       waitForSupabaseClient: async () => {
         throw new Error("AppCore indisponible.");
@@ -58,13 +59,20 @@
       },
       loadTaskActivityLogs: async () => {
         throw new Error("AppCore indisponible.");
+      },
+      getVisibleTeamMembers: async () => {
+        throw new Error("AppCore indisponible.");
       }
     };
+
     return;
   }
 
   function normalizeProfileRecord(profile, pillars = []) {
     const safeProfile = profile || {};
+    const safeRole = normalizeRole
+      ? normalizeRole(safeProfile.role || safeProfile.user_type)
+      : String(safeProfile.role || safeProfile.user_type || "staff").toLowerCase();
 
     return {
       ...safeProfile,
@@ -72,16 +80,13 @@
       full_name: safeProfile.full_name || "",
       name: safeProfile.full_name || safeProfile.name || "Utilisateur",
       email: safeProfile.email || "",
-      role: normalizeRole
-        ? normalizeRole(safeProfile.role || safeProfile.user_type)
-        : String(safeProfile.role || safeProfile.user_type || "staff").toLowerCase(),
-      user_type: normalizeRole
-        ? normalizeRole(safeProfile.role || safeProfile.user_type)
-        : String(safeProfile.role || safeProfile.user_type || "staff").toLowerCase(),
+      role: safeRole,
+      user_type: safeRole,
       pillar_id: safeProfile.pillar_id ?? null,
       supervisor_id: safeProfile.supervisor_id ?? null,
       office: safeProfile.office || "",
       is_active: safeProfile.is_active !== false,
+      created_at: safeProfile.created_at || null,
       pillar: getPillarNameByIdFromArray
         ? getPillarNameByIdFromArray(safeProfile.pillar_id, pillars)
         : ""
@@ -127,7 +132,7 @@
       priority: safeTask.priority || "Moyenne",
       status: normalizeStatusToDatabase
         ? normalizeStatusToDatabase(safeTask.status)
-        : (safeTask.status || "En bonne voie"),
+        : safeTask.status || "En bonne voie",
 
       progress_score: Number(safeTask.progress_score ?? 0),
       progress: Number(safeTask.progress ?? 0),
@@ -185,7 +190,7 @@
       priority: safeTask.priority || "Moyenne",
       status: normalizeStatusToDatabase
         ? normalizeStatusToDatabase(safeTask.status)
-        : (safeTask.status || "En bonne voie"),
+        : safeTask.status || "En bonne voie",
 
       progress_score: Number(safeTask.progress_score ?? 0),
       progress: Number(safeTask.progress ?? 0),
@@ -250,7 +255,7 @@
 
     const { data: profile, error: profileError } = await sb
       .from("profiles")
-      .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
+      .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active, created_at")
       .eq("id", user.id)
       .single();
 
@@ -273,14 +278,19 @@
     const sb = getSb();
 
     const [pillarsRes, usersRes, activitiesRes] = await Promise.all([
-      sb.from("pillars").select("*").order("name", { ascending: true }),
+      sb
+        .from("pillars")
+        .select("*")
+        .order("name", { ascending: true }),
 
-      sb.from("profiles")
-        .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active")
+      sb
+        .from("profiles")
+        .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active, created_at")
         .eq("is_active", true)
         .order("full_name", { ascending: true }),
 
-      sb.from("main_activities")
+      sb
+        .from("main_activities")
         .select("id, pillar_id, name, description, is_active, created_by, created_at, updated_at")
         .eq("is_active", true)
         .order("name", { ascending: true })
@@ -328,6 +338,7 @@
       AppState.tasks = tasksViewRes.data
         .map(normalizeTaskRecordFromEnriched)
         .map(task => (hydrateTaskStatus ? hydrateTaskStatus(task) : task));
+
       return;
     }
 
@@ -341,6 +352,7 @@
       const enrichedMessage = tasksViewRes.error?.message
         ? ` | tasks_enriched: ${tasksViewRes.error.message}`
         : "";
+
       throw new Error(`Lecture tasks impossible: ${tasksRes.error.message}${enrichedMessage}`);
     }
 
@@ -371,7 +383,7 @@
       ...payload,
       status: normalizeStatusToDatabase
         ? normalizeStatusToDatabase(payload.status)
-        : (payload.status || "En bonne voie")
+        : payload.status || "En bonne voie"
     };
 
     const { data, error } = await sb
@@ -394,7 +406,7 @@
       ...payload,
       status: normalizeStatusToDatabase
         ? normalizeStatusToDatabase(payload.status)
-        : (payload.status || "En bonne voie")
+        : payload.status || "En bonne voie"
     };
 
     const { error } = await sb
@@ -416,7 +428,10 @@
       .eq("task_id", taskId)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
+
     return data || [];
   }
 
@@ -428,7 +443,10 @@
       .select("*", { count: "exact", head: true })
       .eq("task_id", taskId);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
+
     return count || 0;
   }
 
@@ -453,7 +471,10 @@
     const uploadedRows = [];
 
     for (const file of files) {
-      const safeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${file.name.replace(/\s+/g, "_")}`;
+      const safeName = `${Date.now()}_${Math.random()
+        .toString(36)
+        .slice(2, 8)}_${file.name.replace(/\s+/g, "_")}`;
+
       const filePath = `task-${taskId}/${safeName}`;
 
       const { error: uploadError } = await sb.storage
@@ -505,7 +526,10 @@
       throw new Error("Document introuvable.");
     }
 
-    const newSafeName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${newFile.name.replace(/\s+/g, "_")}`;
+    const newSafeName = `${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2, 8)}_${newFile.name.replace(/\s+/g, "_")}`;
+
     const newFilePath = `task-${existingDoc.task_id}/${newSafeName}`;
 
     const { error: uploadError } = await sb.storage
@@ -549,7 +573,10 @@
       .from("task-documents")
       .createSignedUrl(filePath, 3600);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
+
     return data?.signedUrl || "";
   }
 
@@ -561,20 +588,28 @@
       .delete()
       .eq("id", documentId);
 
-    if (dbError) throw dbError;
+    if (dbError) {
+      throw dbError;
+    }
 
     const { error: storageError } = await sb.storage
       .from("task-documents")
       .remove([filePath]);
 
-    if (storageError) throw storageError;
+    if (storageError) {
+      throw storageError;
+    }
   }
 
   async function deleteTaskAndLinkedDocuments(taskId) {
     const sb = getSb();
-    if (!sb) throw new Error("Client Supabase introuvable.");
+
+    if (!sb) {
+      throw new Error("Client Supabase introuvable.");
+    }
 
     const safeTaskId = Number(taskId);
+
     if (!safeTaskId) {
       throw new Error("ID de tâche invalide.");
     }
@@ -593,8 +628,7 @@
       .filter(Boolean);
 
     if (filePaths.length) {
-      const { error: storageError } = await sb
-        .storage
+      const { error: storageError } = await sb.storage
         .from("task-documents")
         .remove(filePaths);
 
@@ -656,7 +690,9 @@
         new_value: newValue
       }]);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 
   async function loadTaskActivityLogs(taskId) {
@@ -668,53 +704,73 @@
       .eq("task_id", taskId)
       .order("created_at", { ascending: false });
 
-    if (error) throw error;
-    return data || [];
-  }
-  async function getVisibleTeamMembers(currentUserProfile) {
-  if (!currentUserProfile) {
-    throw new Error("Profil utilisateur introuvable.");
-  }
-
-  const role = currentUserProfile.role;
-  const pillar = currentUserProfile.pillar;
-
-  let query = supabaseClient
-    .from("profiles")
-    .select(`
-      id,
-      full_name,
-      email,
-      role,
-      office,
-      pillar,
-      supervisor,
-      created_at
-    `)
-    .order("full_name", { ascending: true });
-
-  if (role === "admin" || role === "management") {
-    // Admin et Management voient tous les membres
-    return await query;
-  }
-
-  if (role === "supervisor" || role === "staff") {
-    // Supervisor et Staff voient uniquement les membres de leur pilier
-    if (!pillar) {
-      throw new Error("Aucun pilier n’est associé à votre profil.");
+    if (error) {
+      throw error;
     }
 
-    return await query.eq("pillar", pillar);
+    return data || [];
   }
 
-  // Par défaut, aucun accès
-  throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
-}
+  async function getVisibleTeamMembers(currentUserProfile) {
+    const sb = getSb();
+
+    if (!sb) {
+      throw new Error("Client Supabase indisponible.");
+    }
+
+    if (!currentUserProfile) {
+      throw new Error("Profil utilisateur introuvable.");
+    }
+
+    const role = normalizeRole
+      ? normalizeRole(currentUserProfile.role || currentUserProfile.user_type)
+      : String(currentUserProfile.role || currentUserProfile.user_type || "staff").toLowerCase();
+
+    const pillarId = currentUserProfile.pillar_id ?? null;
+
+    let query = sb
+      .from("profiles")
+      .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active, created_at")
+      .eq("is_active", true)
+      .order("full_name", { ascending: true });
+
+    if (role === "admin" || role === "management") {
+      const { data, error } = await query;
+
+      if (error) {
+        throw new Error(`Lecture des membres impossible : ${error.message}`);
+      }
+
+      return (data || []).map(user =>
+        normalizeProfileRecord(user, AppState.pillars || [])
+      );
+    }
+
+    if (role === "supervisor" || role === "staff") {
+      if (!pillarId) {
+        throw new Error("Aucun pilier n’est associé à votre profil.");
+      }
+
+      const { data, error } = await query.eq("pillar_id", pillarId);
+
+      if (error) {
+        throw new Error(`Lecture des membres du pilier impossible : ${error.message}`);
+      }
+
+      return (data || []).map(user =>
+        normalizeProfileRecord(user, AppState.pillars || [])
+      );
+    }
+
+    throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
+  }
+
   window.AppServices = {
     createTaskWithFallbackStatus,
     deleteTaskAndLinkedDocuments,
     deleteTaskDocument,
     getTaskDocumentSignedUrl,
+    getVisibleTeamMembers,
     loadCurrentUser,
     loadReferenceData,
     loadTaskActivityLogs,
