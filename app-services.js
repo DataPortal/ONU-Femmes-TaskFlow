@@ -62,6 +62,9 @@
       },
       getVisibleTeamMembers: async () => {
         throw new Error("AppCore indisponible.");
+      },
+      getVisibleTeamSummary: async () => {
+        throw new Error("AppCore indisponible.");
       }
     };
 
@@ -70,9 +73,12 @@
 
   function normalizeProfileRecord(profile, pillars = []) {
     const safeProfile = profile || {};
+
     const safeRole = normalizeRole
       ? normalizeRole(safeProfile.role || safeProfile.user_type)
-      : String(safeProfile.role || safeProfile.user_type || "staff").toLowerCase();
+      : String(safeProfile.role || safeProfile.user_type || "staff")
+          .trim()
+          .toLowerCase();
 
     return {
       ...safeProfile,
@@ -205,6 +211,43 @@
       description: safeTask.description || "",
       created_by: safeTask.created_by ?? null,
       created_at: safeTask.created_at || null
+    };
+  }
+
+  function getNormalizedRoleFromProfile(profile) {
+    return normalizeRole
+      ? normalizeRole(profile?.role || profile?.user_type)
+      : String(profile?.role || profile?.user_type || "staff")
+          .trim()
+          .toLowerCase();
+  }
+
+  function getDefaultTaskSummary() {
+    return {
+      total: 0,
+      completed: 0,
+      onTrack: 0,
+      imminent: 0,
+      late: 0,
+      averageProgress: 0
+    };
+  }
+
+  function normalizeTaskForSummary(task) {
+    const safeTask = task || {};
+    const hydratedTask = hydrateTaskStatus ? hydrateTaskStatus(safeTask) : safeTask;
+
+    return {
+      ...hydratedTask,
+      status: normalizeStatusToDatabase
+        ? normalizeStatusToDatabase(hydratedTask.status)
+        : hydratedTask.status || "En bonne voie",
+      progress: Number(
+        hydratedTask.progress ??
+        (Number(hydratedTask.progress_score ?? 0) * 10) ??
+        0
+      ),
+      progress_score: Number(hydratedTask.progress_score ?? 0)
     };
   }
 
@@ -722,10 +765,7 @@
       throw new Error("Profil utilisateur introuvable.");
     }
 
-    const role = normalizeRole
-      ? normalizeRole(currentUserProfile.role || currentUserProfile.user_type)
-      : String(currentUserProfile.role || currentUserProfile.user_type || "staff").toLowerCase();
-
+    const role = getNormalizedRoleFromProfile(currentUserProfile);
     const pillarId = currentUserProfile.pillar_id ?? null;
 
     let query = sb
@@ -748,7 +788,7 @@
 
     if (role === "supervisor" || role === "staff") {
       if (!pillarId) {
-        throw new Error("Aucun pilier n’est associé à votre profil.");
+        throw new Error("Aucun pilier n’est associé à votre profil. Veuillez renseigner le pilier du compte.");
       }
 
       const { data, error } = await query.eq("pillar_id", pillarId);
@@ -764,210 +804,97 @@
 
     throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
   }
+
   async function getVisibleTeamSummary(currentUserProfile) {
-  const sb = getSb();
+    const sb = getSb();
 
-  if (!sb) {
-    throw new Error("Client Supabase indisponible.");
-  }
-
-  if (!currentUserProfile) {
-    throw new Error("Profil utilisateur introuvable.");
-  }
-
-  const role = normalizeRole
-    ? normalizeRole(currentUserProfile.role || currentUserProfile.user_type)
-    : String(currentUserProfile.role || currentUserProfile.user_type || "staff").toLowerCase();
-
-  const pillarId = currentUserProfile.pillar_id ?? null;
-
-  let membersQuery = sb
-    .from("profiles")
-    .select("id, full_name, email, role, pillar_id, supervisor_id, office, is_active, created_at")
-    .eq("is_active", true)
-    .order("full_name", { ascending: true });
-
-  if (role === "staff" || role === "supervisor") {
-    if (!pillarId) {
-      throw new Error("Aucun pilier n’est associé à votre profil.");
+    if (!sb) {
+      throw new Error("Client Supabase indisponible.");
     }
 
-    membersQuery = membersQuery.eq("pillar_id", pillarId);
-  }
+    if (!currentUserProfile) {
+      throw new Error("Profil utilisateur introuvable.");
+    }
 
-  if (!["admin", "management", "supervisor", "staff"].includes(role)) {
-    throw new Error("Vous n’avez pas les permissions nécessaires pour consulter cette page.");
-  }
+    const role = getNormalizedRoleFromProfile(currentUserProfile);
+    const pillarId = currentUserProfile.pillar_id ?? null;
 
-  const { data: membersData, error: membersError } = await membersQuery;
+    const members = await getVisibleTeamMembers(currentUserProfile);
 
-  if (membersError) {
-    throw new Error(`Lecture des membres impossible : ${membersError.message}`);
-  }
+    const visibleMemberIds = members
+      .map(member => member.id)
+      .filter(Boolean);
 
-  const members = (membersData || []).map(user =>
-    normalizeProfileRecord(user, AppState.pillars || [])
-  );
+    if (!visibleMemberIds.length) {
+      return [];
+    }
 
-  const visibleMemberIds = members
-    .map(member => member.id)
-    .filter(Boolean);
+    let tasks = [];
 
-  if (!visibleMemberIds.length) {
-    return [];
-  }
+    try {
+      let tasksQuery = sb
+        .from("tasks")
+        .select("id, title, assigned_to_id, pillar_id, status, progress, progress_score, due_date, created_at")
+        .in("assigned_to_id", visibleMemberIds);
 
-  let tasksQuery = sb
-    .from("tasks")
-    .select(`
-      id,
-      title,
-      assigned_to_id,
-      pillar_id,
-      status,
-      progress_score,
-      progress,
-      due_date,
-      created_at
-    `)
-    .in("assigned_to_id", visibleMemberIds);
-
-  if (role === "staff" || role === "supervisor") {
-    tasksQuery = tasksQuery.eq("pillar_id", pillarId);
-  }
-
-  const { data: tasksData, error: tasksError } = await tasksQuery;
-
-  if (tasksError) {
-    throw new Error(`Lecture des tâches de l’équipe impossible : ${tasksError.message}`);
-  }
-
-  const tasks = (tasksData || []).map(task =>
-    hydrateTaskStatus ? hydrateTaskStatus(task) : task
-  );
-
-  return members.map(member => {
-    const memberTasks = tasks.filter(task =>
-      String(task.assigned_to_id) === String(member.id)
-    );
-
-    const total = memberTasks.length;
-    const completed = memberTasks.filter(task => task.status === "Achevé").length;
-    const onTrack = memberTasks.filter(task => task.status === "En bonne voie").length;
-    const imminent = memberTasks.filter(task => task.status === "Échéance imminente").length;
-    const late = memberTasks.filter(task => task.status === "En retard").length;
-
-    const averageProgress = total
-      ? Math.round(
-          memberTasks.reduce((sum, task) => {
-            const progress = Number(task.progress ?? 0);
-            return sum + progress;
-          }, 0) / total
-        )
-      : 0;
-
-    return {
-      ...member,
-      task_summary: {
-        total,
-        completed,
-        onTrack,
-        imminent,
-        late,
-        averageProgress
+      if (role === "staff" || role === "supervisor") {
+        if (pillarId) {
+          tasksQuery = tasksQuery.eq("pillar_id", pillarId);
+        }
       }
-    };
-  });
-}
-  async function getVisibleTeamSummary(currentUserProfile) {
-  const sb = getSb();
 
-  if (!sb) {
-    throw new Error("Client Supabase indisponible.");
-  }
+      const { data: tasksData, error: tasksError } = await tasksQuery;
 
-  if (!currentUserProfile) {
-    throw new Error("Profil utilisateur introuvable.");
-  }
-
-  const role = normalizeRole
-    ? normalizeRole(currentUserProfile.role || currentUserProfile.user_type)
-    : String(currentUserProfile.role || currentUserProfile.user_type || "staff").toLowerCase();
-
-  const pillarId = currentUserProfile.pillar_id ?? null;
-
-  const members = await getVisibleTeamMembers(currentUserProfile);
-
-  const visibleMemberIds = members
-    .map(member => member.id)
-    .filter(Boolean);
-
-  if (!visibleMemberIds.length) {
-    return [];
-  }
-
-  let tasksQuery = sb
-    .from("tasks")
-    .select(`
-      id,
-      title,
-      assigned_to_id,
-      pillar_id,
-      status,
-      progress,
-      progress_score,
-      due_date,
-      created_at
-    `)
-    .in("assigned_to_id", visibleMemberIds);
-
-  if (role === "staff" || role === "supervisor") {
-    tasksQuery = tasksQuery.eq("pillar_id", pillarId);
-  }
-
-  const { data: tasksData, error: tasksError } = await tasksQuery;
-
-  if (tasksError) {
-    console.warn("Résumé des tâches non disponible :", tasksError.message);
-  }
-
-  const tasks = (tasksData || []).map(task =>
-    hydrateTaskStatus ? hydrateTaskStatus(task) : task
-  );
-
-  return members.map(member => {
-    const memberTasks = tasks.filter(task =>
-      String(task.assigned_to_id) === String(member.id)
-    );
-
-    const total = memberTasks.length;
-    const completed = memberTasks.filter(task => task.status === "Achevé").length;
-    const onTrack = memberTasks.filter(task => task.status === "En bonne voie").length;
-    const imminent = memberTasks.filter(task => task.status === "Échéance imminente").length;
-    const late = memberTasks.filter(task => task.status === "En retard").length;
-
-    const averageProgress = total
-      ? Math.round(
-          memberTasks.reduce((sum, task) => {
-            const progress = Number(task.progress ?? task.progress_score * 10 ?? 0);
-            return sum + progress;
-          }, 0) / total
-        )
-      : 0;
-
-    return {
-      ...member,
-      task_summary: {
-        total,
-        completed,
-        onTrack,
-        imminent,
-        late,
-        averageProgress
+      if (tasksError) {
+        console.warn("Résumé des tâches non disponible :", tasksError.message);
+        tasks = [];
+      } else {
+        tasks = (tasksData || []).map(normalizeTaskForSummary);
       }
-    };
-  });
-}
+    } catch (error) {
+      console.warn("Résumé des tâches non disponible :", error.message);
+      tasks = [];
+    }
+
+    return members.map(member => {
+      const memberTasks = tasks.filter(task =>
+        String(task.assigned_to_id) === String(member.id)
+      );
+
+      const total = memberTasks.length;
+
+      if (!total) {
+        return {
+          ...member,
+          task_summary: getDefaultTaskSummary()
+        };
+      }
+
+      const completed = memberTasks.filter(task => task.status === "Achevé").length;
+      const onTrack = memberTasks.filter(task => task.status === "En bonne voie").length;
+      const imminent = memberTasks.filter(task => task.status === "Échéance imminente").length;
+      const late = memberTasks.filter(task => task.status === "En retard").length;
+
+      const averageProgress = Math.round(
+        memberTasks.reduce((sum, task) => {
+          return sum + Number(task.progress ?? 0);
+        }, 0) / total
+      );
+
+      return {
+        ...member,
+        task_summary: {
+          total,
+          completed,
+          onTrack,
+          imminent,
+          late,
+          averageProgress
+        }
+      };
+    });
+  }
+
   window.AppServices = {
     createTaskWithFallbackStatus,
     deleteTaskAndLinkedDocuments,
