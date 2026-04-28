@@ -1647,12 +1647,15 @@ tbody tr:hover td{
   }
 
   .fixed-header{
-    position:relative;
+    position:sticky;
+    top:0;
+    z-index:1000;
   }
 
   .fixed-nav{
     position:sticky;
-    top:0;
+    top:var(--header-height);
+    z-index:999;
   }
 
   .dashboard-search-chip{
@@ -2572,12 +2575,15 @@ textarea{
   }
 
   .fixed-header{
-    position:relative;
+    position:sticky;
+    top:0;
+    z-index:1000;
   }
 
   .fixed-nav{
     position:sticky;
-    top:0;
+    top:var(--header-height);
+    z-index:999;
   }
 
   .container{
@@ -3241,6 +3247,9 @@ tbody td{
     min-width:1350px;
   }
 }
+
+
+
 /* =====================================================
    HEADER + MENU FIGÉS AU DÉFILEMENT VERTICAL
    Application globale à toutes les pages
@@ -3248,58 +3257,65 @@ tbody td{
 
 .site-header,
 header.fixed-header,
-.fixed-header {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  width: 100%;
+.fixed-header{
+  position:sticky !important;
+  top:0 !important;
+  z-index:1000 !important;
+  width:100%;
 }
 
 .main-nav,
 nav.fixed-nav,
-.fixed-nav {
-  position: sticky;
-  top: var(--header-height);
-  z-index: 999;
-  width: 100%;
+.fixed-nav{
+  position:sticky !important;
+  top:var(--header-height) !important;
+  z-index:999 !important;
+  width:100%;
 }
 
-/* Évite que le menu passe sous le header */
-:root {
-  --header-height: 96px;
-  --nav-height: 49px;
-}
-
-/* Ajustement lorsque le header devient plus haut sur tablette */
-@media (max-width: 1200px) {
-  :root {
-    --header-height: 104px;
-  }
-
-  .fixed-nav {
-    top: var(--header-height);
+/* Ajustements des hauteurs d’en-tête selon les tailles d’écran */
+@media (min-width:1201px){
+  :root{
+    --header-height:96px;
   }
 }
 
-/* Sur mobile, on garde aussi le header et le menu figés */
-@media (max-width: 760px) {
-  :root {
-    --header-height: auto;
+@media (max-width:1200px) and (min-width:901px){
+  :root{
+    --header-height:104px;
+  }
+}
+
+@media (max-width:900px) and (min-width:761px){
+  :root{
+    --header-height:150px;
+  }
+}
+
+@media (max-width:760px){
+  :root{
+    --header-height:172px;
   }
 
   .site-header,
   header.fixed-header,
-  .fixed-header {
-    position: sticky;
-    top: 0;
-    z-index: 1000;
+  .fixed-header{
+    position:sticky !important;
+    top:0 !important;
+    z-index:1000 !important;
   }
 
   .main-nav,
   nav.fixed-nav,
-  .fixed-nav {
-    position: sticky;
-    top: 0;
-    z-index: 999;
+  .fixed-nav{
+    position:sticky !important;
+    top:var(--header-height) !important;
+    z-index:999 !important;
+  }
+}
+
+@media (max-width:480px){
+  :root{
+    --header-height:188px;
   }
 }
