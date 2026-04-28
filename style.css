@@ -3076,3 +3076,68 @@ textarea{
     width:100%;
   }
 }
+/* =========================================================
+   TABLEAUX DES TÂCHES — ALIGNEMENT DES COLONNES TEXTUELLES
+   Description / Commentaire staff / Commentaire superviseur
+========================================================= */
+
+.task-description-cell,
+.task-staff-comment-cell,
+.task-supervisor-comment-cell {
+  font-weight: 700;
+  text-align: left;
+  vertical-align: top;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+  min-width: 220px;
+  max-width: 360px;
+}
+
+/* Rend le contenu plus lisible dans les tableaux */
+.task-description-cell .cell-content,
+.task-staff-comment-cell .cell-content,
+.task-supervisor-comment-cell .cell-content {
+  display: block;
+  width: 100%;
+  max-height: none;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+/* Ajustement automatique de la hauteur des lignes */
+.tasks-table td,
+.tasks-table th,
+.table td,
+.table th {
+  vertical-align: top;
+}
+
+/* Évite que les longues descriptions cassent la mise en page */
+.tasks-table,
+.table {
+  table-layout: auto;
+  width: 100%;
+}
+
+/* Option utile si le tableau est dans un conteneur scrollable */
+.table-responsive,
+.table-wrapper {
+  overflow-x: auto;
+}
+
+/* Amélioration de lecture pour les textes longs */
+.task-description-cell {
+  color: #1f2937;
+}
+
+.task-staff-comment-cell {
+  color: #243b53;
+}
+
+.task-supervisor-comment-cell {
+  color: #2f3a4a;
+}
