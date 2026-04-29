@@ -641,82 +641,97 @@
   }
 
   function renderMyTeamPage() {
-    const currentUser = getCurrentUser();
-    const currentRole = getUserRole(currentUser);
-    const membersBox = byId("teamMembersList");
-    const title = byId("myTeamTitle");
+  const currentUser = getCurrentUser();
+  const currentRole = getUserRole(currentUser);
+  const membersBox = byId("teamMembersList");
+  const title = byId("myTeamTitle");
 
-    if (!currentUser || !membersBox || !title) return;
+  if (!currentUser || !membersBox || !title) return;
 
-    if (!canViewTeamPage(currentUser)) {
-      title.textContent = "Mon équipe";
-      membersBox.innerHTML = `<div class="empty">Cette page n’est pas accessible pour votre profil.</div>`;
-      renderKPIs("myTeamKpis", []);
-      return;
-    }
-
-    let teamMembers = [];
-    let teamTasks = [];
-
-    if (currentRole === "admin") {
-      teamMembers = AppState.users || [];
-      teamTasks = AppState.tasks || [];
-    } else {
-      teamMembers = (AppState.users || []).filter(user =>
-        String(user.pillar_id) === String(currentUser.pillar_id)
-      );
-
-      teamTasks = getVisibleTasks();
-    }
-
-    const visibleTeamTasks = sortTasksNewestFirst(teamTasks);
-
-    title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
-    renderKPIs("myTeamKpis", visibleTeamTasks);
-
-    membersBox.innerHTML = teamMembers.length
-      ? teamMembers
-          .map(member => {
-            const memberTasks = visibleTeamTasks.filter(task =>
-              String(task.assigned_to_id) === String(member.id)
-            );
-
-            const completed = memberTasks.filter(task =>
-              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE
-            ).length;
-
-            const late = memberTasks.filter(task =>
-              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE
-            ).length;
-
-            const dueSoon = memberTasks.filter(task =>
-              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON
-            ).length;
-
-            const onTrack = memberTasks.filter(task =>
-              normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.ON_TRACK
-            ).length;
-
-            return `
-              <div class="member-card">
-                <h4>${escapeHtml(getUserDisplayName(member))}</h4>
-                <div class="muted">
-                  ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
-                </div>
-
-                <div class="kpi-inline" style="margin-top:10px;">
-                  <span><strong>${memberTasks.length}</strong> tâche(s)</span>
-                  <span><strong>${completed}</strong> achevée(s)</span>
-                  <span><strong>${onTrack}</strong> en bonne voie</span>
-                  <span><strong>${dueSoon}</strong> imminente(s)</span>
-                  <span><strong>${late}</strong> en retard</span>
-                </div>
-              </div>
-            `;
-          })
-          .join("")
-      : `<div class="empty">Aucun membre rattaché.</div>`;
+  if (!canViewTeamPage(currentUser)) {
+    title.textContent = "Mon équipe";
+    membersBox.innerHTML = `<div class="empty">Cette page n’est pas accessible pour votre profil.</div>`;
+    renderKPIs("myTeamKpis", []);
+    return;
   }
+
+  let teamMembers = [];
+  let teamTasks = [];
+
+  if (currentRole === "admin") {
+    teamMembers = AppState.users || [];
+    teamTasks = AppState.tasks || [];
+  } else if (currentRole === "management") {
+    teamMembers = (AppState.users || []).filter(user =>
+      String(user.pillar_id) === String(currentUser.pillar_id)
+    );
+    teamTasks = getVisibleTasks().filter(task =>
+      String(task.pillar_id) === String(currentUser.pillar_id)
+    );
+  } else if (currentRole === "supervisor") {
+    teamMembers = (AppState.users || []).filter(user =>
+      String(user.pillar_id) === String(currentUser.pillar_id)
+    );
+    teamTasks = getVisibleTasks().filter(task =>
+      String(task.pillar_id) === String(currentUser.pillar_id)
+    );
+  } else if (currentRole === "staff") {
+    teamMembers = (AppState.users || []).filter(user =>
+      String(user.pillar_id) === String(currentUser.pillar_id)
+    );
+    teamTasks = getVisibleTasks().filter(task =>
+      String(task.pillar_id) === String(currentUser.pillar_id)
+    );
+  }
+
+  const visibleTeamTasks = sortTasksNewestFirst(teamTasks);
+
+  title.textContent = `Mon équipe — ${getUserDisplayName(currentUser)}`;
+  renderKPIs("myTeamKpis", visibleTeamTasks);
+
+  membersBox.innerHTML = teamMembers.length
+    ? teamMembers
+        .map(member => {
+          const memberTasks = visibleTeamTasks.filter(task =>
+            String(task.assigned_to_id) === String(member.id)
+          );
+
+          const completed = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DONE
+          ).length;
+
+          const late = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.LATE
+          ).length;
+
+          const dueSoon = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.DUE_SOON
+          ).length;
+
+          const onTrack = memberTasks.filter(task =>
+            normalizeStatusToDatabase(computeAutomaticStatus(task)) === STATUS.ON_TRACK
+          ).length;
+
+          return `
+            <div class="member-card">
+              <h4>${escapeHtml(getUserDisplayName(member))}</h4>
+              <div class="muted">
+                ${escapeHtml(getUserRole(member))} | ${escapeHtml(getUserPillarLabel(member))}
+              </div>
+
+              <div class="kpi-inline" style="margin-top:10px;">
+                <span><strong>${memberTasks.length}</strong> tâche(s)</span>
+                <span><strong>${completed}</strong> achevée(s)</span>
+                <span><strong>${onTrack}</strong> en bonne voie</span>
+                <span><strong>${dueSoon}</strong> imminente(s)</span>
+                <span><strong>${late}</strong> en retard</span>
+              </div>
+            </div>
+          `;
+        })
+        .join("")
+    : `<div class="empty">Aucun membre rattaché.</div>`;
+}
 
   function populateRegisterDropdowns() {
     const pillarSupervisor = byId("pillarSupervisor");
