@@ -190,9 +190,9 @@
   }
 
   function canViewTeamPage(user = null) {
-    const role = getUserRole(user);
-    return role === "admin" || role === "supervisor";
-  }
+  const role = getUserRole(user);
+  return role === "admin" || role === "supervisor" || role === "management" || role === "staff";
+}
 
   function canViewTask(task = {}, user = null) {
     const currentUser = user || getCurrentUser();
